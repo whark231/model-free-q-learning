@@ -22,7 +22,9 @@ a finding rather than a bug.
 One of your existing tests will also start failing the moment real daily moments
 are used. Details in issue 1.
 
-Three smaller items follow. Issue 2 blocks a Part V requirement.
+Three smaller items follow. Issue 2 blocks a Part V requirement. Issue 3 has
+already been fixed with Albert's go-ahead (commit `02f6a49`); everything else
+here is untouched and still yours.
 
 ---
 
@@ -32,7 +34,7 @@ Three smaller items follow. Issue 2 blocks a Part V requirement.
 |---|---|---|---|---|
 | 1 | **Critical** | `mean_variance.py:48` | SLSQP stops prematurely on daily-scale moments and returns a wrong portfolio while reporting success | Part II, Part V |
 | 2 | **High** | `mean_variance.py:67` | `best_discrete_weights` hardcodes the 9-asset 20% grid; no way to vary resolution | Part V (≥2 grid resolutions), Part VI |
-| 3 | **Medium** | `grid.py:24` | Grid weights carry floating-point error (`0.6000000000000001`) | Transaction-cost extension |
+| 3 | ~~Medium~~ **FIXED** | `grid.py:24` | Grid weights carried floating-point error (`0.6000000000000001`) | — |
 | 4 | **Low** | `mean_variance.py:16` | `n = mu.shape` assigns a tuple where an int is intended | Nothing today |
 
 A fifth, unrelated item is at the bottom (`.vscode/settings.json`).
@@ -293,7 +295,23 @@ and resolutions, which is what the optional `grid` parameter is for.
 
 ---
 
-# Issue 3 — MEDIUM: grid weights carry floating-point error
+# Issue 3 — FIXED in commit `02f6a49`
+
+**This one is already done**, with Albert's go-ahead after it was flagged. It is
+the only issue in this document that has been changed in the code. Issues 1, 2
+and 4 are still open and still yours. The description below is kept so you can
+review the change.
+
+Sanity checks run before committing, against assignment Part III:
+
+| Check | Result |
+|---|---|
+| Action counts 495 / 1,287 / 43,758 | unchanged |
+| Weights nonnegative, rows sum to one | unchanged |
+| Best discrete portfolio at γ = 1/3/5/8/15 | identical |
+| Largest value change anywhere | 1.1e-16 |
+| Full suite | 59 passed |
+| New regression test on the old implementation | fails, verified by reverting in a sandbox |
 
 ### High level
 
@@ -327,7 +345,7 @@ The transaction-cost extension needs to map a current-holdings vector back to an
 action index to compute turnover. Exact float comparison there works for
 weights of 0.2, 0.4 and 0.8 and fails for 0.6.
 
-### Recommended fix
+### The fix that was applied
 
 **Divide by the integer unit count instead of multiplying by the increment.**
 Three fifths is exactly 0.6; three times 0.2 is not.
@@ -337,7 +355,7 @@ Three fifths is exactly 0.6; three times 0.2 is not.
 weights = np.array(portfolios) / total_units
 ```
 
-Verified in a sandbox copy:
+Verified before committing:
 
 | Check | Result |
 |---|---|
@@ -425,8 +443,7 @@ state that should not persist.
    number in the report. Note it will also make `test_mean_variance.py:217` go
    green again rather than red.
 2. **Issue 2.** Blocks Part V and Part VI, needed before the Week 6 baseline.
-3. **Issue 3.** Cheap now, painful later. Do it before the transaction-cost
-   extension.
+3. ~~Issue 3.~~ Done, commit `02f6a49`. Review it in the PR.
 4. **Issue 4** and `.vscode`, whenever convenient.
 
 ## Cross-check available
