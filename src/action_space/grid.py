@@ -21,5 +21,10 @@ def generate_weight_grid(n_assets: int = 9, increment: float = 0.2) -> np.ndarra
         units = [boundaries[i + 1] - boundaries[i] - 1 for i in range(n_assets)]
         portfolios.append(units)
 
-    weights = np.array(portfolios) * increment
+    # Divide by the integer unit count rather than multiplying by the increment.
+    # 0.2 has no exact binary representation, so 3 * 0.2 gives 0.6000000000000001
+    # while 3 / 5 gives exactly 0.6. Matters wherever a weight is compared to a
+    # literal or used as a dict key, e.g. mapping holdings back to an action
+    # index in the transaction-cost extension.
+    weights = np.array(portfolios) / total_units
     return weights
