@@ -49,11 +49,26 @@ A "conflict" here is broader than a git merge conflict. It includes:
 - A bug found in William's code.
 
 For **every** conflict:
-1. State what conflicts with what, with file and line references.
-2. Explain the consequence if left unresolved.
-3. **Propose a specific recommended way forward**, not just "discuss this."
-4. Wait for Albert's decision before acting on anything that touches William's
+1. **Re-read the relevant part of `assignment.pdf` before proposing anything.**
+   The assignment is the grading contract, so it outranks the prospectus, our
+   own prior decisions, and anyone's preference. Quote the requirement that
+   settles it, or say plainly that the assignment is silent and the call is
+   ours. Never resolve a conflict from memory of what the assignment says.
+2. State what conflicts with what, with file and line references.
+3. Explain the consequence if left unresolved.
+4. **Propose a specific recommended way forward**, not just "discuss this."
+5. Check the proposed fix against any hard numbers or constraints the
+   assignment states, and show that check. For the action space that means the
+   required action counts (495 / 1,287 / 43,758 / 3,108,105), weights
+   nonnegative and summing to one, and no benchmark information used to build
+   the set.
+6. Wait for Albert's decision before acting on anything that touches William's
    work.
+
+**Flagging is not fixing.** An issue reported in
+`REVIEW_NOTES_FOR_WILLIAM.md` stays outstanding in the code until someone
+changes the code. Say which state a thing is in rather than letting "verified
+the fix works" read as "fixed."
 
 ### 2.4 Plan before building, with the whole arc in view
 Before starting a task, work out:
