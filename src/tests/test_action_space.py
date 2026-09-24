@@ -59,6 +59,30 @@ def test_grid_has_no_duplicate_portfolios(grid):
     assert unique_rows.shape[0] == grid.shape[0]
 
 
+def test_grid_weights_are_exact_multiples_of_the_increment(grid, request):
+    """Regression: weights must compare equal to the decimals they represent.
+
+    Building weights as units * increment drifts, because 0.2 has no exact
+    binary representation: 3 * 0.2 is 0.6000000000000001, so `weight == 0.6` is
+    False and a dict keyed on weights silently misses. Dividing by the integer
+    unit count instead is exact (3 / 5 == 0.6).
+
+    This matters wherever a weight is compared to a literal rather than with a
+    tolerance, which is what mapping current holdings back to an action index
+    needs in the transaction-cost extension.
+    """
+    _, increment = request.node.callspec.params["grid"]
+    total_units = round(1.0 / increment)
+
+    expected = {k / total_units for k in range(total_units + 1)}
+    actual = set(np.unique(grid).tolist())
+
+    assert actual <= expected, (
+        f"grid holds values that are not exact multiples of {increment}: "
+        f"{sorted(actual - expected)}"
+    )
+
+
 # --- Edge cases ---
 
 def test_single_asset_grid_is_fully_invested():

@@ -1,0 +1,191 @@
+{
+  "downloaded_at_utc": "2026-09-24T15:03:51+00:00",
+  "requested_start": "2006-01-01",
+  "price_source": "Yahoo Finance via yfinance",
+  "adjustment_convention": "auto_adjust=False. 'Adj Close' is adjusted for both splits and cash distributions, and is what returns are built from. 'Close' is split-adjusted but NOT distribution-adjusted, so the two columns differ by distributions only. Verified in clean.py by verify_adjustment_convention (distributions) and verify_split_convention (splits); results in data/processed/CLEANING_LOG.json.",
+  "versions": {
+    "yfinance": "1.7.0",
+    "pandas": "2.3.3",
+    "requests": "2.32.5"
+  },
+  "prices": {
+    "SPY": {
+      "file": "data/raw/prices/SPY.csv",
+      "rows": 5214,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "b63165ecb0c3170a4999bdf2132d70a343a08e97ee2f3d4ff94f151051108028"
+    },
+    "EFA": {
+      "file": "data/raw/prices/EFA.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "1411432396220cca726049d72f14d3c70712c33b5a42b42615b5e755b5efb259"
+    },
+    "EEM": {
+      "file": "data/raw/prices/EEM.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "4350c684df754e219c1426a6a8b60eefab4359a00e524801b8dd1183a154a3b1"
+    },
+    "IEF": {
+      "file": "data/raw/prices/IEF.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "463de96baa4edafa5b73391e567c957fa64b6ff0fdee9b06592139a35327e031"
+    },
+    "LQD": {
+      "file": "data/raw/prices/LQD.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "53a16daf9cc1e2e202898195145e2125ab26f4f48187b433e7711203c28f7879"
+    },
+    "TIP": {
+      "file": "data/raw/prices/TIP.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "0e87e8fcc9a6257f30f4095934d9b00d8802203ac15f67453210b4f61aef01aa"
+    },
+    "GLD": {
+      "file": "data/raw/prices/GLD.csv",
+      "rows": 5214,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "51ceb7d7e38e582a8543190186e8d8d200bb40a8d113b9721a29a561c7cd1278"
+    },
+    "VNQ": {
+      "file": "data/raw/prices/VNQ.csv",
+      "rows": 5213,
+      "first_date": "2006-01-03",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "c62aab8f1b3ddacb4a2c128991d5fe3b04b98edfa88dd253a42e4d873dca9860"
+    },
+    "DBC": {
+      "file": "data/raw/prices/DBC.csv",
+      "rows": 5190,
+      "first_date": "2006-02-06",
+      "last_date": "2026-09-24",
+      "columns": [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Adj Close",
+        "Volume",
+        "Dividends",
+        "Stock Splits",
+        "Capital Gains"
+      ],
+      "sha256": "b4661ee8f7a2428067064152cf04b4bd4d6923ab22ccbe98253aba69ecfb878a"
+    }
+  },
+  "risk_free": {
+    "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_Factors_daily_CSV.zip",
+    "zip_file": "data/raw/risk_free/F-F_Research_Data_Factors_daily_CSV.zip",
+    "csv_file": "data/raw/risk_free/F-F_Research_Data_Factors_daily.csv",
+    "zip_sha256": "1916d331c2c51d2aee3d00215897d2b8e5995cb387f1f4569ba46bff5fb049a8",
+    "csv_sha256": "b324d858f6ba2065ca8bb6e5d421f71ae33d42d59c1e942b3b07fa82bc23849a"
+  },
+  "manifest_corrections": [
+    {
+      "date": "2026-09-24",
+      "field": "adjustment_convention",
+      "reason": "original text called 'Close' the unadjusted close; yfinance split-adjusts it, so it is split-adjusted but distribution-unadjusted",
+      "previous_text": "auto_adjust=False: 'Close' is the unadjusted close and 'Adj Close' is adjusted for both splits and cash distributions. Returns are built from 'Adj Close'.",
+      "note": "metadata only; no price file was modified"
+    }
+  ]
+}
