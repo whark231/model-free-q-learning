@@ -44,3 +44,8 @@ data/interim/
 
 results/*
 !results/.gitkeep
+
+# --- R ---
+.Rhistory
+.RData
+.Rapp.history
