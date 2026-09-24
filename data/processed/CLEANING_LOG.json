@@ -1,0 +1,181 @@
+{
+  "download_date_et": "2026-09-24",
+  "rows_raw_per_ticker": {
+    "SPY": 5214,
+    "EFA": 5213,
+    "EEM": 5213,
+    "IEF": 5213,
+    "LQD": 5213,
+    "TIP": 5213,
+    "GLD": 5214,
+    "VNQ": 5213,
+    "DBC": 5190
+  },
+  "partial_session_rows_dropped": {
+    "SPY": 1,
+    "EFA": 1,
+    "EEM": 1,
+    "IEF": 1,
+    "LQD": 1,
+    "TIP": 1,
+    "GLD": 1,
+    "VNQ": 1,
+    "DBC": 1
+  },
+  "calendar_alignment": {
+    "union_of_trading_dates_after_partial_drop": 5213,
+    "common_dates_retained": 5189,
+    "dbc_inception": "2006-02-06",
+    "dates_before_dbc_inception_dropped": 23,
+    "vendor_gap_dates_dropped": [
+      "2026-09-22"
+    ],
+    "missing_value_policy": "inner join on date; no forward-fill, no interpolation"
+  },
+  "returns": {
+    "definition": "simple total return: AdjClose_t / AdjClose_{t-1} - 1",
+    "rows": 5188,
+    "first_return_date_dropped": "2006-02-06",
+    "fill_method": "None (explicit); no forward-fill before differencing"
+  },
+  "risk_free": {
+    "source": "Kenneth French Data Library, F-F_Research_Data_Factors_daily",
+    "units": "converted from percent-per-day to decimal-per-day (/100)",
+    "coverage": "1926-07-01 to 2026-07-31",
+    "rows": 26296
+  },
+  "excess_returns": {
+    "definition": "r_excess = r_simple - RF_daily",
+    "rows": 5152,
+    "sample_start": "2006-02-07",
+    "sample_end": "2026-07-31",
+    "etf_data_available_through": "2026-09-23",
+    "risk_free_available_through": "2026-07-31",
+    "rows_dropped_to_risk_free_coverage": 36,
+    "explicit_end_cap": null,
+    "rows_dropped_to_explicit_cap": 0,
+    "note": "Sample end is set by the French daily file, not by the ETF data. Forward-filling RF past its published end was rejected in favour of truncating."
+  },
+  "final_sample_restriction": {
+    "reason": "prices and returns are built before the risk-free join, so they initially extend past the calibration window; all published files are clipped to the documented sample",
+    "sample_start": "2006-02-07",
+    "sample_end": "2026-07-31",
+    "price_base_date_retained": "2006-02-06",
+    "price_rows": 5153,
+    "return_rows": 5152,
+    "trailing_rows_dropped_from_prices": 36
+  },
+  "adjustment_verification": {
+    "worst_max_abs_difference_full_history": 0.008581174938174452,
+    "worst_max_abs_difference_in_sample": 0.0005959289452069916,
+    "per_ticker": {
+      "SPY": {
+        "max_abs_difference_full_history": 0.00025200436604133625,
+        "max_abs_difference_in_sample": 0.00025200436604133625,
+        "median_abs_difference": 1.3053212932767622e-07,
+        "worst_date_full_history": "2020-03-20",
+        "distribution_days": 83
+      },
+      "EFA": {
+        "max_abs_difference_full_history": 0.0005959289452069916,
+        "max_abs_difference_in_sample": 0.0005959289452069916,
+        "median_abs_difference": 9.158378544427137e-08,
+        "worst_date_full_history": "2012-06-21",
+        "distribution_days": 40
+      },
+      "EEM": {
+        "max_abs_difference_full_history": 0.00043328621937011036,
+        "max_abs_difference_in_sample": 0.00043328621937011036,
+        "median_abs_difference": 1.0433720221136866e-07,
+        "worst_date_full_history": "2012-06-21",
+        "distribution_days": 43
+      },
+      "IEF": {
+        "max_abs_difference_full_history": 4.803994914603926e-05,
+        "max_abs_difference_in_sample": 4.803994914603926e-05,
+        "median_abs_difference": 2.2692973344895506e-07,
+        "worst_date_full_history": "2009-06-01",
+        "distribution_days": 248
+      },
+      "LQD": {
+        "max_abs_difference_full_history": 7.859258016340576e-05,
+        "max_abs_difference_in_sample": 7.859258016340576e-05,
+        "median_abs_difference": 2.2227482721071112e-07,
+        "worst_date_full_history": "2008-12-01",
+        "distribution_days": 247
+      },
+      "TIP": {
+        "max_abs_difference_full_history": 0.00011247017720494856,
+        "max_abs_difference_in_sample": 0.00011247017720494856,
+        "median_abs_difference": 1.8396268042231156e-07,
+        "worst_date_full_history": "2022-05-02",
+        "distribution_days": 181
+      },
+      "GLD": {
+        "max_abs_difference_full_history": 0.0,
+        "max_abs_difference_in_sample": 0.0,
+        "median_abs_difference": 0.0,
+        "worst_date_full_history": null,
+        "distribution_days": 0
+      },
+      "VNQ": {
+        "max_abs_difference_full_history": 0.008581174938174452,
+        "max_abs_difference_in_sample": 0.00035653264574264654,
+        "median_abs_difference": 1.3110807128846602e-07,
+        "worst_date_full_history": "2026-09-23",
+        "distribution_days": 83
+      },
+      "DBC": {
+        "max_abs_difference_full_history": 0.0004392882132899789,
+        "max_abs_difference_in_sample": 0.0004392882132899789,
+        "median_abs_difference": 4.756266469563286e-08,
+        "worst_date_full_history": "2008-12-15",
+        "distribution_days": 9
+      }
+    },
+    "interpretation": "Adj Close return reconciles with (Close + distributions) / prior Close, confirming Adj Close is distribution-adjusted. Split adjustment is established separately, in split_verification. The typical disagreement is floating-point noise and rises to 6.0e-04 in-sample on ex-distribution days, which is the rounding in Yahoo's published adjustment factors rather than a different convention."
+  },
+  "split_verification": {
+    "splits_found": {
+      "EEM 2008-07-24": {
+        "split_ratio": 3.0,
+        "close_ratio": 0.9630416706689578,
+        "adj_close_ratio": 0.9630416098810004
+      }
+    },
+    "interpretation": "Both Close and Adj Close move by ~1 across every split date rather than by the split ratio, so yfinance split-adjusts BOTH series. 'Close' is therefore the split-adjusted, distribution-UNadjusted close, not a raw unadjusted price."
+  },
+  "validation": {
+    "checks_passed": true,
+    "extreme_move_threshold": 0.2,
+    "flagged_moves_retained": {
+      "EEM": [
+        {
+          "date": "2008-10-13",
+          "excess_return": 0.2277
+        },
+        {
+          "date": "2008-10-28",
+          "excess_return": 0.2093
+        }
+      ]
+    },
+    "note": "Flagged moves are real crisis-period prints (2008 and March 2020) and are retained; removing them would bias the covariance downward in exactly the states the agent most needs to price."
+  },
+  "covariance_diagnostics": {
+    "smallest_eigenvalue": 3.1045872808213487e-06,
+    "largest_eigenvalue": 0.0008322347690296707,
+    "condition_number": 268.06615300230663,
+    "positive_definite": true,
+    "note": "5,152 daily observations against 9 assets gives 45 covariance parameters from a long sample, so the sample estimator is well conditioned and invertible without shrinkage. A shrinkage estimator remains available as the Part VI statistical robustness check."
+  },
+  "outputs": [
+    "adj_close.csv",
+    "correlation_matrix.csv",
+    "covariance_daily.csv",
+    "excess_returns.csv",
+    "returns_simple.csv",
+    "rf_daily.csv",
+    "summary_statistics.csv"
+  ]
+}
