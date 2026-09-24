@@ -13,7 +13,7 @@
 
 | | |
 |---|---|
-| **Albert** (repo owner) | Newer to coding and quant finance. Leads data construction, documentation, visualization, README. Wants to genuinely understand the work, not just receive it. |
+| **Albert** | Newer to coding and quant finance. Leads data construction, documentation, visualization, README. Wants to genuinely understand the work, not just receive it. |
 | **William** (`whark231` / `wharkpenn`) | More experienced in coding and the technical math. Leads RL implementation, optimization, benchmark derivations. |
 | **Claude** | Senior data scientist (Python + R). Works primarily alongside Albert. |
 
