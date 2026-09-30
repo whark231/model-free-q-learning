@@ -25,31 +25,31 @@ As skills develop, the split should shift — by the extension phase (weeks 7–
 Mapped to the assignment's required parts (Parts I–VI):
 
 ### Core (required for base grade)
-| # | Component | Assignment Part |
-|---|---|---|
-| 1 | Nine-ETF data pipeline: download, align, clean, adjust for distributions | Part I |
-| 2 | Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator | Part I |
-| 3 | Theoretical mean-variance benchmark: closed-form continuous optimum + best discrete-grid portfolio | Part II |
-| 4 | Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline) (this will likely change) | Part III |
-| 5 | Reward function: episodic realized mean-variance reward (will likely also change) | Part III |
-| 6 | Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation) | Part III |
-| 7 | Training loop across multiple random seeds + convergence criterion | Part IV |
-| 8 | Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics | Part V |
-| 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V |
-| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI |
+| # | Component | Assignment Part | Status (2026-09-29) |
+|---|---|---|---|
+| 1 | ~~Nine-ETF data pipeline: download, align, clean, adjust for distributions~~ | Part I | ✅ Done — `src/data/`, `DATA_CLEANING.md`, 5,152-day sample |
+| 2 | Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator | Part I | 🔶 Half done — μ, Σ estimated (`data/processed/`); the return generator itself (`src/environment.py`) is still empty |
+| 3 | ~~Theoretical mean-variance benchmark: closed-form continuous optimum + best discrete-grid portfolio~~ | Part II | ✅ Done — `src/benchmarks/mean_variance.py`, 27 tests |
+| 4 | ~~Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline)~~ | Part III | ✅ Done — `src/action_space/grid.py`, 12 tests |
+| 5 | ~~Reward function: episodic realized mean-variance reward~~ | Part III | ✅ Done — `src/rewards.py`, 5 tests |
+| 6 | Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation) | Part III | ⬜ Not started — `src/agent.py` is a placeholder |
+| 7 | Training loop across multiple random seeds + convergence criterion | Part IV | ⬜ Not started — `src/train.py` is empty |
+| 8 | Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics | Part V | ⬜ Not started — `src/evaluate.py` is empty |
+| 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V | ⬜ Not started |
+| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | ⬜ Not started |
 
 ### Extension (our chosen bonus angle)
-| # | Component | Notes |
-|---|---|---|
-| 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP |
-| 12 | Function approximation Q-learning: replaces the table once state × action space is too large | Compare directly against the tabular baseline at the same grid resolution |
+| # | Component | Notes | Status (2026-09-29) |
+|---|---|---|---|
+| 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP | ⬜ Not started |
+| 12 | Function approximation Q-learning: replaces the table once state × action space is too large | Compare directly against the tabular baseline at the same grid resolution | ⬜ Not started |
 
 ### Deliverables
-| # | Component | Notes |
-|---|---|---|
-| 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below |
-| 14 | Clean, reproducible Python code + README (run instructions, seeds, requirements) | |
-| 15 | Class presentation | |
+| # | Component | Notes | Status (2026-09-29) |
+|---|---|---|---|
+| 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started |
+| 14 | Clean, reproducible Python code + README (run instructions, seeds, requirements) | | 🔶 Code and tests exist; `README.md` is still a one-line stub |
+| 15 | Class presentation | | ⬜ Not started |
 
 ## 4. Task Ownership (draft — adjust as we go)
 
