@@ -178,6 +178,7 @@ Existing docs:
 |---|---|
 | `PROJECT_PROSPECTUS.md` | Plan, ownership, timeline (William) |
 | `DATA_CLEANING.md` | Part I data pipeline, decisions, assumptions (Albert) |
+| `ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
 | `REVIEW_NOTES_FOR_WILLIAM.md` | Open issues found in William's files, with fixes |
 | `CLAUDE.md` | This working agreement |
 
