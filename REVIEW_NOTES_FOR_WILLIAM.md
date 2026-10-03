@@ -1,454 +1,217 @@
-# Review Notes — `src/benchmarks/` and `src/action_space/`
+# Review Notes for William
 
-**From:** Albert, found while wiring the Part I data into the Part II benchmarks
-**Date:** 2026-09-24
-**Status:** reported, not patched. These are your files, so nothing here has been changed.
+**From:** Albert
+**Date:** 2026-10-02
+**Status:** the four issues from the 2026-09-24 review are all closed. Three new issues in your files are reported below and not patched. They are your files, so nothing in them has been changed.
 
 ---
 
 ## TL;DR / In plain terms
 
-Your benchmark code is correct on the test data and wrong on our real data. The
-optimizer's default stopping tolerance is too loose for daily returns, so it
-quits early and returns a portfolio that is not the optimum, while reporting
-success. At γ = 5 it gives up 59% of the achievable objective.
+Your Sep 29 fixes work. I checked the long-only optimizer against an exact
+solution on our real data, and every weight agrees within 0.000003 for every whole-number γ
+from 1 to 15. The simulator you scoped in `NEXT_STEPS_FOR_ALBERT.md` is built and
+in a PR for your review.
 
-It is dangerous because nothing looks broken: no exception, `success` is `True`,
-and the weights are valid. At low γ it returns the equal-weight portfolio, which
-is one of our four Part V benchmarks, so the "continuous optimum" row and the
-"equal-weight" row in our comparison table would come out identical and read as
-a finding rather than a bug.
+While building it I found three new problems in your code. None changes a
+number we would report today. One of them (the reward returning NaN) can
+silently wreck a training run, so it is worth fixing before we pair on the
+agent.
 
-One of your existing tests will also start failing the moment real daily moments
-are used. Details in issue 1.
-
-Three smaller items follow. Issue 2 blocks a Part V requirement. Issue 3 has
-already been fixed with Albert's go-ahead (commit `02f6a49`); everything else
-here is untouched and still yours.
+Your next steps, in order:
+1. Review the simulator PR.
+2. Fix the three issues below.
+3. Choose γ.
+4. Settle the open decisions in prospectus §6 before the agent session.
 
 ---
 
-## Issue summary
+## 1. What changed since the last notes
+
+### Earlier issues: all closed
+
+| # | Issue | Fixed in | Verified |
+|---|---|---|---|
+| 1 | SLSQP stopped early on daily moments | `51b3eb7` (yours) | Against an exact support-enumeration solve on the real calibration: max weight gap 2.1e-6 over integer γ 1 to 15; objective identical to about 1e-11 relative. Reproduces `DATA_CLEANING.md` §8.3 exactly |
+| 2 | `best_discrete_weights` hardcoded the grid | `51b3eb7` (yours) | `increment` and `grid` arguments work; grid sizes 495 / 1,287 / 43,758 |
+| 3 | Float drift in grid weights | `02f6a49` (Albert) | Regression test in `test_action_space.py` |
+| 4 | `n = mu.shape` tuple | `51b3eb7` (yours) | |
+| 5 | `.vscode/settings.json` Windows path | `51b3eb7` (yours) | Untracked now |
+
+### New: the simulator (Albert, PR into `dev`)
+
+`src/environment.py`, 69 tests in `src/tests/test_environment.py`, and the
+write-up in `ENVIRONMENT.md`. In short:
+
+- `load_calibration()` reads μ and Σ from `data/processed/`, checks ticker
+  order, and parses the CSVs exactly (pandas' default parser was off by up to
+  1e-12 relative).
+- `simulate_returns(mu, sigma, n_days, rng)` is the interface you specified,
+  returning `(n_days, 9)` draws from N(μ, Σ).
+- `ReturnSimulator` is the object the agent gets. It factors Σ once (about 10
+  times faster than `rng.multivariate_normal` per episode), keeps μ and the
+  factor private, and refuses episodes shorter than 2 days (see issue A).
+- `SeedPlan` turns one master seed into separate streams: training returns
+  per run, the agent's own randomness per run, and one evaluation stream that
+  every policy and benchmark is scored on.
+- Leakage tests fail if `src/agent.py` imports the benchmarks, the loader or
+  the data files, directly or through another module.
+
+Verification: draws identical to numpy's `multivariate_normal(method="cholesky")`
+for the same seed; 400,000 simulated days match μ and Σ within 5 standard
+errors; the reward averaged over 20,000 simulated episodes matches
+w'μ − (γ/2)w'Σw; 22 deliberately injected bugs all caught. Full suite: 143
+passed.
+
+---
+
+## 2. New issues in your files
 
 | # | Severity | File | Issue | Blocks |
 |---|---|---|---|---|
-| 1 | **Critical** | `mean_variance.py:48` | SLSQP stops prematurely on daily-scale moments and returns a wrong portfolio while reporting success | Part II, Part V |
-| 2 | **High** | `mean_variance.py:67` | `best_discrete_weights` hardcodes the 9-asset 20% grid; no way to vary resolution | Part V (≥2 grid resolutions), Part VI |
-| 3 | ~~Medium~~ **FIXED** | `grid.py:24` | Grid weights carried floating-point error (`0.6000000000000001`) | — |
-| 4 | **Low** | `mean_variance.py:16` | `n = mu.shape` assigns a tuple where an int is intended | Nothing today |
+| A | **Medium** | `src/rewards.py:19` | Returns NaN, with no error, for a one-day batch | Nothing today; any 1-day episode in training |
+| B | **Low-medium** | `src/benchmarks/mean_variance.py:90` | `best_discrete_weights` returns a view into the caller's grid | Nothing today; sharing the agent's grid with the benchmark |
+| C | **Low** | `src/benchmarks/mean_variance.py:69` | The `nit <= 1` guard gives false alarms and misses some failures | Nothing on our data |
 
-A fifth, unrelated item is at the bottom (`.vscode/settings.json`).
+### Issue A: the reward returns NaN for a one-day episode
 
-All evidence below is reproducible from `data/processed/excess_returns.csv` on
-branch `feature/data_pipeline`.
+`portfolio_returns.var(ddof=1)` divides by B − 1, so a batch of one day gives
+NaN. numpy warns only once per code location, so inside a training loop it is
+effectively silent. A 1-D `(9,)` input and an empty `(0, 9)` batch also give
+NaN, and a transposed `(9, 9)` batch is accepted without complaint.
 
----
-
-# Issue 1 — CRITICAL: the long-only optimizer stops early on daily moments
-
-### High level
-
-`constrained_optimal_weights` uses SciPy's default convergence tolerance,
-`ftol=1e-6`. Our mean-variance objective at **daily** frequency is around
-`1.4e-4`, the same order of magnitude as the tolerance. SLSQP concludes it has
-converged and stops, returning a point that is not the optimum.
-
-It reports `status=0`, `success=True`, and `"Optimization terminated
-successfully"`. The `if not result.success` guard on line 56 cannot catch this,
-because from SciPy's point of view nothing failed.
-
-`closed_Form_optimal_weights` is unaffected. It solves the budget-only problem
-analytically with no optimizer, and its daily and annualized solutions agree to
-4e-15.
-
-### Why your tests don't catch it
-
-Every fixture in `test_mean_variance.py` uses **annual-scale** expected returns
-(`mu` in 0.05 to 0.09). At that scale the objective is around 7e-2, comfortably
-above `ftol`, and SLSQP converges in 8 iterations. The bug appears only on real
-daily moments, which is what Part II must use, since the assignment requires μ,
-Σ, risk aversion and rewards to share one time frequency.
-
-### Evidence, γ = 5, on the calibrated data
-
-```
-repo function returns : [0.111 0.111 0.111 0.111 0.111 0.111 0.111 0.111 0.111]
-correct answer        : [0.469 0.    0.    0.136 0.    0.    0.395 0.    0.   ]
-                         SPY                IEF               GLD
-
-L1 distance between them:  1.3333   (maximum possible is 2.0)
-objective: repo 8.71e-05  vs  correct 2.11e-04   ->  58.6% shortfall
-annualized: repo    ret 5.62%  vol 11.71%
-            correct ret 8.86%  vol 11.92%
-
-SLSQP: nit=1  success=True  status=0  "Optimization terminated successfully"
-```
-
-Iteration counts across scales, same problem, γ = 3:
-
-| Moments | `ftol` | Iterations | Objective |
-|---|---|---|---|
-| Annualized | `1e-6` (current) | 8 | 7.11e-2 |
-| Daily | `1e-6` (current) | **1** | 1.42e-4 |
-| Daily | `1e-16` | 113 | 2.82e-4 |
-
-The daily solution at tight tolerance agrees with the annualized solution to
-2e-8, so the maths is fine and only the tolerance is wrong.
-
-### Three things worth knowing before you fix it
-
-**(i) It does not always return equal weights.** That is only the behaviour at
-low γ, where it stops on its first iteration at the starting guess. At γ = 15 it
-stops at an arbitrary interior point:
-
-```
-shipped : SPY 0.093, EFA 0.044, IEF 0.204, LQD 0.175, TIP 0.192,
-          GLD 0.171, VNQ 0.025, DBC 0.096
-correct : SPY 0.264, IEF 0.532, TIP 0.062, GLD 0.142
-max|difference| = 0.328
-```
-
-A regression test asserting `!= equal_weights(9)` would pass while the answer is
-still wrong. "Stops prematurely" is the accurate description, not "returns the
-equal-weight start."
-
-**(ii) `test_mean_variance.py:217` will start failing.** That test asserts the
-best discrete portfolio cannot beat the continuous optimum, which is correct
-theory. On real daily moments the broken continuous optimum scores worse than
-the grid, so the ordering inverts at every γ:
-
-```
-  gamma   continuous    best discrete   ordering holds?
-      1   1.958847e-04   3.602096e-04   NO
-      3   1.415106e-04   2.810814e-04   NO
-      5   8.713658e-05   2.082434e-04   NO
-      8   5.575514e-06   1.480594e-04   NO
-     15   2.197185e-05   6.694274e-05   NO
-```
-
-This also makes the "discretization gap between the continuous and best discrete
-benchmarks" that Part V explicitly requires come out **negative**.
-
-**(iii) `maxiter` is load-bearing.** Tightening `ftol` alone converts a silent
-wrong answer into a crash:
-
-| Setting | Result |
-|---|---|
-| daily, `ftol=1e-6` (as shipped) | wrong answer, no failure reported |
-| daily, `ftol=1e-16` only | γ = 1 and 3 raise "Iteration limit reached" (nit=100) |
-| daily, `ftol=1e-16` + `maxiter=1000` | correct at every γ |
-
-### Recommended fix
-
-Two options. **The second is better** and I would pick it.
-
-**Option A, tighten the tolerance.** `mean_variance.py:48`:
+**Why it matters:** NaN does not just give one bad reward. Once a Q-value is
+NaN it stays NaN, and `np.argmax` treats NaN as the largest value:
 
 ```python
-result = minimize(
-    neg_obj,
-    w0,
-    method="SLSQP",
-    bounds=bounds,
-    constraints=constraints,
-    options={"ftol": 1e-16, "maxiter": 1000},
-)
+>>> np.argmax(np.array([0.0, 0.0, np.nan, 0.0, 0.0]))
+2
 ```
 
-**Option B, solve on annualized moments internally.** `ftol` is an *absolute*
-tolerance, so any specific value is a bet on the objective's scale. Since γ is
-frequency-invariant (proved in `DATA_CLEANING.md` §8.1, verified to 4e-15), you
-can scale the inputs up, solve, and return, with no magic number:
+That action becomes the agent's permanent greedy choice, with no error. Part
+VI lists "different episode lengths" as a robustness check, so someone will
+eventually try a short episode.
+
+The simulator already refuses episodes under 2 days, but the reward can be
+called directly, and the guard belongs with the formula that needs it.
+
+**Recommended fix** (`rewards.py`, top of the function):
 
 ```python
-SCALE = 252  # trading days; gamma is frequency-invariant so the argmax is unchanged
-
-result = minimize(
-    lambda w: -(w @ (mu * SCALE) - 0.5 * gamma * (w @ (sigma * SCALE) @ w)),
-    w0,
-    method="SLSQP",
-    bounds=bounds,
-    constraints=constraints,
-    options={"ftol": 1e-12, "maxiter": 1000},
-)
-```
-
-This is robust whether the caller passes daily, monthly or annual moments.
-
-Either way, strengthen the guard, because `result.success` is not evidence of
-convergence here:
-
-```python
-if not result.success:
-    raise RuntimeError(f"Optimizer failed: {result.message}")
-
-# SLSQP reports success after a single iteration when ftol is large relative to
-# the objective, which at daily frequency means silently returning w0.
-if result.nit <= 1:
-    raise RuntimeError(
-        f"Optimizer stopped after {result.nit} iteration(s); ftol is likely too "
-        "large relative to the objective scale."
+if returns_batch.ndim != 2 or returns_batch.shape[1] != w.shape[0]:
+    raise ValueError(
+        f"returns_batch must be (B, {w.shape[0]}), got {returns_batch.shape}"
     )
+if returns_batch.shape[0] < 2:
+    raise ValueError("episodic reward needs at least 2 days (ddof=1 variance)")
 ```
 
-### Recommended regression test
+If we ever switch to the one-period quadratic reward the assignment also
+allows, that reward needs B = 1 and gets its own function, and
+`MIN_EPISODE_LENGTH` in `environment.py` drops to 1.
 
-Must use **daily-scale** moments. That is the whole point:
+### Issue B: `best_discrete_weights` returns a view, not a copy
+
+`grid[np.argmax(scores)]` with a single integer index returns a view of that
+row. When a caller passes `grid=`, which is the point of the parameter (sharing
+the agent's action grid with the benchmark), editing the returned weights
+silently edits the grid:
 
 ```python
-@pytest.fixture
-def daily_scale_problem():
-    """Realistic daily moments. The objective here is ~1e-4, which is where
-    SLSQP's default ftol stops prematurely."""
-    rng = np.random.default_rng(1)
-    mu = rng.uniform(0.05, 0.09, size=9) / 252
-    sigma = np.diag(rng.uniform(0.01, 0.05, size=9)) / 252
-    return mu, sigma, 5.0
-
-
-def test_daily_and_annual_solutions_agree(daily_scale_problem):
-    """gamma is frequency-invariant: mu and Sigma both scale linearly with the
-    horizon, so annualizing multiplies the objective by 252 and leaves the
-    argmax unchanged. Disagreement means one scale failed to converge.
-
-    This is stronger than asserting the result differs from equal weights: at
-    high gamma the bug returns an arbitrary interior point, not w0.
-    """
-    mu, sigma, gamma = daily_scale_problem
-    w_daily = constrained_optimal_weights(mu, sigma, gamma)
-    w_annual = constrained_optimal_weights(mu * 252, sigma * 252, gamma)
-    np.testing.assert_allclose(w_daily, w_annual, atol=1e-6)
-
-
-def test_discretization_gap_is_non_negative_on_daily_moments(daily_scale_problem):
-    """Guards test_mean_variance.py:217 at the scale where it currently breaks."""
-    mu, sigma, gamma = daily_scale_problem
-    obj = lambda w: w @ mu - 0.5 * gamma * (w @ sigma @ w)
-    assert obj(best_discrete_weights(mu, sigma, gamma)) <= obj(
-        constrained_optimal_weights(mu, sigma, gamma)
-    ) + 1e-12
+>>> w = best_discrete_weights(mu, sigma, 5.0, grid=G)
+>>> np.shares_memory(w, G)
+True
 ```
+
+Any in-place step on `w` later (renormalizing, clipping) would corrupt one of
+the agent's actions.
+
+**Recommended fix** (`mean_variance.py:90`):
+
+```python
+return grid[np.argmax(mean_var_scores)].copy()
+```
+
+### Issue C: the `nit <= 1` guard checks the wrong thing
+
+The guard catches the old failure, but it uses iteration count as a proxy for
+"did not converge," and that proxy fails in both directions:
+
+- **False alarm.** If the equal-weight starting point is already the optimum
+  (any symmetric problem, or a one-asset problem), SLSQP correctly stops after
+  one iteration and the guard raises. Example: 3 assets, equal μ, Σ = I.
+- **Missed failure.** Under the old settings at γ = 15, SLSQP stopped at a
+  wrong interior point after 6 iterations, which the guard would not catch.
+
+Neither happens on our data at any γ tested. It could bite in a robustness
+check with a symmetric toy problem.
+
+**Recommended fix:** check optimality directly. At the long-only optimum the
+gradient μ − γΣw is equal across held assets and no higher on assets at zero
+(the KKT conditions). Replace the `nit` guard with:
+
+```python
+grad = mu_scaled - gamma * sigma_scaled @ result.x
+held = result.x > 1e-8
+lam = grad[held].mean()
+residual = max(np.abs(grad[held] - lam).max(), (grad[~held] - lam).max(initial=0.0))
+if residual > 1e-5:
+    raise RuntimeError(f"Optimizer result fails the optimality check (KKT residual {residual:.1e})")
+```
+
+Checked on the scaled (annualized) objective: residual 3.1e-7 or less for our
+solutions at every integer γ from 1 to 15, exactly 0 at the symmetric optimum
+that currently raises, and 0.061 for equal weights on our data at γ = 5. A
+1e-5 threshold separates them by two orders of magnitude.
+
+### Minor: test count in your docs
+
+`PROJECT_PROSPECTUS.md` row 4 and `NEXT_STEPS_FOR_ALBERT.md` say the action
+space has 12 tests; pytest collects 22 (8 functions, some parametrized). Your
+total of 74 was right.
 
 ---
 
-# Issue 2 — HIGH: `best_discrete_weights` cannot vary the grid resolution
+## 3. Your next steps
 
-### High level
+1. **Review the simulator PR** (`feature/environment` → `dev`). Please run the
+   suite on your machine: a few tests compare draws to 1e-15, which should
+   hold across BLAS libraries but has only been run on Albert's Mac.
+2. **Fix issues A, B and C** above. A matters most before the agent exists.
+3. **Choose γ** and write down the reason (`DATA_CLEANING.md` §8.4). It must
+   be chosen on outside grounds before anyone looks at results: matching the
+   original three-asset version of this problem if it used one, or a value in
+   the range economists treat as plausible (Mehra and Prescott capped it at
+   10). It doesn't block the simulator, but every results table needs it.
+4. **Settle prospectus §6** before the agent session: seed count, which second
+   robustness check, the action-library approach, and the two
+   transaction-cost questions. Also choose the episode length B.
+5. **Mark prospectus row 2 done** after merging the simulator.
+6. **Agent session (paired).** One design question to settle first. The
+   assignment lets the agent see realized returns, but a full 9-asset batch
+   would let it score all 1,287 portfolios at once or estimate μ and Σ
+   itself, which stops being standard Q-learning. Albert's recommendation:
+   `train.py` computes the reward and the agent updates only the chosen
+   portfolio's Q-value; the report says so.
 
-`best_discrete_weights` calls `generate_weight_grid()` with no arguments, so it
-always builds the 9-asset 20% grid regardless of the `mu` it is handed. It
-cannot be pointed at another resolution, and it raises a confusing matmul error
-on a problem of a different size:
+## 4. Things to know for the agent work
 
-```python
->>> best_discrete_weights(np.array([0.10, 0.08, 0.06]), np.eye(3) * 0.04, 3.0)
-ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0
-            (size 3 is different from 9)
-```
-
-### Why it matters
-
-Two assignment requirements need this:
-
-- **Part V**: "A comparison of convergence under at least two action-space
-  resolutions." The best-discrete benchmark is needed at each resolution.
-- **Part VI**: one of the two required robustness checks must change the
-  action-space design, and coarser-versus-finer grids is the obvious candidate.
-
-Both are blocked until this takes parameters. It is on the critical path for the
-prospectus's Week 6 baseline experiments.
-
-### Recommended fix
-
-`mean_variance.py:66`:
-
-```python
-def best_discrete_weights(
-    mu: np.ndarray,
-    sigma: np.ndarray,
-    gamma: float,
-    increment: float = 0.2,
-    grid: np.ndarray | None = None,
-) -> np.ndarray:
-    """Best portfolio available in the agent's discrete action set.
-
-    Pass `grid` to score a pre-built action set. This avoids rebuilding a large
-    grid on every call, and lets the caller use a randomly sampled action
-    library instead of a Cartesian grid.
-    """
-    if grid is None:
-        grid = generate_weight_grid(mu.shape[0], increment=increment)
-
-    if grid.shape[1] != mu.shape[0]:
-        raise ValueError(f"grid has {grid.shape[1]} assets but mu has {mu.shape[0]}")
-
-    scores = grid @ mu - 0.5 * gamma * ((grid @ sigma) * grid).sum(axis=1)
-    return grid[np.argmax(scores)]
-```
-
-Deriving `n_assets` from `mu.shape[0]` also makes the three-asset comparison the
-assignment lists for bonus credit work without further changes.
-
-**Performance note.** The 10% grid is 43,758 × 9 and the 5% grid is 3.1M × 9.
-Rebuilding inside the function on every call gets expensive once we sweep seeds
-and resolutions, which is what the optional `grid` parameter is for.
-
----
-
-# Issue 3 — FIXED in commit `02f6a49`
-
-**This one is already done**, with Albert's go-ahead after it was flagged. It is
-the only issue in this document that has been changed in the code. Issues 1, 2
-and 4 are still open and still yours. The description below is kept so you can
-review the change.
-
-Sanity checks run before committing, against assignment Part III:
-
-| Check | Result |
-|---|---|
-| Action counts 495 / 1,287 / 43,758 | unchanged |
-| Weights nonnegative, rows sum to one | unchanged |
-| Best discrete portfolio at γ = 1/3/5/8/15 | identical |
-| Largest value change anywhere | 1.1e-16 |
-| Full suite | 59 passed |
-| New regression test on the old implementation | fails, verified by reverting in a sandbox |
-
-### High level
-
-`generate_weight_grid` builds integer unit counts and multiplies by the
-increment. 0.2 has no exact binary representation, so the product drifts: the
-value that should be `0.6` is stored as `0.6000000000000001`. Any code comparing
-a grid weight to a literal, or using one as a dictionary key, silently misses.
-
-```python
->>> sorted(set(generate_weight_grid(9, 0.2).flatten()))
-[0.0, 0.2, 0.4, 0.6000000000000001, 0.8, 1.0]
->>> 0.6 in sorted(set(generate_weight_grid(9, 0.2).flatten()))
-False
-```
-
-Only some multiples are affected, depending on which way the rounding lands:
-0.2, 0.4, 0.8 and 1.0 are all exact; 0.6 is not.
-
-### What is NOT affected (checked)
-
-- All 1,287 rows of the 20% grid sum to exactly 1.0.
-- All 1,287 rows are unique as tuples, so a dict keyed on `tuple(row)` does not
-  collide today.
-- Existing tests pass, because they use `np.allclose` and `pytest.approx`.
-
-This is latent, not currently breaking anything.
-
-### Where it will bite
-
-The transaction-cost extension needs to map a current-holdings vector back to an
-action index to compute turnover. Exact float comparison there works for
-weights of 0.2, 0.4 and 0.8 and fails for 0.6.
-
-### The fix that was applied
-
-**Divide by the integer unit count instead of multiplying by the increment.**
-Three fifths is exactly 0.6; three times 0.2 is not.
-
-```python
-# grid.py:24
-weights = np.array(portfolios) / total_units
-```
-
-Verified before committing:
-
-| Check | Result |
-|---|---|
-| 20% grid values | `0.6` exactly, no drift |
-| Largest value change anywhere | 1.1e-16 |
-| Best discrete portfolio at γ = 1/3/5/8/15 | identical at every γ |
-| Full test suite | 55 passed |
-
-One caveat, which does not matter but should not surprise you. The count of rows
-summing to *bitwise* exactly 1.0 shifts slightly, in both directions:
-
-| Grid | Current | After fix |
-|---|---|---|
-| 20% | 1287/1287 | 1287/1287 |
-| 10% | 38,062/43,758 | 37,894/43,758 |
-| 5% | 2,681,145/3,108,105 | 2,789,789/3,108,105 |
-
-The current code sometimes gets an exact sum by accidental error cancellation,
-and cleaning the individual values removes the accident. Nothing compares a row
-sum to exactly 1.0, everything uses `allclose`, and the discrepancy is 1e-16
-against a tolerance of 1e-8.
-
-**Worth pairing with it:** return the integer unit counts as well. They are exact
-by construction and are the natural key for a Q-table, which removes the
-float-comparison question from the extension entirely:
-
-```python
-def generate_weight_grid(
-    n_assets: int = 9, increment: float = 0.2, return_units: bool = False
-) -> np.ndarray:
-    ...
-    units = np.array(portfolios)          # exact integers
-    weights = units / total_units
-    return (weights, units) if return_units else weights
-```
-
----
-
-# Issue 4 — LOW: `n = mu.shape` assigns a tuple
-
-`mean_variance.py:16`, in `closed_Form_optimal_weights`:
-
-```python
-n = mu.shape          # tuple, e.g. (9,)
-ones = np.ones(n)     # works: np.ones accepts a shape tuple
-```
-
-Right answer by accident. `n` reads as a count everywhere else in the file,
-including `constrained_optimal_weights` three lines down, which correctly uses
-`mu.shape[0]`. It would break if `n` were ever used arithmetically.
-
-**Fix:** `n = mu.shape[0]`.
-
-**While you are in this file:** `closed_Form_optimal_weights` has an inconsistent
-capital `F`. Renaming to `closed_form_optimal_weights` touches 11 lines, all in
-this file and `test_mean_variance.py` (the definition, the import on line 6,
-eight call sites, two comment mentions). Verify with `grep -rn "closed_Form"
-src/`. Mechanical, and easier now than once the report cites function names.
-
----
-
-# Unrelated: `.vscode/settings.json` has a hardcoded Windows path
-
-```json
-"python.defaultInterpreterPath": "C:\\Python310\\python.exe"
-```
-
-Committed to the repo, so it applies to both of us, and wrong on Albert's Mac.
-`.gitignore:26-27` ignores `.vscode/*` then explicitly un-ignores
-`settings.json`, so this file is tracked on purpose. Two options:
-
-- **Keep it shared:** drop the `python.defaultInterpreterPath` line, leave only
-  portable settings.
-- **Make it personal:** delete line 27 from `.gitignore` and run
-  `git rm --cached .vscode/settings.json`.
-
-Either is fine. A Windows-only absolute path shared across two machines is the
-state that should not persist.
-
----
-
-## Suggested order
-
-1. **Issue 1.** Blocks Part II onward and is the one that could put a wrong
-   number in the report. Note it will also make `test_mean_variance.py:217` go
-   green again rather than red.
-2. **Issue 2.** Blocks Part V and Part VI, needed before the Week 6 baseline.
-3. ~~Issue 3.~~ Done, commit `02f6a49`. Review it in the PR.
-4. **Issue 4** and `.vscode`, whenever convenient.
-
-## Cross-check available
-
-Albert's Part I data is on `feature/data_pipeline` and every number above is
-reproducible from `data/processed/excess_returns.csv`. Happy to pair on issue 1.
-The fix is a few lines; the regression test is the part worth agreeing on, since
-it is what stops this reappearing at a different scale.
+- **The reward is noisy.** At γ = 5 on our data, one 20-day episode's reward
+  has a standard deviation 7.5 times the best portfolio's true score, and
+  the best and second-best menu portfolios differ by 2%. An idealized learner
+  with a 1/N learning rate needs about 13 million episodes to get within
+  about 2% of the best menu portfolio on a typical seed. With a constant
+  learning rate the Q-values keep jittering by 17% to 53% of the objective.
+  The learning-rate rule and training budget are the first agent decisions.
+- **Convergence rule and leakage.** "Within X% of the best menu portfolio"
+  needs μ and Σ, so it should be measured by evaluation code after the fact
+  and never decide when training stops. The stopping rule should use only
+  what the agent sees (for example, the greedy choice unchanged for K
+  episodes).
+- **Speed.** Per 20-day episode, the reward call costs 7.6 µs and the draw
+  3.8 µs. Rewards can't be computed for a block at once (episode k's action
+  depends on episode k−1's reward), but each episode's mean vector m and
+  covariance S can, and then reward = w'm − (γ/2)w'Sw exactly.
+- **Observation counts** for Part IV should come from the training loop
+  (episodes used × B). `ReturnSimulator.days_simulated` counts days drawn,
+  which includes block pre-draws.
