@@ -1,6 +1,6 @@
 # Part I — Data Construction and Cleaning
 
-**Owner:** Albert · **Status:** complete, reviewed, pending William's sign-off
+**Owner:** Albert · **Status:** complete; reviewed by William (`NEXT_STEPS_FOR_ALBERT.md`, 2026-09-29)
 **Download date:** 2026-09-24 (America/New_York)
 **Final sample:** 5,152 daily observations, 2006-02-07 to 2026-07-31
 
@@ -38,7 +38,8 @@ Q-learning agent) is built from that table and its average and covariance.
 3. The correlations look like real markets, which is the main evidence nothing
    is scrambled: stocks move together, Treasuries move opposite to stocks, gold
    is roughly independent.
-4. Two decisions are still William's: the value of γ, and the reward formula.
+4. One decision is still William's: the value of γ. The reward is settled as
+   the episodic realized mean-variance reward in `src/rewards.py`.
 
 ---
 
@@ -47,7 +48,7 @@ Q-learning agent) is built from that table and its average and covariance.
 ```bash
 python3 -m src.data.download_raw   # writes data/raw/   (network required)
 python3 -m src.data.clean          # writes data/interim/ and data/processed/
-python3 -m pytest src/tests -q     # 55 tests
+python3 -m pytest src/tests -q     # full suite; test_data_pipeline.py covers this pipeline
 ```
 
 `download_raw.py` is the only script that reaches the network and the only one
@@ -373,19 +374,23 @@ This holds only while the reward is defined over **per-period** returns. An
 episodic reward computed on an episode's *cumulative* return over B days is a
 B-period objective, and γ would not carry over.
 
-### 8.2 Blocker: the long-only optimizer fails silently on daily moments
+### 8.2 Resolved: the long-only optimizer stopped early on daily moments
 
-Reported in full in `REVIEW_NOTES_FOR_WILLIAM.md`, issue 1. In short,
-`constrained_optimal_weights` uses SLSQP at its default `ftol=1e-6`, which at
-daily scale is comparable to the entire objective, so the optimizer stops
-prematurely and returns a wrong portfolio while reporting success. At γ = 5 it
-gives up 58.6% of the achievable objective. Part II cannot produce a meaningful
-continuous benchmark until this is fixed.
+`constrained_optimal_weights` originally ran SLSQP at its default `ftol=1e-6`,
+which at daily scale is comparable to the entire objective. The optimizer
+stopped prematurely and returned a wrong portfolio while reporting success,
+giving up 58.6% of the achievable objective at γ = 5.
+
+William fixed it in `51b3eb7` (2026-09-29) by solving on annualized moments
+internally, which leaves the argmax unchanged (§8.1). Checked on 2026-10-02
+against an exact solution that enumerates every set of held assets: every
+weight agrees within 3e-6 for each whole-number γ from 1 to 15. The history is
+in `REVIEW_NOTES_FOR_WILLIAM.md`.
 
 ### 8.3 Sanity check of the calibrated environment
 
-With the tolerance corrected, the long-only continuous optimum behaves as theory
-predicts, shifting from risk assets to Treasuries as γ rises:
+With the fix in place, the repo's long-only optimizer reproduces this table
+exactly, and the continuous optimum behaves as theory predicts, shifting from risk assets to Treasuries as γ rises:
 
 | γ | Ann. return | Ann. vol | Holdings | Discretization gap |
 |---|---|---|---|---|
