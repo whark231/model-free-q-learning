@@ -2,7 +2,7 @@
 
 **From:** Albert
 **Date:** 2026-10-02
-**Status:** the four issues from the 2026-09-24 review are all closed. Three new issues in your files are reported below and not patched. They are your files, so nothing in them has been changed.
+**Status:** the four issues from the 2026-09-24 review are all closed. The three new issues reported below (A, B, C) are now fixed too, by William on 2026-10-13, with tests. See the note under issue C: the recommended fix had a scale bug, found while testing it, now corrected.
 
 ---
 
@@ -67,13 +67,17 @@ passed.
 
 ## 2. New issues in your files
 
+**Status as of 2026-10-13 (William): all three fixed and tested, not yet
+committed.** Full suite: 149 passed (142 before these fixes plus 2 new
+tests for issue C's replacement guard, 4 for issue A, 1 for issue B).
+
 | # | Severity | File | Issue | Blocks |
 |---|---|---|---|---|
-| A | **Medium** | `src/rewards.py:19` | Returns NaN, with no error, for a one-day batch | Nothing today; any 1-day episode in training |
-| B | **Low-medium** | `src/benchmarks/mean_variance.py:90` | `best_discrete_weights` returns a view into the caller's grid | Nothing today; sharing the agent's grid with the benchmark |
-| C | **Low** | `src/benchmarks/mean_variance.py:69` | The `nit <= 1` guard gives false alarms and misses some failures | Nothing on our data |
+| A | ~~Medium~~ **FIXED** | `src/rewards.py:19` | Returns NaN, with no error, for a one-day batch | Nothing today; any 1-day episode in training |
+| B | ~~Low-medium~~ **FIXED** | `src/benchmarks/mean_variance.py:90` | `best_discrete_weights` returns a view into the caller's grid | Nothing today; sharing the agent's grid with the benchmark |
+| C | ~~Low~~ **FIXED** | `src/benchmarks/mean_variance.py:69` | The `nit <= 1` guard gives false alarms and misses some failures | Nothing on our data |
 
-### Issue A: the reward returns NaN for a one-day episode
+### ~~Issue A: the reward returns NaN for a one-day episode~~ FIXED
 
 `portfolio_returns.var(ddof=1)` divides by B − 1, so a batch of one day gives
 NaN. numpy warns only once per code location, so inside a training loop it is
@@ -110,7 +114,7 @@ If we ever switch to the one-period quadratic reward the assignment also
 allows, that reward needs B = 1 and gets its own function, and
 `MIN_EPISODE_LENGTH` in `environment.py` drops to 1.
 
-### Issue B: `best_discrete_weights` returns a view, not a copy
+### ~~Issue B: `best_discrete_weights` returns a view, not a copy~~ FIXED
 
 `grid[np.argmax(scores)]` with a single integer index returns a view of that
 row. When a caller passes `grid=`, which is the point of the parameter (sharing
@@ -132,7 +136,7 @@ the agent's actions.
 return grid[np.argmax(mean_var_scores)].copy()
 ```
 
-### Issue C: the `nit <= 1` guard checks the wrong thing
+### ~~Issue C: the `nit <= 1` guard checks the wrong thing~~ FIXED, with one change from the recommendation below
 
 The guard catches the old failure, but it uses iteration count as a proxy for
 "did not converge," and that proxy fails in both directions:
@@ -164,6 +168,29 @@ solutions at every integer γ from 1 to 15, exactly 0 at the symmetric optimum
 that currently raises, and 0.061 for equal weights on our data at γ = 5. A
 1e-5 threshold separates them by two orders of magnitude.
 
+**One problem with the recommendation above, found while testing it.** The
+threshold is absolute, but the residual scales linearly with whatever
+magnitude of μ and Σ the caller passes in. Scaling a test problem's μ and Σ
+by 1000x (nothing in the function stops a caller from doing this) raised the
+residual from 1.8e-6 to 4.2e-4, past a 1e-5 absolute cutoff, on a solution
+that was just as correct. That breaks the scale-invariance this function is
+supposed to have (`SCALE = 252` already relies on it). Fixed by normalizing
+the residual by the gradient's own magnitude before comparing it to a
+threshold, so the check responds to how wrong the answer is rather than how
+large the inputs happen to be:
+
+```python
+grad_scale = max(np.abs(grad).max(), 1e-12)
+if residual / grad_scale > 1e-4:
+    raise RuntimeError(...)
+```
+
+Checked across a 1,000,000x range of input scaling on the same test problem:
+relative residual stays between 3.4e-8 and 1.7e-5 for correct solutions, and
+0.42 for the wrong-answer case above. `test_does_not_raise_when_the_symmetric_optimum_is_the_equal_weight_start`
+in `test_mean_variance.py` pins the false-alarm case this issue was originally
+about.
+
 ### Minor: test count in your docs
 
 `PROJECT_PROSPECTUS.md` row 4 and `NEXT_STEPS_FOR_ALBERT.md` say the action
@@ -177,7 +204,7 @@ total of 74 was right.
 1. **Review the simulator PR** (`feature/environment` → `dev`). Please run the
    suite on your machine: a few tests compare draws to 1e-15, which should
    hold across BLAS libraries but has only been run on Albert's Mac.
-2. **Fix issues A, B and C** above. A matters most before the agent exists.
+2. ~~**Fix issues A, B and C** above. A matters most before the agent exists.~~ Done 2026-10-13, 5 new regression tests, 149 passed.
 3. **Choose γ** and write down the reason (`DATA_CLEANING.md` §8.4). It must
    be chosen on outside grounds before anyone looks at results: matching the
    original three-asset version of this problem if it used one, or a value in

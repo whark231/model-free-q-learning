@@ -29,6 +29,43 @@ def test_variance_uses_bessels_correction():
     assert reward == pytest.approx(1.0 - 0.5 * 1.0 * 2.0)
 
 
+# ---------------------------------------------------------------------------
+# Input validation: a short or malformed batch must raise, not return NaN.
+# ddof=1 variance divides by B-1, so a 1-day batch silently produced NaN,
+# and NaN compares as the largest value under np.argmax, which made it a
+# permanent, silent greedy choice once it reached a Q-table.
+# ---------------------------------------------------------------------------
+
+def test_raises_on_one_day_batch():
+    w = np.array([0.5, 0.5])
+    one_day_batch = np.array([[0.01, 0.02]])
+    with pytest.raises(ValueError, match="at least 2 days"):
+        episodic_mean_variance_reward(w, one_day_batch, gamma=1.0)
+
+
+def test_raises_on_empty_batch():
+    w = np.array([0.5, 0.5])
+    empty_batch = np.empty((0, 2))
+    with pytest.raises(ValueError):
+        episodic_mean_variance_reward(w, empty_batch, gamma=1.0)
+
+
+def test_raises_on_one_dimensional_input():
+    w = np.array([0.5, 0.5])
+    one_dimensional = np.array([0.01, 0.02])
+    with pytest.raises(ValueError, match="must be"):
+        episodic_mean_variance_reward(w, one_dimensional, gamma=1.0)
+
+
+def test_raises_on_wrong_asset_count():
+    """A batch for the wrong number of assets should fail loudly rather
+    than broadcasting or silently misaligning against w."""
+    w = np.array([0.5, 0.5, 0.0])  # 3 assets
+    two_asset_batch = np.array([[0.01, 0.02], [0.00, 0.01]])  # 2 assets
+    with pytest.raises(ValueError, match="must be"):
+        episodic_mean_variance_reward(w, two_asset_batch, gamma=1.0)
+
+
 def test_ddof1_vs_ddof0_reward_gap_matches_the_exact_algebraic_identity():
     """For any batch, var_ddof0 = var_ddof1 * (B-1)/B exactly, so
     reward_ddof0 = reward_ddof1 + (gamma/2) * var_ddof1 / B exactly -- no
