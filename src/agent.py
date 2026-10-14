@@ -1,10 +1,8 @@
-"""The agreed interface between src/agent.py (William) and src/train.py
-(Albert), proposed and agreed in REVIEW_NOTES_FOR_WILLIAM.md section 2.
+"""The tabular Q-learning agent (the required baseline, Part III of the
+assignment). Implements the interface agreed with Albert in
+REVIEW_NOTES_FOR_WILLIAM.md section 2.1, which train.py is written against.
 
-In plain terms: this file is a contract, not an implementation. It lets
-train.py be written against TabularQAgent's method names without guessing
-them, and lets agent.py's internals change freely as long as this shape
-stays the same. One training episode, from train.py's side:
+In plain terms: one training episode, from train.py's side, looks like:
 
     a = agent.select_action()
     w = grid[a]
@@ -18,8 +16,11 @@ owns all of that. That is the leakage boundary the assignment requires, and
 test_environment.py's leakage tests already check that this file does not
 import the benchmarks, the data loader, or the raw data.
 
-Every method and property below raises NotImplementedError. The actual
-Q-learning logic is built on feature/agent, not here.
+This file is organized so the plumbing (storing config, allocating the
+Q-table, exposing read-only copies for logging) is already written, and the
+TODOs mark exactly where the actual Q-learning algorithm goes: the
+epsilon-greedy branch in select_action, the TD arithmetic in update, and the
+tie-breaking rule in greedy_action.
 """
 
 from typing import Callable, Union
@@ -28,10 +29,10 @@ import numpy as np
 
 
 class TabularQAgent:
-    """Stateless tabular Q-learning agent: the required baseline, Part III
-    of the assignment. Stateless because the synthetic returns are i.i.d.,
-    so there is nothing to condition a choice on besides what the agent has
-    already learned. No state argument appears anywhere below.
+    """Stateless tabular Q-learning agent. Stateless because the synthetic
+    returns are i.i.d., so there is nothing to condition a choice on besides
+    what the agent has already learned. No state argument appears anywhere
+    below.
     """
 
     def __init__(
@@ -74,40 +75,93 @@ class TabularQAgent:
             stream goes to the agent versus the environment) lives in
             environment.py's SeedPlan, not here.
         """
-        raise NotImplementedError
+        self.n_actions = n_actions
+        self.alpha_rule = alpha_rule
+        self.epsilon0 = epsilon0
+        self.beta = beta
+        self.discount = discount
+        self.rng = rng
 
-    def select_action(self) -> int:
-        """Return an action index in [0, n_actions), chosen epsilon-greedy
-        over the agent's current Q-values. Advances whatever counter the
-        epsilon-decay schedule reads, so repeated calls make the agent
-        explore less over time."""
-        raise NotImplementedError
+        self._q = np.full(n_actions, q_init, dtype=float)
+        self._visits = np.zeros(n_actions, dtype=int)
+        self._t = 0  # number of select_action calls so far; the epsilon schedule reads this
 
-    def update(self, action: int, reward: float) -> None:
-        """Apply one Q-learning update for the action that was actually
-        taken:
-
-            Q(action) <- Q(action) + alpha * (reward + discount * max(Q) - Q(action))
-
-        `reward` is computed entirely outside this class. This method's only
-        job is the arithmetic for the one action index it is given."""
-        raise NotImplementedError
-
-    @property
-    def greedy_action(self) -> int:
-        """The action with the highest current Q-value. Ties must be broken
-        by a stated, reproducible rule (for example, uniformly at random via
-        `rng`), not by whatever numpy's argmax happens to do by default."""
-        raise NotImplementedError
+    # -- Read-only accessors for logging and evaluation. Pure plumbing, no
+    # algorithm here, which is why these are already filled in. --
 
     @property
     def q_values(self) -> np.ndarray:
         """Read-only copy of the current Q-table, shape (n_actions,)."""
-        raise NotImplementedError
+        return self._q.copy()
 
     @property
     def visit_counts(self) -> np.ndarray:
         """Read-only copy of how many times each action has been updated,
         shape (n_actions,). Needed for a 1/N(a) learning rate and for
         per-action visit logging in train.py."""
+        return self._visits.copy()
+
+    # -- Internal helpers --
+
+    def _epsilon(self) -> float:
+        """Current exploration rate, from the schedule agreed with Albert:
+        epsilon_t = epsilon0 * exp(-beta * t)."""
+        return self.epsilon0 * np.exp(-self.beta * self._t)
+
+    def _alpha(self, action: int) -> float:
+        """Learning rate to use for updating `action` right now.
+
+        TODO: if alpha_rule is a constant float, just return it. If it's
+        callable (a visit-dependent rule like sample averaging, alpha =
+        1/n), call it with the right visit count for `action`. Decide the
+        order relative to incrementing self._visits in update() below: it
+        changes what "the right visit count" means for the very first visit
+        (does the first update use alpha_rule(0) or alpha_rule(1)?), and
+        that's exactly the kind of thing the assignment wants reported and
+        justified, not left implicit.
+        """
+        raise NotImplementedError
+
+    # -- The actual algorithm. Everything above exists so this is the only
+    # part you have to design. --
+
+    def select_action(self) -> int:
+        """Epsilon-greedy choice over self._q.
+
+        TODO:
+        1. draw u = self.rng.random()
+        2. if u < self._epsilon(): return a uniformly random action index
+           (self.rng.integers(self.n_actions))
+        3. otherwise return self.greedy_action (don't reimplement the
+           tie-break here; greedy_action owns that rule)
+        4. increment self._t exactly once per call, on every branch,
+           since that's what the epsilon schedule reads
+        """
+        raise NotImplementedError
+
+    def update(self, action: int, reward: float) -> None:
+        """The Q-learning update for the action that was actually taken:
+
+            Q(action) <- Q(action) + alpha * (reward + discount * max(Q) - Q(action))
+
+        TODO:
+        1. figure out the learning rate for this step (self._alpha(action),
+           once that's implemented)
+        2. td_target = reward + self.discount * self._q.max()
+           (stateless form: max_a' Q(a') is just the max over this same
+           table, since there's no next state)
+        3. self._q[action] += alpha * (td_target - self._q[action])
+        4. update self._visits[action]
+        """
+        raise NotImplementedError
+
+    @property
+    def greedy_action(self) -> int:
+        """The action with the highest current Q-value, ties broken
+        uniformly at random rather than by numpy's silent first-index rule.
+
+        TODO: np.flatnonzero(self._q == self._q.max()) gives every tied
+        index (including the case of no tie, a single-element array).
+        Pick one of them with self.rng, e.g. self.rng.choice(...).
+        """
         raise NotImplementedError
