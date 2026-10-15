@@ -1,11 +1,12 @@
 # Notes for William
 
 **From:** Albert
-**Date:** 2026-10-13
+**Date:** 2026-10-15 (first written 2026-10-13)
 **Status:** every issue from both review rounds is fixed in the code and
-independently re-checked (§1). This update proposes how we split the tabular
-Q-learning core so we can work in parallel (§2), and lists the decisions we
-need before writing code (§3). Nothing in your files has been changed.
+independently re-checked (§1). §2 and §3 are the work split and open
+decisions. **New in this update: `src/train.py` is on `dev`, built against
+your interface, with four items for you in §5.** Nothing in your files has
+been changed.
 
 ---
 
@@ -129,7 +130,7 @@ results."
 | Convergence rule | Both | Stop on agent-observable quantities only (greedy action unchanged for K episodes, or largest Q change below a tolerance). Report the gap to the best menu action afterwards, in evaluation | The gap needs μ and Σ, so letting it stop training would leak benchmark information |
 | ε₀, β, episode count | Both | ε₀ = 1; set β from the episode budget so exploration fades over roughly the first half of training | Ties the schedule to the budget instead of a magic number |
 | Q initialization, tie-breaking | William | Q = 0; ties broken uniformly at random with `agent_rng` | With 1/N averaging the first visit overwrites the initial value; random ties avoid a bias toward low action indices |
-| Seed count | Both | 10 | The assignment asks for "multiple random seeds"; about 2.5 minutes per 13M-episode run at B = 20 keeps this cheap |
+| Seed count | Both | 10 | The assignment asks for "multiple random seeds"; about 5 minutes per 13M-episode run at B = 20 on the 20% grid (corrected, see §5) |
 | Second robustness check | Both | Episode length (5 / 20 / 63), alongside the 20% vs. 10% grid comparison | Both are on the assignment's Part VI list and need no new code |
 
 **Prospectus edit to agree:** if we adopt the split, §4's row "Tabular
@@ -150,9 +151,107 @@ William; training runner (`train.py`): Albert; each reviews the other's PR."
 - **Lock-in risk.** In a 3-asset toy run with fast-decaying ε, the agent
   settled on the second-best portfolio (1% short of the best) because the
   best one got an unlucky early average and was rarely retried.
-- **Speed.** About 11 µs per episode (3.8 µs draw plus 7.6 µs reward call).
+- **Speed.** The draw and reward alone cost about 11 µs per episode (3.8 µs
+  draw plus 7.6 µs reward call); the full loop with an agent is slower (§5).
   Each episode's mean vector and covariance can be computed for a whole block
   in advance, then reward = w'm − (γ/2)w'Sw, which is exact.
 - **Observation counts** for Part IV should come from the training loop
   (episodes used × B). `ReturnSimulator.days_simulated` also counts days
   drawn in advance by block sampling.
+
+---
+
+## 5. `src/train.py` is on `dev`: four items for you
+
+The runner is built against the interface in `src/agent.py` and tested with
+stand-in agents (30 tests in `src/tests/test_train.py`; full suite 179
+passed). Every reward and every logged number is rebuilt independently in the
+tests and compared exactly. An independent review filled in your
+`feature/agent` TODOs in a scratch copy and confirmed the runner produces
+exactly the same Q-table as a bare five-line loop. Once your agent lands, one
+command runs a real experiment:
+
+```bash
+python -m src.train --gamma 5 --episode-length 20 --episodes 200000 --master-seed 2026 --runs 2 --beta 2e-5 --out results/demo
+```
+
+γ, B, episode count, master seed, run count and β are required arguments
+with no defaults, because they are still open decisions (§3).
+
+### 5.1 The learning-rate visit count (needs your decision)
+
+`train.py` passes `alpha_rule` as a function of n, where **n counts the update
+being made**: the first update of an action uses α = 1/1, which replaces
+`q_init` with the first reward. Your `_alpha` TODO leaves the order open
+("does the first update use alpha_rule(0) or alpha_rule(1)?").
+
+If `_alpha` calls the rule before incrementing the visit count, the first call
+is `1 / np.int64(0)`, which numpy turns into `inf` with only a warning. Q
+becomes inf or NaN and, since `np.argmax` treats NaN as the largest value,
+that action becomes the permanent greedy choice.
+
+What `train.py` now does about it: the sample-average rule raises
+`ValueError` for n < 1, and the loop stops with `FloatingPointError` if any
+Q-value becomes non-finite.
+
+**Proposed:** increment `_visits[action]` first, then call
+`alpha_rule(self._visits[action])`. That matches the sample-average
+definition (after n rewards, Q is their mean) and the runner's convention.
+
+### 5.2 `greedy_action` draws from the agent's random stream
+
+Your TODO breaks ties with `self.rng.choice(...)`, which is the right rule for
+choosing actions. It also means that merely reading the property consumes a
+random draw, so any logging code that reads it would change the agent's later
+choices. `train.py` never calls it; it logs its own lowest-index argmax of
+`q_values`, for logging only. Two small proposals:
+
+- note in the property's docstring that reading it consumes randomness;
+- add a read-only `epsilon` property (the rate the next `select_action` will
+  use), so the runner can log it instead of recomputing
+  `epsilon0 * exp(-beta * t)` from the config. Today the two agree exactly,
+  but a later change to the schedule (a floor, say) would make the recomputed
+  log silently wrong.
+
+### 5.3 Speed: my earlier estimate was wrong
+
+The "about 2.5 minutes per 13M-episode run" in the previous version of these
+notes is wrong. With your agent filled in from its TODOs, the reviewer
+measured:
+
+| Grid | Actions | Runner | Bare loop | Per 13M-episode run |
+|---|---|---|---|---|
+| 20% | 1,287 | 23.6 µs/episode | 19.7 µs | about 5 minutes |
+| 10% | 43,758 | 91 µs/episode | 51.6 µs | about 20 minutes (3.3 hours for 10 seeds) |
+
+Most of the runner's overhead is copying the full Q-table through
+`q_values` after every update (to log the change in Q and track the greedy
+action). **Proposed interface addition:** a scalar accessor such as
+`q_value(action) -> float`, or have `update` return the new Q(action). The
+runner could then track the greedy action incrementally and skip the copy.
+Not urgent at the 20% grid; worth it before the 10% robustness runs.
+
+### 5.4 The log format differs from §2.2
+
+§2.2 promised a per-episode log (action, reward, ε). At 13M episodes per run
+that is hundreds of MB per run, so `train.py` saves instead:
+
+- every `log_every` episodes (default 10,000): mean reward, largest |change in
+  Q|, logged greedy action, per-action choice counts, ε for the next episode,
+  and a float32 Q-table snapshot;
+- every change of the logged greedy action, with its episode number, starting
+  at episode 0;
+- a `manifest.json` with the config, seed plan, SHA-256 of the calibration
+  files and the code, git commit and library versions.
+
+That is enough for the learning curve, exact expected regret per window
+(choice counts × gap to the best menu action, computed in evaluation), "greedy
+unchanged for K episodes" at any K, convergence frequency across seeds, and
+the final greedy portfolio to score on the evaluation stream. It is not enough
+for a per-episode plot of every reward; if you need that for the report, say
+so and I'll add an optional full log for short runs.
+
+Training always runs its full budget. Nothing stops early, and the runner
+never imports the benchmarks or touches the evaluation stream (both tested),
+so convergence is judged afterwards from these logs.
+
