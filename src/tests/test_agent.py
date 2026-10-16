@@ -133,6 +133,29 @@ def test_update_increments_visit_count_only_for_the_updated_action():
     np.testing.assert_array_equal(agent.visit_counts, [2, 0, 1])
 
 
+@pytest.mark.parametrize("bad_reward", [float("nan"), float("inf"), float("-inf")])
+def test_update_rejects_non_finite_reward(bad_reward):
+    """Regression for the same bug class fixed in rewards.py issue A: a bad
+    reward must fail loudly at the point it's given, not silently poison a
+    Q-value and crash somewhere unrelated later (see the next test)."""
+    agent = make_agent(n_actions=3)
+    with pytest.raises(ValueError, match="finite"):
+        agent.update(0, bad_reward)
+
+
+def test_update_rejects_nan_before_it_can_poison_the_q_table():
+    """Without the guard, this exact sequence doesn't fail on the NaN
+    update -- it fails one call later, inside greedy_action, with a
+    confusing "a cannot be empty" error that points nowhere near the cause."""
+    agent = make_agent(n_actions=3)
+    with pytest.raises(ValueError):
+        agent.update(0, float("nan"))
+
+    np.testing.assert_array_equal(agent.q_values, [0.0, 0.0, 0.0])
+    np.testing.assert_array_equal(agent.visit_counts, [0, 0, 0])
+    assert agent.greedy_action in range(3)  # still answerable, nothing was poisoned
+
+
 # ---------------------------------------------------------------------------
 # Sample-average learning rate (alpha_rule as a callable): the standard
 # rule the prospectus/review notes propose as the baseline, alpha = 1/N(a).

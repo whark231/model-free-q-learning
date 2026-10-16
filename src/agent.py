@@ -138,8 +138,16 @@ class TabularQAgent:
 
             Q(action) <- Q(action) + alpha * (reward + discount * max(Q) - Q(action))
 
+        Rejects a non-finite reward outright rather than letting it poison
+        this action's Q-value. A NaN Q-value doesn't fail here: self._q.max()
+        becomes NaN, every tie-break comparison in greedy_action becomes
+        False, and flatnonzero returns empty, so the actual crash happens on
+        some later, unrelated call with no indication it started here.
         """
-        alpha = self._alpha(action) 
+        if not np.isfinite(reward):
+            raise ValueError(f"reward must be finite, got {reward!r}")
+
+        alpha = self._alpha(action)
         td_target = reward + self.discount * self._q.max()
         self._q[action] += alpha * (td_target - self._q[action])
         self._visits[action] += 1
