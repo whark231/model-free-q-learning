@@ -72,9 +72,8 @@ MAX_SNAPSHOT_VALUES = 100_000_000
 class TrainConfig:
     """Everything that defines a training experiment.
 
-    The fields without defaults are open team decisions (γ, episode length,
-    budget, seeds, exploration decay) and must be stated explicitly. The
-    defaults are the values proposed in REVIEW_NOTES_FOR_WILLIAM.md §3.
+    The fields without defaults must be stated explicitly. The team's chosen
+    values for every field, including these, are in src/config.py.
     """
 
     gamma: float

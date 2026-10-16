@@ -32,8 +32,7 @@ What it computes, mapped to the assignment:
   near-optimal line and stay there.
 - Part IV convergence. When each agent-observable rule is met, and how often
   across seeds. K, the |change in Q| tolerance and the near-optimal line are
-  inputs, because the team has not fixed them yet (REVIEW_NOTES_FOR_WILLIAM.md
-  §3). They must be fixed before results are read.
+  inputs here; the team's fixed values are in src/config.py.
 
 Usage, from the repo root:
 
