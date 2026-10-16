@@ -25,20 +25,20 @@ As skills develop, the split should shift — by the extension phase (weeks 7–
 Mapped to the assignment's required parts (Parts I–VI):
 
 ### Core (required for base grade)
-| # | Component | Assignment Part | Status (2026-10-13) |
+| # | Component | Assignment Part | Status (2026-10-15) |
 |---|---|---|---|
 | 1 | ~~Nine-ETF data pipeline: download, align, clean, adjust for distributions~~ | Part I | ✅ Done — `src/data/`, `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
 | 2 | ~~Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator~~ | Part I | ✅ Done — μ, Σ in `data/processed/`; generator in `src/environment.py`, `ENVIRONMENT.md`, 69 tests |
 | 3 | ~~Theoretical mean-variance benchmark: closed-form continuous optimum + best discrete-grid portfolio~~ | Part II | ✅ Done — `src/benchmarks/mean_variance.py`, 29 tests |
 | 4 | ~~Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline)~~ | Part III | ✅ Done — `src/action_space/grid.py`, 22 tests |
 | 5 | ~~Reward function: episodic realized mean-variance reward~~ | Part III | ✅ Done — `src/rewards.py`, 9 tests |
-| 6 | Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation) | Part III | ⬜ Not started — `src/agent.py` is a placeholder |
-| 7 | Training loop across multiple random seeds + convergence criterion | Part IV | ⬜ Not started — `src/train.py` is empty |
+| 6 | ~~Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation)~~ | Part III | ✅ Done — `src/agent.py`, 22 tests |
+| 7 | Training loop across multiple random seeds + convergence criterion | Part IV | 🔶 Runner built and tested (`src/train.py`, 30 tests) but no real run has executed yet — blocked on γ and the convergence rule's definition, see `REVIEW_NOTES_FOR_WILLIAM.md` §3.1 |
 | 8 | Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics | Part V | ⬜ Not started — `src/evaluate.py` is empty |
 | 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V | ⬜ Not started |
 | 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | ⬜ Not started |
 
-Full suite: 149 tests passing (`python -m pytest src/tests -q`).
+Full suite: 201 tests passing (`python -m pytest src/tests -q`).
 
 ### Extension (our chosen bonus angle)
 | # | Component | Notes | Status (2026-10-13) |
@@ -61,7 +61,7 @@ Full suite: 149 tests passing (`python -m pytest src/tests -q`).
 | Theoretical mean-variance benchmark | William | Albert (learns derivation, writes it up) |
 | Action space construction | William | Albert |
 | Reward function | William | Albert (reviews math) |
-| Tabular Q-learning core | William + Albert (paired) | — |
+| Tabular Q-learning core | Agent (`agent.py`): William; training runner (`train.py`): Albert | Each reviews the other's PR |
 | Convergence analysis & visualizations | Albert | William |
 | Robustness checks | Split: one each | Cross-review |
 | Transaction-cost extension | William + Albert (paired) | — |
@@ -93,11 +93,14 @@ Full suite: 149 tests passing (`python -m pytest src/tests -q`).
 
 ## 6. Open Decisions Still to Finalize
 
-- [ ] Confirm action library approach: fixed Cartesian grid (20%) vs. randomly sampled feasible-portfolio library
-- [ ] Fix the transaction-cost penalty: single fixed parameter, or swept across values as one of our two required robustness checks
-- [ ] Decide which second robustness check to run alongside the action-space one (risk-aversion sweep vs. covariance estimator choice vs. calibration window)
-- [ ] Confirm random seed count for "multiple seeds" (suggest 5–10, balancing statistical confidence against compute time)
-- [ ] Confirm state representation granularity for the transaction-cost extension (exact prior weights vs. coarsely bucketed)
+- [x] Action library approach: fixed Cartesian grid, built in `src/action_space/grid.py` (also accepts a custom grid, so a sampled library stays possible without a code change)
+- [ ] Fix the transaction-cost penalty: single fixed parameter, or swept across values as one of our two required robustness checks (extension-phase decision, not urgent yet)
+- [ ] Confirm state representation granularity for the transaction-cost extension (exact prior weights vs. coarsely bucketed) (extension-phase decision, not urgent yet)
+
+Everything about the Q-learning core's own open decisions (γ, the
+convergence rule, and the deliberately parked tuning choices: episode
+length, episode count, seed count, β, the second Part VI robustness check)
+now lives in `REVIEW_NOTES_FOR_WILLIAM.md` §3, so it isn't tracked twice.
 
 ## 7. Known Risks
 

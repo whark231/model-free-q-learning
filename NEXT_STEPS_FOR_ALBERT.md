@@ -1,16 +1,16 @@
-# Next Steps: After the Ground-Truth Environment
+# Next Steps
 
 **From:** William
-**Date:** 2026-10-13
-**Status:** five of ten required core components are done and tested. The environment this document originally scoped is built. This update removes that scope and says what's next.
+**Date:** 2026-10-15
+**Status:** the agent/train split worked. Both `agent.py` and `train.py` are done and tested. Two decisions are still mine (or ours) to make before a real experiment runs; everything else is deliberately parked.
 
 ---
 
 ## TL;DR / In plain terms
 
-The environment is done: `src/environment.py`, `ENVIRONMENT.md`, 69 tests, merged into `dev`. That closes the last open piece of Part I. Five of ten core components are now done and tested (149 tests passing across the project).
+`src/agent.py` (mine) and `src/train.py` (yours) are both built, tested, and merged, against the interface we agreed on first. 201 tests pass across the project. The code can run a real experiment today (the CLI in `train.py`'s docstring works), except that a few arguments (γ, episode length, episode count, seed count, β) are required with no defaults, on purpose, because none of them are decided yet.
 
-The next step is pairing on the Q-learning agent itself (`src/agent.py`), as planned. That's not ready to start yet. Two things need to happen on my end first: choosing γ, and settling a few open decisions in the prospectus. Nothing further is needed from you until then.
+Two of those can't wait: γ, and the exact definition of convergence. The rest are implementation details with a real tuning tradeoff, and I'm deliberately not deciding them now. They get explored properly once there's a notebook to run that exploration in, not guessed at while we're still writing plumbing.
 
 ---
 
@@ -19,30 +19,41 @@ The next step is pairing on the Q-learning agent itself (`src/agent.py`), as pla
 | Component | Where | Evidence |
 |---|---|---|
 | Nine-ETF data pipeline | `src/data/` | `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
-| μ and Σ estimation | `data/processed/covariance_daily.csv`, `summary_statistics.csv` | Part of the same pipeline |
-| Ground-truth return simulator | `src/environment.py` | `ENVIRONMENT.md`, 69 tests in `src/tests/test_environment.py` |
-| Theoretical mean-variance benchmark | `src/benchmarks/mean_variance.py` | 29 tests in `src/tests/test_mean_variance.py` |
-| Feasible action space (weight grid) | `src/action_space/grid.py` | 22 tests in `src/tests/test_action_space.py` |
-| Reward function | `src/rewards.py` | 9 tests in `src/tests/test_rewards.py`, including a Monte Carlo check that the reward is unbiased for the true mean-variance utility |
+| μ and Σ estimation | `data/processed/` | Part of the same pipeline |
+| Ground-truth return simulator | `src/environment.py` | `ENVIRONMENT.md`, 69 tests |
+| Theoretical mean-variance benchmark | `src/benchmarks/mean_variance.py` | 29 tests |
+| Feasible action space (weight grid) | `src/action_space/grid.py` | 22 tests |
+| Reward function | `src/rewards.py` | 9 tests |
+| Tabular Q-learning agent | `src/agent.py` | 22 tests in `test_agent.py` |
+| Training runner | `src/train.py` | 30 tests in `test_train.py` |
 
-All bugs reported in `REVIEW_NOTES_FOR_WILLIAM.md` across both review rounds are closed: the SLSQP tolerance issue, the hardcoded grid size, the float-drift in grid weights, the tuple/int mix-up, the `.vscode/settings.json` path, the reward's NaN on a one-day batch, the view-vs-copy bug in `best_discrete_weights`, and the optimality guard's false alarms and missed failures. Each has a regression test.
+All bugs reported across both rounds of `REVIEW_NOTES_FOR_WILLIAM.md` are closed, each with a regression test. 201 tests pass (`python -m pytest src/tests -q`).
 
 ---
 
-## Key concepts to understand
+## Two decisions still open, not parked
 
-- **Ground truth, in this project's specific sense.** It doesn't mean "the true statistics of financial markets." It means "the fixed parameters of our synthetic experiment." The assignment says this directly: μ and Σ "are not assumed to be the true moments of financial markets. They are the ground truth only within your controlled experiment."
-- **Why the agent never sees μ or Σ.** The whole research question is whether a model-free learner can recover something close to the optimum using only realized outcomes. If the agent's code ever touched μ or Σ directly, the experiment would no longer be testing that. `src/environment.py`'s leakage tests enforce this at the code level, not just as a rule we remember to follow.
+These aren't hyperparameters, they're definitions, and the assignment is
+explicit that both need settling before anyone looks at a result:
 
-## Key takeaways
+1. **γ**, mine to choose, on outside grounds (matching a known value, or whatever the three-asset version of this problem used), written down in `DATA_CLEANING.md` §8.4 before any results exist. Picking it by seeing which value makes a run look good is the researcher-degrees-of-freedom problem the assignment calls out by name.
+2. **The convergence rule's definition**, ours jointly. The shape is basically agreed: agent-observable quantities only (greedy action unchanged for K episodes, or largest Q-change below a tolerance), never the gap to the benchmark, since that needs μ and Σ. Needs writing down as final.
 
-- Five of ten core components are done. The remaining five (agent, training loop, evaluation, convergence analysis, robustness checks) all depend on the agent existing first.
-- The agent session is paired, not something to start alone. Nothing is blocked on you right now.
+## Everything else is intentionally parked
+
+Episode length, episode count, seed count, β, learning-rate magnitude, and
+the numeric convergence threshold K all have real defaults built into
+`train.py`'s config already, as parameters, not hardcoded. They're parked
+until the tuning/research phase, where they belong: that's when we can
+actually see the tradeoff (compute time vs. how fast/reliably Q-values
+settle) instead of guessing. Full list and reasoning is in
+`REVIEW_NOTES_FOR_WILLIAM.md` §3.2. This isn't something you need to track;
+it stops being an open item in these notes until we're actually at that
+phase.
 
 ## What happens next
 
-Before the pairing session on `src/agent.py`:
-1. I choose γ and write down the reason (`DATA_CLEANING.md` §8.4).
-2. We settle the open decisions in `PROJECT_PROSPECTUS.md` §6 together: seed count, the second robustness check, the action-library approach, the transaction-cost questions, and the episode length B.
-
-I'll let you know when both are settled and we're ready to pair.
+Nothing is blocked on you right now for the agent/train side. Once γ and the
+convergence definition are settled, we can run a real experiment and move to
+evaluation and convergence analysis (`src/evaluate.py`, still unstarted).
+I'll let you know when that's ready.
