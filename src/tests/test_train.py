@@ -259,6 +259,7 @@ def test_manifest_records_what_is_needed_to_reproduce(tmp_path):
     assert on_disk["seed_plan"]["master_seed"] == 123
     assert set(on_disk["calibration_sha256"]) == {"summary_statistics.csv", "covariance_daily.csv"}
     assert set(on_disk["code_sha256"]) == set(train.CODE_FILES)
+    assert on_disk["grid_sha256"] == train.grid_fingerprint(generate_weight_grid(9, 0.25))
     assert on_disk["agent_class"].endswith("test_train.EpsilonGreedyAverager")
     assert [r["simulated_days"] for r in on_disk["runs"]] == [50_000, 50_000]
     assert json.loads(str(load_run(tmp_path)["config_json"]))["gamma"] == 5.0

@@ -250,6 +250,7 @@ def run_experiment(
         "config": asdict(config),
         "seed_plan": plan.as_dict(),
         "n_actions": int(grid.shape[0]),
+        "grid_sha256": grid_fingerprint(grid),
         "calibration_sha256": _hashes(Path(processed_dir), CALIBRATION_FILES),
         "code_sha256": _hashes(REPO_ROOT, CODE_FILES),
         "git_commit": _git_commit(),
@@ -295,6 +296,12 @@ def run_experiment(
         print(f"run {run}: {seconds:.1f}s, final greedy {grid[final]}")
 
     return manifest
+
+
+def grid_fingerprint(grid: np.ndarray) -> str:
+    """SHA-256 of the action grid's values, so evaluation can confirm that
+    action index a still means the same portfolio."""
+    return hashlib.sha256(np.ascontiguousarray(grid, dtype=np.float64).tobytes()).hexdigest()
 
 
 def _write_manifest(out_dir: Path, manifest: dict) -> None:
