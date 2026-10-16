@@ -1,6 +1,4 @@
-"""The tabular Q-learning agent (the required baseline, Part III of the
-assignment). Implements the interface agreed with Albert in
-REVIEW_NOTES_FOR_WILLIAM.md section 2.1, which train.py is written against.
+"""The tabular Q-learning agent
 
 In plain terms: one training episode, from train.py's side, looks like:
 
@@ -15,12 +13,6 @@ portfolio weights, returns, mu, Sigma, or a benchmark value, since train.py
 owns all of that. That is the leakage boundary the assignment requires, and
 test_environment.py's leakage tests already check that this file does not
 import the benchmarks, the data loader, or the raw data.
-
-This file is organized so the plumbing (storing config, allocating the
-Q-table, exposing read-only copies for logging) is already written, and the
-TODOs mark exactly where the actual Q-learning algorithm goes: the
-epsilon-greedy branch in select_action, the TD arithmetic in update, and the
-tie-breaking rule in greedy_action.
 """
 
 from typing import Callable, Union
