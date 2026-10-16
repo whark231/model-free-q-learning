@@ -81,13 +81,11 @@ class TabularQAgent:
         self.beta = beta
         self.discount = discount
         self.rng = rng
+        self._tie_rng = rng.spawn(1)[0]
 
         self._q = np.full(n_actions, q_init, dtype=float)
         self._visits = np.zeros(n_actions, dtype=int)
         self._t = 0  # number of select_action calls so far; the epsilon schedule reads this
-
-    # -- Read-only accessors for logging and evaluation. Pure plumbing, no
-    # algorithm here, which is why these are already filled in. --
 
     @property
     def q_values(self) -> np.ndarray:
@@ -110,25 +108,16 @@ class TabularQAgent:
 
     def _alpha(self, action: int) -> float:
         """Learning rate to use for updating `action` right now.
-
-        TODO: if alpha_rule is a constant float, just return it. If it's
-        callable (a visit-dependent rule like sample averaging, alpha =
-        1/n), call it with the right visit count for `action`. Decide the
-        order relative to incrementing self._visits in update() below: it
-        changes what "the right visit count" means for the very first visit
-        (does the first update use alpha_rule(0) or alpha_rule(1)?), and
-        that's exactly the kind of thing the assignment wants reported and
-        justified, not left implicit.
         """
-        raise NotImplementedError
+        if callable(self.alpha_rule):
+            # visits so far + 1 = the visit about to happen, so the first update uses n = 1
+            return float(self.alpha_rule(int(self._visits[action]) + 1))
+        return float(self.alpha_rule)
 
-    # -- The actual algorithm. Everything above exists so this is the only
-    # part you have to design. --
 
     def select_action(self) -> int:
         """Epsilon-greedy choice over self._q.
 
-        TODO:
         1. draw u = self.rng.random()
         2. if u < self._epsilon(): return a uniformly random action index
            (self.rng.integers(self.n_actions))
@@ -137,31 +126,27 @@ class TabularQAgent:
         4. increment self._t exactly once per call, on every branch,
            since that's what the epsilon schedule reads
         """
-        raise NotImplementedError
+        if self.rng.random() < self._epsilon():
+            action = int(self.rng.integers(self.n_actions))  # explore
+        else:
+            action = self.greedy_action  # exploit
+        self._t += 1  # once per call, after epsilon was read, on every branch
+        return action
 
     def update(self, action: int, reward: float) -> None:
         """The Q-learning update for the action that was actually taken:
 
             Q(action) <- Q(action) + alpha * (reward + discount * max(Q) - Q(action))
 
-        TODO:
-        1. figure out the learning rate for this step (self._alpha(action),
-           once that's implemented)
-        2. td_target = reward + self.discount * self._q.max()
-           (stateless form: max_a' Q(a') is just the max over this same
-           table, since there's no next state)
-        3. self._q[action] += alpha * (td_target - self._q[action])
-        4. update self._visits[action]
         """
-        raise NotImplementedError
+        alpha = self._alpha(action) 
+        td_target = reward + self.discount * self._q.max()
+        self._q[action] += alpha * (td_target - self._q[action])
+        self._visits[action] += 1
 
     @property
     def greedy_action(self) -> int:
         """The action with the highest current Q-value, ties broken
-        uniformly at random rather than by numpy's silent first-index rule.
-
-        TODO: np.flatnonzero(self._q == self._q.max()) gives every tied
-        index (including the case of no tie, a single-element array).
-        Pick one of them with self.rng, e.g. self.rng.choice(...).
-        """
-        raise NotImplementedError
+        uniformly at random rather than by numpy's silent first-index rule."""
+        tied = np.flatnonzero(self._q == self._q.max())
+        return int(self._tie_rng.choice(tied))
