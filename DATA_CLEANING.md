@@ -410,7 +410,17 @@ assets. That is the standard corner-solution behaviour of mean-variance
 optimization, which treats noisy estimates of μ as certain, and it is the
 concrete form the Part VI estimation-error discussion should take.
 
-### 8.4 The one decision still open
+### 8.4 γ: decided 2026-10-16
+
+**Decision:** γ ∈ {3, 5, 8}, with γ = 5 as the baseline for every headline
+table and 3 and 8 as the Part VI risk-aversion check (`src/config.py`). The
+written outside-grounds justification is still to be added here (William).
+Candidates already discussed: a market-implied value for an investor holding
+only SPY, (annual excess mean) ÷ (annual variance) ≈ 2.9, and the conventional
+range of roughly 1 to 10 for relative risk aversion. The decision was made
+before any real experiment ran.
+
+The original guidance follows.
 
 **What value of γ, and on what grounds?** The units question is settled in §8.1.
 The level is not, and the assignment requires a clearly stated risk-aversion

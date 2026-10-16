@@ -1,10 +1,13 @@
 # Notes for William
 
 **From:** Albert
-**Date:** 2026-10-15 (first written 2026-10-13)
-**Status:** `agent.py` and `train.py` are both built, tested, and merged. Every
-review issue across all rounds is closed. What's left is two decisions that
-can't wait and a handful that can.
+**Date:** 2026-10-16 (first written 2026-10-13)
+**Status:** `agent.py`, `train.py` and `evaluate.py` are built, tested and on
+`dev`. Every review issue across all rounds is closed; the §5.3 interface
+question (a per-action Q accessor for speed) is still open. **New in this update
+(§6): γ, B and the convergence threshold are decided and wired into
+`src/config.py`, and I edited three rows of your prospectus to match.** The
+γ justification paragraph is the one item still yours.
 
 ---
 
@@ -12,13 +15,11 @@ can't wait and a handful that can.
 
 The split worked: I wrote `train.py`, you wrote `agent.py`, and the interface
 we agreed on first meant neither of us had to guess the other's method names.
-201 tests pass across the project.
+244 tests pass across the project.
 
-Two things are still open and genuinely need deciding before any real
-experiment runs: γ, and the exact wording of the convergence rule. Everything
-else that used to be in this file's decisions table (episode length, episode
-count, seed count, β, learning-rate magnitude) is intentionally parked until
-the tuning/research phase, where it belongs. See §3.
+Update 2026-10-16: γ, B and the convergence rule are now decided, and the
+parked choices are set as adopted defaults (§6). §3 below is kept as the
+record of how the decisions were framed.
 
 ---
 
@@ -74,7 +75,7 @@ training runner (`train.py`): Albert; each reviews the other's PR."
 
 ## 3. Decisions
 
-### 3.1 Still open: needed before any results are examined
+### 3.1 Were open; decided 2026-10-16 (see §6)
 
 These two aren't hyperparameters to tune. γ defines the research question
 itself, and the assignment requires convergence to be defined before anyone
@@ -86,7 +87,7 @@ a result look good.
 | γ | William | It's the investor's risk aversion, not an algorithm setting. Choosing it by seeing which value gives a flattering result is the exact researcher-degrees-of-freedom problem `DATA_CLEANING.md` §8.4 already warns about. Needs justification on outside grounds (matching a known value, or the three-asset version of this problem if it used one) before any results exist. |
 | Convergence rule (the definition, not the threshold) | Both | Assignment: "define convergence before examining the final results." The shape of the rule is basically agreed already: agent-observable quantities only (greedy action unchanged for K episodes, or largest \|ΔQ\| below a tolerance), never the gap to the benchmark, since that needs μ and Σ. Needs writing down as final, not as a proposal, before any run is read as converged or not. |
 
-### 3.2 Parked until the tuning/research phase
+### 3.2 Were parked; set as adopted defaults 2026-10-16 (see §6)
 
 Everything below is an implementation detail with a real, explorable
 tradeoff (compute time vs. statistical confidence, mostly). The code already
@@ -180,3 +181,74 @@ logged greedy action. Enough for learning curves, exact regret, "greedy
 unchanged for K episodes" at any K, and the final policy to evaluate. Not
 enough for a per-episode reward plot: say so if the report needs one and
 I'll add an optional full log for short runs.
+
+
+---
+
+## 6. Decisions of 2026-10-16, and what I changed
+
+### 6.1 The decisions
+
+| Setting | Value | Where |
+|---|---|---|
+| γ | {3, 5, 8}; 5 is the baseline for headline tables, 3 and 8 are the Part VI risk-aversion check | `src/config.py` |
+| Episode length B | 20 trading days | `src/config.py` |
+| Convergence rule | Greedy action unchanged for K = 10% of training episodes (K = 1,300,000 at 13M episodes). Primary reading: the final greedy action held for at least K episodes through the end (`greedy_stable_through_end`); "first time any action held for K" is secondary | `src/config.py` |
+
+That settles both items in §3.1. Most of §3.2 is now set as adopted defaults
+(all one-line changes in `src/config.py`):
+
+- 10 seeds, master seed 20261016;
+- 13 million episodes per seed;
+- β chosen so ε = 1% halfway through training (about 7.08e-7);
+- \|ΔQ\| tolerance 1e-5 per window, held for good;
+- near-optimal line 25 bps/yr of certainty-equivalent loss;
+- 20% grid baseline, 25% grid as the second resolution;
+- the second Part VI check is the γ sweep.
+
+### 6.2 Edits to your files, flagged here as CLAUDE.md requires
+
+`PROJECT_PROSPECTUS.md`:
+
+- **Row 7** (training loop + convergence criterion) is now marked done, with
+  the decisions listed.
+- **Rows 8 and 9** said `evaluate.py` was empty. They now say the code is done
+  and waiting on the full-scale run.
+
+Nothing else in the prospectus changed. Revert or reword freely.
+
+### 6.3 Still yours
+
+`DATA_CLEANING.md` §8.4 now records the γ decision, but the written
+outside-grounds justification is still missing. I left two candidates there:
+
+- a market-implied value for an SPY-only investor, about 2.9;
+- the conventional 1-to-10 range.
+
+### 6.4 New code and docs
+
+- `src/config.py`: every experiment setting, plus the list of four
+  experiments (baseline, 25% grid, γ = 3, γ = 8).
+- `src/run_experiments.py`: one command trains, evaluates, compares the two
+  grids and writes `results/INDEX.md`. It resumes after interruption and
+  refuses half-finished folders.
+- `src/tests/test_config.py`: 12 tests pinning the decisions and exercising
+  the runner.
+- `EXPERIMENTS.md`: the runbook.
+- `EVALUATION.md`: §7 updated.
+
+Two more items for you:
+
+- **`requirements.txt` is unpinned.** The README quotes the versions that
+  produced our data (numpy 2.3.5 and others), but pinning them would need
+  Python 3.11 or later. If your machine is still on Python 3.10 (the old
+  `.vscode` path suggested it), tell me which Python you use and we can pin
+  versions that work for both of us.
+- **All four experiments share the master seed.** Seed i sees the same
+  simulated returns in every experiment, and every experiment uses the same
+  evaluation sample. That makes the comparisons paired; it is recorded in
+  `EXPERIMENTS.md`.
+
+A full run is about 3.5 hours, and `results/` is git-ignored. EXPERIMENTS.md
+§4 proposes committing the small evaluation outputs and keeping the training
+logs local; that needs both of us to agree.

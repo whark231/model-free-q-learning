@@ -33,12 +33,12 @@ Mapped to the assignment's required parts (Parts I–VI):
 | 4 | ~~Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline)~~ | Part III | ✅ Done — `src/action_space/grid.py`, 22 tests |
 | 5 | ~~Reward function: episodic realized mean-variance reward~~ | Part III | ✅ Done — `src/rewards.py`, 9 tests |
 | 6 | ~~Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation)~~ | Part III | ✅ Done — `src/agent.py`, 22 tests |
-| 7 | Training loop across multiple random seeds + convergence criterion | Part IV | 🔶 Runner built and tested (`src/train.py`, 30 tests) but no real run has executed yet — blocked on γ and the convergence rule's definition, see `REVIEW_NOTES_FOR_WILLIAM.md` §3.1 |
-| 8 | Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics | Part V | ⬜ Not started — `src/evaluate.py` is empty |
-| 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V | ⬜ Not started |
-| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | ⬜ Not started |
+| 7 | ~~Training loop across multiple random seeds + convergence criterion~~ | Part IV | ✅ Done (2026-10-16) — runner `src/train.py`; settings fixed in `src/config.py`: γ ∈ {3, 5, 8} with 5 as baseline, B = 20, convergence = greedy action unchanged for 10% of training episodes; batch runner `src/run_experiments.py`; see `EXPERIMENTS.md`. Full-scale run not yet executed |
+| 8 | Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics | Part V | 🔶 Code done (`src/evaluate.py`, `EVALUATION.md`); waiting on the full-scale run |
+| 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V | 🔶 Code done (learning curves, regret, 20% vs 25% comparison); waiting on the full-scale run |
+| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | 🔶 Defined and coded (`src/config.py`): 25% vs 20% grid, and γ = 3 and 8 vs the γ = 5 baseline; waiting on the full-scale run |
 
-Full suite: 201 tests passing (`python -m pytest src/tests -q`).
+Full suite: 244 tests passing (`python -m pytest src/tests -q`).
 
 ### Extension (our chosen bonus angle)
 | # | Component | Notes | Status (2026-10-13) |
@@ -97,10 +97,10 @@ Full suite: 201 tests passing (`python -m pytest src/tests -q`).
 - [ ] Fix the transaction-cost penalty: single fixed parameter, or swept across values as one of our two required robustness checks (extension-phase decision, not urgent yet)
 - [ ] Confirm state representation granularity for the transaction-cost extension (exact prior weights vs. coarsely bucketed) (extension-phase decision, not urgent yet)
 
-Everything about the Q-learning core's own open decisions (γ, the
-convergence rule, and the deliberately parked tuning choices: episode
-length, episode count, seed count, β, the second Part VI robustness check)
-now lives in `REVIEW_NOTES_FOR_WILLIAM.md` §3, so it isn't tracked twice.
+The Q-learning core's decisions (γ, the convergence rule, episode length,
+episode count, seed count, β and the second Part VI robustness check) were
+settled on 2026-10-16 and live in `src/config.py`, with the reasoning in
+`EXPERIMENTS.md` and `REVIEW_NOTES_FOR_WILLIAM.md` §6.
 
 ## 7. Known Risks
 

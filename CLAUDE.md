@@ -180,6 +180,7 @@ Existing docs:
 | `DATA_CLEANING.md` | Part I data pipeline, decisions, assumptions (Albert) |
 | `ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
 | `EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
+| `EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
 | `REVIEW_NOTES_FOR_WILLIAM.md` | Open issues found in William's files, with fixes |
 | `CLAUDE.md` | This working agreement |
 

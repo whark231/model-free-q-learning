@@ -1,6 +1,6 @@
 # Parts IV and V: Evaluating the Learned Policy
 
-**Owner:** Albert · **Status:** built and tested on `dev`; rule definitions proposed, thresholds open; both need team sign-off
+**Owner:** Albert · **Status:** built and tested on `dev`; rules and thresholds fixed 2026-10-16 (§7)
 **Code:** `src/evaluate.py` · **Tests:** `src/tests/test_evaluate.py` (24 tests)
 **Date:** 2026-10-16, numpy 2.3.5, matplotlib 3.10.6
 
@@ -35,9 +35,9 @@ fresh simulated days the agent never trained on.
 **Key takeaways**
 
 - Every Part V comparison and every Part IV count is produced by one command.
-- The rule definitions below are proposals for the team to adopt (William's notes §3.1 list the convergence rule as a joint decision). The numbers inside them (K, the ΔQ
-  tolerance, the near-optimal line), together with γ and B, still need team
-  decisions before results are read.
+- The rules and their thresholds are fixed (§7): K = 10% of training
+  episodes, ΔQ tolerance 1e-5, near-optimal line 25 bps/yr, γ ∈ {3, 5, 8},
+  B = 20.
 
 ---
 
@@ -180,10 +180,18 @@ made, so these numbers show the pipeline working and are not findings.
 
 ---
 
-## 7. Open decisions (needed before results are read)
+## 7. Settings (fixed 2026-10-16)
 
-- γ (William), and B, the episode budget, β and the seed count (joint).
-- K for the greedy rule; the ΔQ tolerance; the near-optimal line in bps/yr.
-  The demo's 200,000 episodes, 1e-5 and 25 bps were placeholders. 25 bps is
-  about 5% of the best grid portfolio's value at γ = 5, and only 4 of the 1,287
-  portfolios on the 20% grid fall inside it.
+γ ∈ {3, 5, 8} with 5 as baseline, B = 20, and K = 10% of training episodes
+are team decisions. The primary convergence rule is
+`greedy_stable_through_end`: the final greedy action held for at least K
+episodes. The ΔQ tolerance (1e-5) and the near-optimal line (25 bps/yr) are
+adopted defaults. All live in `src/config.py`; the run procedure is in
+`EXPERIMENTS.md`. Still open: the written justification for γ
+(`DATA_CLEANING.md` §8.4).
+
+The 25 bps line is a fixed number of basis points, so it is a tighter bar at
+some γ than others: it is 3.5%, 4.8% and 6.7% of the best grid portfolio's
+value at γ = 3, 5 and 8, and it contains 2, 4 and 2 of the 1,287 portfolios on
+the 20% grid. Near-optimal rates across γ should be compared with that in
+mind.
