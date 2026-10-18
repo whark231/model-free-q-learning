@@ -211,10 +211,18 @@ class TestConstrainedOptimalWeights:
         w_rescaled = constrained_optimal_weights(mu * 1000, sigma * 1000, gamma)
         np.testing.assert_allclose(w_rescaled, w_unscaled, atol=1e-4)
 
-    def test_raises_when_optimizer_stops_after_one_iteration(self, monkeypatch, favorable_9_asset_problem):
-        """Directly exercise the early-stopping guard by forcing scipy to
-        report a successful solve that never actually iterated, independent
-        of whatever real ftol/scale conditions would trigger it naturally."""
+    def test_raises_when_optimizer_result_fails_kkt_check(self, monkeypatch, favorable_9_asset_problem):
+        """Directly exercise the optimality guard by forcing scipy to report
+        a successful solve that is nevertheless not the optimum (equal
+        weights, which is not optimal here since mu/sigma are asymmetric
+        across assets), independent of whatever real ftol/scale conditions
+        would trigger a bad solve naturally.
+
+        This replaced an nit<=1 early-stopping guard, which was both a false
+        alarm (a symmetric problem correctly stops in one iteration at its
+        optimum) and a missed failure (a wrong interior point can take
+        several iterations to reach). The KKT check catches a wrong answer
+        regardless of how many iterations it took to get there."""
         import types
         import src.benchmarks.mean_variance as mv
 
@@ -226,8 +234,32 @@ class TestConstrainedOptimalWeights:
 
         monkeypatch.setattr(mv, "minimize", fake_minimize)
 
-        with pytest.raises(RuntimeError, match="stopped after"):
+        with pytest.raises(RuntimeError, match="optimality check"):
             constrained_optimal_weights(mu, sigma, gamma)
+
+    def test_does_not_raise_when_the_symmetric_optimum_is_the_equal_weight_start(self, monkeypatch):
+        """The specific false alarm the old nit<=1 guard had: a symmetric
+        problem (identity Sigma, constant mu) has the equal-weight portfolio
+        as its true optimum, so SLSQP correctly stops after one iteration.
+        The KKT check must not raise here, unlike the guard it replaced."""
+        import types
+        import src.benchmarks.mean_variance as mv
+
+        mu = np.array([0.08] * 9)
+        sigma = np.eye(9)
+        gamma = 8.0
+
+        real_minimize = mv.minimize
+
+        def one_iteration_minimize(*args, **kwargs):
+            result = real_minimize(*args, **kwargs)
+            result.nit = 1
+            return result
+
+        monkeypatch.setattr(mv, "minimize", one_iteration_minimize)
+
+        w = constrained_optimal_weights(mu, sigma, gamma)
+        np.testing.assert_allclose(w, np.full(9, 1 / 9), atol=1e-8)
 
     def test_raises_when_optimizer_reports_failure(self, monkeypatch, favorable_9_asset_problem):
         import types
@@ -343,6 +375,22 @@ class TestBestDiscreteWeights:
 
         actual = best_discrete_weights(mu, sigma, gamma, grid=custom_grid)
         np.testing.assert_allclose(actual, expected)
+
+    def test_result_does_not_share_memory_with_a_caller_supplied_grid(self, favorable_9_asset_problem):
+        """grid[i] for an integer i is a view, not a copy. When a caller
+        passes grid= to share one action set between the agent and the
+        benchmark (the documented use case), mutating the returned weights
+        in place must not corrupt the agent's grid."""
+        mu, sigma, gamma = favorable_9_asset_problem
+        from src.action_space.grid import generate_weight_grid
+
+        shared_grid = generate_weight_grid(mu.shape[0], increment=0.2)
+        w = best_discrete_weights(mu, sigma, gamma, grid=shared_grid)
+        assert not np.shares_memory(w, shared_grid)
+
+        grid_before = shared_grid.copy()
+        w += 1.0  # an in-place step a caller might reasonably take
+        np.testing.assert_array_equal(shared_grid, grid_before)
 
     def test_raises_on_grid_dimension_mismatch(self, favorable_9_asset_problem):
         """A grid built for the wrong number of assets should fail loudly,

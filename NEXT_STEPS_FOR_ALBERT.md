@@ -1,16 +1,16 @@
-# Next Steps: The Ground-Truth Environment
+# Next Steps
 
 **From:** William
-**Date:** 2026-09-29
-**Status:** four of ten required core components are done and tested. This document scopes the next one.
+**Date:** 2026-10-15
+**Status:** the agent/train split worked. Both `agent.py` and `train.py` are done and tested. Two decisions are still mine (or ours) to make before a real experiment runs; everything else is deliberately parked.
 
 ---
 
 ## TL;DR / In plain terms
 
-The data pipeline, the theoretical benchmark, the action space, and the reward function are all built and tested (74 tests passing across the project). What's missing is the piece the assignment calls the Ground Truth Environment: code that actually draws random simulated daily returns from the calibrated model. `src/environment.py` exists as a file but is empty.
+`src/agent.py` (mine) and `src/train.py` (yours) are both built, tested, and merged, against the interface we agreed on first. 201 tests pass across the project. The code can run a real experiment today (the CLI in `train.py`'s docstring works), except that a few arguments (γ, episode length, episode count, seed count, β) are required with no defaults, on purpose, because none of them are decided yet.
 
-That's the next piece, and it's yours to build, with me reviewing, matching how we split Part I. Once it's working and tested, I want to pair with you on the Q-learning agent itself (`src/agent.py`), which hasn't been started.
+Two of those can't wait: γ, and the exact definition of convergence. The rest are implementation details with a real tuning tradeoff, and I'm deliberately not deciding them now. They get explored properly once there's a notebook to run that exploration in, not guessed at while we're still writing plumbing.
 
 ---
 
@@ -18,67 +18,42 @@ That's the next piece, and it's yours to build, with me reviewing, matching how 
 
 | Component | Where | Evidence |
 |---|---|---|
-| Nine-ETF data pipeline | `src/data/` | `DATA_CLEANING.md`, 5,152-day sample, reviewed |
-| μ and Σ estimation | `data/processed/covariance_daily.csv`, `summary_statistics.csv` | Part of the same pipeline |
-| Theoretical mean-variance benchmark | `src/benchmarks/mean_variance.py` | 27 tests in `src/tests/test_mean_variance.py` |
-| Feasible action space (weight grid) | `src/action_space/grid.py` | 12 tests in `src/tests/test_action_space.py` |
-| Reward function | `src/rewards.py` | 5 tests in `src/tests/test_rewards.py`, including a Monte Carlo check that the reward is unbiased for the true mean-variance utility |
+| Nine-ETF data pipeline | `src/data/` | `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
+| μ and Σ estimation | `data/processed/` | Part of the same pipeline |
+| Ground-truth return simulator | `src/environment.py` | `ENVIRONMENT.md`, 69 tests |
+| Theoretical mean-variance benchmark | `src/benchmarks/mean_variance.py` | 29 tests |
+| Feasible action space (weight grid) | `src/action_space/grid.py` | 22 tests |
+| Reward function | `src/rewards.py` | 9 tests |
+| Tabular Q-learning agent | `src/agent.py` | 22 tests in `test_agent.py` |
+| Training runner | `src/train.py` | 30 tests in `test_train.py` |
 
-Everything above also has the bugs from your `REVIEW_NOTES_FOR_WILLIAM.md` fixed: the SLSQP tolerance issue, the hardcoded grid size, the float-drift in grid weights, and the tuple/int mix-up. All four are closed and covered by regression tests, including the two you wrote in that file (`test_daily_and_annual_solutions_agree` and `test_discretization_gap_is_non_negative_on_daily_moments`).
-
-The `.vscode/settings.json` issue from that review is also closed. It's untracked now (`.gitignore` covers `.vscode/*` with no exception), so it stays personal to each machine and won't hand you a Windows-only path.
-
----
-
-## What's next: the synthetic return generator
-
-### In plain terms
-
-The assignment splits "ground truth" into two steps. Step one is estimating μ and Σ from the real ETF data, which is done. Step two is treating those numbers as fixed and building a simulator that generates fake daily returns as if the world followed exactly that Gaussian model. The Q-learning agent will never see real market data. Every return it ever observes, during training and during evaluation, comes from this simulator.
-
-### The specification
-
-From the assignment, Part I:
-
-> Let the nine-dimensional excess-return vector follow a stationary Gaussian process:
-> `r_{t+1} = μ + ε_{t+1}`, with `ε_{t+1} ~ N(0, Σ)`
-
-μ and Σ here are the calibrated estimates already sitting in `data/processed/`, held fixed. Each simulated day is an independent draw from `N(μ, Σ)`.
-
-### The interface constraint that already exists
-
-`src/rewards.py` is already built and tested, and it expects its input in a specific shape:
-
-```python
-episodic_mean_variance_reward(w: np.ndarray, returns_batch: np.ndarray, gamma: float) -> float
-```
-
-`returns_batch` is a `(B, 9)` array: B simulated days, one column per asset, in the ticker order fixed by `src/data/universe.py: TICKERS`. The reward function does not generate this array. Something upstream has to. That's the piece you're building: a function that takes μ, Σ, a batch size, and a seeded random generator, and returns a `(B, 9)` array of draws from `N(μ, Σ)`.
-
-### Requirements to carry over from the rest of the project
-
-- **No leakage.** The agent can see the returns the environment hands it and the reward computed from them. It can never see μ, Σ, or the theoretical optimum. This is a CLAUDE.md rule and an explicit assignment requirement.
-- **Fixed, logged seeds.** Every draw needs a seeded `np.random.default_rng(...)`, per CLAUDE.md's reproducibility rules and the assignment's own requirement to report random seeds.
-- **Stateless is fine for now.** The assignment states the required baseline is stateless, since returns are i.i.d. day to day. You don't need to build any notion of holdings or state transitions yet. That only shows up in the transaction-cost extension, which is much later.
-- **Daily frequency, same as everything else.** μ and Σ in `data/processed/` are already daily. No rescaling needed.
-
-### Suggested tests
-
-Match the testing style already used in this repo (`test_rewards.py` is the closest example): draw a large number of batches, average them, and confirm the sample mean and sample covariance of the simulated returns converge to the calibrated μ and Σ. That's a statistical check, not just a shape check, and it's the kind of test that would have caught the SLSQP bug earlier if it had existed for that function.
+All bugs reported across both rounds of `REVIEW_NOTES_FOR_WILLIAM.md` are closed, each with a regression test. 201 tests pass (`python -m pytest src/tests -q`).
 
 ---
 
-## Key concepts to understand
+## Two decisions still open, not parked
 
-- **Ground truth, in this project's specific sense.** It doesn't mean "the true statistics of financial markets." It means "the fixed parameters of our synthetic experiment." The assignment says this directly: μ and Σ "are not assumed to be the true moments of financial markets. They are the ground truth only within your controlled experiment."
-- **Why the agent never sees μ or Σ.** The whole research question is whether a model-free learner can recover something close to the optimum using only realized outcomes. If the agent's code ever touched μ or Σ directly, the experiment would no longer be testing that.
+These aren't hyperparameters, they're definitions, and the assignment is
+explicit that both need settling before anyone looks at a result:
 
-## Key takeaways
+1. **γ**, mine to choose, on outside grounds (matching a known value, or whatever the three-asset version of this problem used), written down in `DATA_CLEANING.md` §8.4 before any results exist. Picking it by seeing which value makes a run look good is the researcher-degrees-of-freedom problem the assignment calls out by name.
+2. **The convergence rule's definition**, ours jointly. The shape is basically agreed: agent-observable quantities only (greedy action unchanged for K episodes, or largest Q-change below a tolerance), never the gap to the benchmark, since that needs μ and Σ. Needs writing down as final.
 
-- Four of ten core components are done. The environment is the next one, and it unblocks the Q-learning agent, which unblocks everything after it (training loop, convergence analysis, comparisons).
-- Your file to build: `src/environment.py`. Your interface target: something that produces a `(B, 9)` array of `N(μ, Σ)` draws, since that's exactly what `episodic_mean_variance_reward` already expects.
-- Not your problem right now: the value of γ (risk aversion) is still undecided. That's called out as my decision to make in `DATA_CLEANING.md` §8.4, and it doesn't block you, since the return generator itself doesn't use γ at all.
+## Everything else is intentionally parked
 
-## What happens after this
+Episode length, episode count, seed count, β, learning-rate magnitude, and
+the numeric convergence threshold K all have real defaults built into
+`train.py`'s config already, as parameters, not hardcoded. They're parked
+until the tuning/research phase, where they belong: that's when we can
+actually see the tradeoff (compute time vs. how fast/reliably Q-values
+settle) instead of guessing. Full list and reasoning is in
+`REVIEW_NOTES_FOR_WILLIAM.md` §3.2. This isn't something you need to track;
+it stops being an open item in these notes until we're actually at that
+phase.
 
-Once the environment is built and tested, we pair on `src/agent.py` (the tabular Q-learning core, currently just a placeholder) together, as planned in the prospectus. No need to look at `src/agent.py` or `src/train.py` before then.
+## What happens next
+
+Nothing is blocked on you right now for the agent/train side. Once γ and the
+convergence definition are settled, we can run a real experiment and move to
+evaluation and convergence analysis (`src/evaluate.py`, still unstarted).
+I'll let you know when that's ready.

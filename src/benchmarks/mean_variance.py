@@ -63,14 +63,24 @@ def constrained_optimal_weights(mu: np.ndarray, sigma: np.ndarray, gamma: float)
     if not result.success:
         raise RuntimeError(f"Optimizer failed: {result.message}")
 
-    # SLSQP can report success after a single iteration when ftol is large
-    # relative to the objective's scale -- at daily frequency that meant
-    # silently returning the starting guess. This turns that into a loud failure.
-    if result.nit <= 1:
-        raise RuntimeError(
-            f"Optimizer stopped after {result.nit} iteration(s); ftol is likely "
-            "too large relative to the objective scale."
-        )
+    # Check the KKT conditions directly rather than using iteration count as a
+    # proxy for "did not converge" -- nit<=1 is both a false alarm (a symmetric
+    # problem whose optimum IS the equal-weight start correctly stops in one
+    # iteration) and a missed failure (a wrong interior point can take several
+    # iterations to reach). At the long-only optimum, held assets (0 < w_i)
+    # share one gradient value (the budget constraint's multiplier) and no
+    # asset at its lower bound can exceed it.
+    grad = mu_scaled - gamma * sigma_scaled @ result.x
+    held = result.x > 1e-8
+    lam = grad[held].mean()
+    residual = max(np.abs(grad[held] - lam).max(), (grad[~held] - lam).max(initial=0.0))
+    # Relative, not absolute: residual scales linearly with whatever
+    # magnitude of mu/sigma the caller passes in (confirmed: scaling inputs
+    # by 1000x scales the raw residual by ~1000x too), so an absolute
+    # threshold breaks the scale-invariance this function otherwise has.
+    grad_scale = max(np.abs(grad).max(), 1e-12)
+    if residual / grad_scale > 1e-4:
+        raise RuntimeError(f"Optimizer result fails the optimality check (relative KKT residual {residual / grad_scale:.1e})")
 
     return result.x
 
@@ -87,4 +97,4 @@ def best_discrete_weights(mu: np.ndarray, sigma: np.ndarray, gamma: float, incre
         raise ValueError(f"grid has {grid.shape[1]} assets but mu has {mu.shape[0]}")
     
     mean_var_scores = grid @ mu - 0.5 * gamma * ((grid @ sigma) * grid).sum(axis=1)
-    return grid[np.argmax(mean_var_scores)]
+    return grid[np.argmax(mean_var_scores)].copy()

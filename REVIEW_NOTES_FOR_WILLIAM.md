@@ -1,217 +1,254 @@
-# Review Notes for William
+# Notes for William
 
 **From:** Albert
-**Date:** 2026-10-02
-**Status:** the four issues from the 2026-09-24 review are all closed. Three new issues in your files are reported below and not patched. They are your files, so nothing in them has been changed.
+**Date:** 2026-10-16 (first written 2026-10-13)
+**Status:** `agent.py`, `train.py` and `evaluate.py` are built, tested and on
+`dev`. Every review issue across all rounds is closed; the §5.3 interface
+question (a per-action Q accessor for speed) is still open. **New in this update
+(§6): γ, B and the convergence threshold are decided and wired into
+`src/config.py`, and I edited three rows of your prospectus to match.** The
+γ justification paragraph is the one item still yours.
 
 ---
 
 ## TL;DR / In plain terms
 
-Your Sep 29 fixes work. I checked the long-only optimizer against an exact
-solution on our real data, and every weight agrees within 0.000003 for every whole-number γ
-from 1 to 15. The simulator you scoped in `NEXT_STEPS_FOR_ALBERT.md` is built and
-in a PR for your review.
+The split worked: I wrote `train.py`, you wrote `agent.py`, and the interface
+we agreed on first meant neither of us had to guess the other's method names.
+244 tests pass across the project.
 
-While building it I found three new problems in your code. None changes a
-number we would report today. One of them (the reward returning NaN) can
-silently wreck a training run, so it is worth fixing before we pair on the
-agent.
-
-Your next steps, in order:
-1. Review the simulator PR.
-2. Fix the three issues below.
-3. Choose γ.
-4. Settle the open decisions in prospectus §6 before the agent session.
+Update 2026-10-16: γ, B and the convergence rule are now decided, and the
+parked choices are set as adopted defaults (§6). §3 below is kept as the
+record of how the decisions were framed.
 
 ---
 
-## 1. What changed since the last notes
+## 1. Review issues: all closed
 
-### Earlier issues: all closed
+| # | Issue | Fixed in |
+|---|---|---|
+| 1 | SLSQP stopped early on daily moments | `51b3eb7` |
+| 2 | `best_discrete_weights` hardcoded the grid | `51b3eb7` |
+| 3 | Float drift in grid weights | `02f6a49` |
+| 4 | `n = mu.shape` tuple | `51b3eb7` |
+| 5 | `.vscode/settings.json` Windows path | `51b3eb7` |
+| A | Reward NaN for a one-day batch | `0e2201d` |
+| B | `best_discrete_weights` returned a view | `0e2201d` |
+| C | `nit <= 1` guard replaced with a relative KKT check | `0e2201d` |
 
-| # | Issue | Fixed in | Verified |
-|---|---|---|---|
-| 1 | SLSQP stopped early on daily moments | `51b3eb7` (yours) | Against an exact support-enumeration solve on the real calibration: max weight gap 2.1e-6 over integer γ 1 to 15; objective identical to about 1e-11 relative. Reproduces `DATA_CLEANING.md` §8.3 exactly |
-| 2 | `best_discrete_weights` hardcoded the grid | `51b3eb7` (yours) | `increment` and `grid` arguments work; grid sizes 495 / 1,287 / 43,758 |
-| 3 | Float drift in grid weights | `02f6a49` (Albert) | Regression test in `test_action_space.py` |
-| 4 | `n = mu.shape` tuple | `51b3eb7` (yours) | |
-| 5 | `.vscode/settings.json` Windows path | `51b3eb7` (yours) | Untracked now |
-
-### New: the simulator (Albert, PR into `dev`)
-
-`src/environment.py`, 69 tests in `src/tests/test_environment.py`, and the
-write-up in `ENVIRONMENT.md`. In short:
-
-- `load_calibration()` reads μ and Σ from `data/processed/`, checks ticker
-  order, and parses the CSVs exactly (pandas' default parser was off by up to
-  1e-12 relative).
-- `simulate_returns(mu, sigma, n_days, rng)` is the interface you specified,
-  returning `(n_days, 9)` draws from N(μ, Σ).
-- `ReturnSimulator` is the object the agent gets. It factors Σ once (about 10
-  times faster than `rng.multivariate_normal` per episode), keeps μ and the
-  factor private, and refuses episodes shorter than 2 days (see issue A).
-- `SeedPlan` turns one master seed into separate streams: training returns
-  per run, the agent's own randomness per run, and one evaluation stream that
-  every policy and benchmark is scored on.
-- Leakage tests fail if `src/agent.py` imports the benchmarks, the loader or
-  the data files, directly or through another module.
-
-Verification: draws identical to numpy's `multivariate_normal(method="cholesky")`
-for the same seed; 400,000 simulated days match μ and Σ within 5 standard
-errors; the reward averaged over 20,000 simulated episodes matches
-w'μ − (γ/2)w'Σw; 22 deliberately injected bugs all caught. Full suite: 143
-passed.
+Re-checked against real calibration (γ 0.25–30), 200 random 9-asset problems,
+and deliberately bad solves. Nothing fires at realistic scales; everything
+genuinely wrong gets caught. Full suite at the time: 149 passed.
 
 ---
 
-## 2. New issues in your files
+## 2. The tabular Q-learning core: split by file, done
 
-| # | Severity | File | Issue | Blocks |
-|---|---|---|---|---|
-| A | **Medium** | `src/rewards.py:19` | Returns NaN, with no error, for a one-day batch | Nothing today; any 1-day episode in training |
-| B | **Low-medium** | `src/benchmarks/mean_variance.py:90` | `best_discrete_weights` returns a view into the caller's grid | Nothing today; sharing the agent's grid with the benchmark |
-| C | **Low** | `src/benchmarks/mean_variance.py:69` | The `nit <= 1` guard gives false alarms and misses some failures | Nothing on our data |
+We split instead of building side by side: you own `src/agent.py` (the part
+that picks portfolios and updates Q-values), I own `src/train.py` (the part
+that runs episodes, manages seeds, saves results). Both are merged into `dev`.
 
-### Issue A: the reward returns NaN for a one-day episode
-
-`portfolio_returns.var(ddof=1)` divides by B − 1, so a batch of one day gives
-NaN. numpy warns only once per code location, so inside a training loop it is
-effectively silent. A 1-D `(9,)` input and an empty `(0, 9)` batch also give
-NaN, and a transposed `(9, 9)` batch is accepted without complaint.
-
-**Why it matters:** NaN does not just give one bad reward. Once a Q-value is
-NaN it stays NaN, and `np.argmax` treats NaN as the largest value:
+The interface that made this work, exactly as agreed:
 
 ```python
->>> np.argmax(np.array([0.0, 0.0, np.nan, 0.0, 0.0]))
-2
+agent = TabularQAgent(n_actions, *, alpha_rule, epsilon0, beta, q_init, discount, rng)
+a = agent.select_action()          # epsilon-greedy, eps_t = epsilon0 * exp(-beta * t)
+agent.update(a, reward)            # Q(a) <- Q(a) + alpha * [R + rho * max Q - Q(a)]
+agent.greedy_action                # current best action index
+agent.q_values, agent.visit_counts # read-only copies, for logging
 ```
 
-That action becomes the agent's permanent greedy choice, with no error. Part
-VI lists "different episode lengths" as a robustness check, so someone will
-eventually try a short episode.
+`train.py` never sees returns, μ, Σ, or a benchmark, only an action index and
+a reward. The leakage tests in `test_environment.py` guard `src/agent.py`.
 
-The simulator already refuses episodes under 2 days, but the reward can be
-called directly, and the guard belongs with the formula that needs it.
+**Rules that are still worth keeping**, now that both sides exist:
+1. I touch `agent.py` only through its interface; you touch `train.py` only
+   through its outputs (the `.npz` logs and `manifest.json`).
+2. Once both are stable, run an integration check: fixed seed, a few thousand
+   episodes on the 25% grid, rerun to confirm identical output.
+3. Review swap: I review `agent.py` line by line, you review `train.py`.
 
-**Recommended fix** (`rewards.py`, top of the function):
-
-```python
-if returns_batch.ndim != 2 or returns_batch.shape[1] != w.shape[0]:
-    raise ValueError(
-        f"returns_batch must be (B, {w.shape[0]}), got {returns_batch.shape}"
-    )
-if returns_batch.shape[0] < 2:
-    raise ValueError("episodic reward needs at least 2 days (ddof=1 variance)")
-```
-
-If we ever switch to the one-period quadratic reward the assignment also
-allows, that reward needs B = 1 and gets its own function, and
-`MIN_EPISODE_LENGTH` in `environment.py` drops to 1.
-
-### Issue B: `best_discrete_weights` returns a view, not a copy
-
-`grid[np.argmax(scores)]` with a single integer index returns a view of that
-row. When a caller passes `grid=`, which is the point of the parameter (sharing
-the agent's action grid with the benchmark), editing the returned weights
-silently edits the grid:
-
-```python
->>> w = best_discrete_weights(mu, sigma, 5.0, grid=G)
->>> np.shares_memory(w, G)
-True
-```
-
-Any in-place step on `w` later (renormalizing, clipping) would corrupt one of
-the agent's actions.
-
-**Recommended fix** (`mean_variance.py:90`):
-
-```python
-return grid[np.argmax(mean_var_scores)].copy()
-```
-
-### Issue C: the `nit <= 1` guard checks the wrong thing
-
-The guard catches the old failure, but it uses iteration count as a proxy for
-"did not converge," and that proxy fails in both directions:
-
-- **False alarm.** If the equal-weight starting point is already the optimum
-  (any symmetric problem, or a one-asset problem), SLSQP correctly stops after
-  one iteration and the guard raises. Example: 3 assets, equal μ, Σ = I.
-- **Missed failure.** Under the old settings at γ = 15, SLSQP stopped at a
-  wrong interior point after 6 iterations, which the guard would not catch.
-
-Neither happens on our data at any γ tested. It could bite in a robustness
-check with a symmetric toy problem.
-
-**Recommended fix:** check optimality directly. At the long-only optimum the
-gradient μ − γΣw is equal across held assets and no higher on assets at zero
-(the KKT conditions). Replace the `nit` guard with:
-
-```python
-grad = mu_scaled - gamma * sigma_scaled @ result.x
-held = result.x > 1e-8
-lam = grad[held].mean()
-residual = max(np.abs(grad[held] - lam).max(), (grad[~held] - lam).max(initial=0.0))
-if residual > 1e-5:
-    raise RuntimeError(f"Optimizer result fails the optimality check (KKT residual {residual:.1e})")
-```
-
-Checked on the scaled (annualized) objective: residual 3.1e-7 or less for our
-solutions at every integer γ from 1 to 15, exactly 0 at the symmetric optimum
-that currently raises, and 0.061 for equal weights on our data at γ = 5. A
-1e-5 threshold separates them by two orders of magnitude.
-
-### Minor: test count in your docs
-
-`PROJECT_PROSPECTUS.md` row 4 and `NEXT_STEPS_FOR_ALBERT.md` say the action
-space has 12 tests; pytest collects 22 (8 functions, some parametrized). Your
-total of 74 was right.
+**Prospectus:** §4's ownership row now reads "Agent (`agent.py`): William;
+training runner (`train.py`): Albert; each reviews the other's PR."
 
 ---
 
-## 3. Your next steps
+## 3. Decisions
 
-1. **Review the simulator PR** (`feature/environment` → `dev`). Please run the
-   suite on your machine: a few tests compare draws to 1e-15, which should
-   hold across BLAS libraries but has only been run on Albert's Mac.
-2. **Fix issues A, B and C** above. A matters most before the agent exists.
-3. **Choose γ** and write down the reason (`DATA_CLEANING.md` §8.4). It must
-   be chosen on outside grounds before anyone looks at results: matching the
-   original three-asset version of this problem if it used one, or a value in
-   the range economists treat as plausible (Mehra and Prescott capped it at
-   10). It doesn't block the simulator, but every results table needs it.
-4. **Settle prospectus §6** before the agent session: seed count, which second
-   robustness check, the action-library approach, and the two
-   transaction-cost questions. Also choose the episode length B.
-5. **Mark prospectus row 2 done** after merging the simulator.
-6. **Agent session (paired).** One design question to settle first. The
-   assignment lets the agent see realized returns, but a full 9-asset batch
-   would let it score all 1,287 portfolios at once or estimate μ and Σ
-   itself, which stops being standard Q-learning. Albert's recommendation:
-   `train.py` computes the reward and the agent updates only the chosen
-   portfolio's Q-value; the report says so.
+### 3.1 Were open; decided 2026-10-16 (see §6)
 
-## 4. Things to know for the agent work
+These two aren't hyperparameters to tune. γ defines the research question
+itself, and the assignment requires convergence to be defined before anyone
+looks at how a run did, specifically so neither gets chosen because it makes
+a result look good.
 
-- **The reward is noisy.** At γ = 5 on our data, one 20-day episode's reward
-  has a standard deviation 7.5 times the best portfolio's true score, and
-  the best and second-best menu portfolios differ by 2%. An idealized learner
-  with a 1/N learning rate needs about 13 million episodes to get within
-  about 2% of the best menu portfolio on a typical seed. With a constant
-  learning rate the Q-values keep jittering by 17% to 53% of the objective.
-  The learning-rate rule and training budget are the first agent decisions.
-- **Convergence rule and leakage.** "Within X% of the best menu portfolio"
-  needs μ and Σ, so it should be measured by evaluation code after the fact
-  and never decide when training stops. The stopping rule should use only
-  what the agent sees (for example, the greedy choice unchanged for K
-  episodes).
-- **Speed.** Per 20-day episode, the reward call costs 7.6 µs and the draw
-  3.8 µs. Rewards can't be computed for a block at once (episode k's action
-  depends on episode k−1's reward), but each episode's mean vector m and
-  covariance S can, and then reward = w'm − (γ/2)w'Sw exactly.
-- **Observation counts** for Part IV should come from the training loop
-  (episodes used × B). `ReturnSimulator.days_simulated` counts days drawn,
-  which includes block pre-draws.
+| Decision | Owner | Why it can't be deferred |
+|---|---|---|
+| γ | William | It's the investor's risk aversion, not an algorithm setting. Choosing it by seeing which value gives a flattering result is the exact researcher-degrees-of-freedom problem `DATA_CLEANING.md` §8.4 already warns about. Needs justification on outside grounds (matching a known value, or the three-asset version of this problem if it used one) before any results exist. |
+| Convergence rule (the definition, not the threshold) | Both | Assignment: "define convergence before examining the final results." The shape of the rule is basically agreed already: agent-observable quantities only (greedy action unchanged for K episodes, or largest \|ΔQ\| below a tolerance), never the gap to the benchmark, since that needs μ and Σ. Needs writing down as final, not as a proposal, before any run is read as converged or not. |
+
+### 3.2 Were parked; set as adopted defaults 2026-10-16 (see §6)
+
+Everything below is an implementation detail with a real, explorable
+tradeoff (compute time vs. statistical confidence, mostly). The code already
+takes every one of these as a parameter rather than a hardcoded value, so
+there's no urgency and no reason to guess now. Revisit when there's a
+notebook to run the exploration in, and pick based on agent-observable
+criteria (how fast/reliably Q-values settle), never by comparing to the
+benchmark. That comparison is what makes a choice here a leakage risk
+instead of ordinary tuning.
+
+- Episode length B (proposed baseline: 20)
+- Episode count / training budget
+- Seed count (proposed: 10)
+- β, the exploration-decay parameter
+- Learning-rate magnitude, if not using sample averaging
+- The numeric convergence threshold K (once 3.1's rule is written down)
+- Which second Part VI robustness check runs alongside the grid-resolution one
+
+### 3.3 Already settled, no longer open
+
+- **What the agent sees**: rewards only, never a return batch. Settled, enforced by the leakage tests.
+- **Learning-rate rule**: sample averaging, α = 1/N(a), is what `agent.py` and `train.py` both implement as the default.
+- **Discount ρ**: defaults to 0, the bandit baseline. Still an explicit constructor argument, so a nonzero value stays a stated choice if one's ever needed.
+- **Q initialization, tie-breaking**: `q_init` is a parameter; ties break uniformly at random. Built and tested (`test_agent.py`).
+
+---
+
+## 4. Numbers to keep in mind for the agent
+
+- **Noise.** At γ = 5, B = 20, one episode's reward for the best menu
+  portfolio has a standard deviation 7.5 times its true value. The best and
+  second-best menu portfolios differ by 2%.
+- **Budget.** With 1/N averaging and uniform exploration, about 13 million
+  episodes (260 million simulated days) got within roughly 2% of the best
+  menu portfolio on a typical seed, finding the exact best about a quarter
+  of the time.
+- **Lock-in risk.** In a 3-asset toy run with fast-decaying ε, the agent
+  settled on the second-best portfolio because the best one got an unlucky
+  early average and was rarely retried.
+- **Speed**, measured with your agent filled in:
+
+  | Grid | Actions | Runner | Bare loop | Per 13M-episode run |
+  |---|---|---|---|---|
+  | 20% | 1,287 | 23.6 µs/episode | 19.7 µs | ~5 minutes |
+  | 10% | 43,758 | 91 µs/episode | 51.6 µs | ~20 minutes (3.3 hr for 10 seeds) |
+
+  Most of the runner's overhead is copying the full Q-table after every
+  update. See §5.3.
+
+---
+
+## 5. Four things found while building `train.py` against your interface
+
+### 5.1 Learning-rate visit count: resolved, not a live risk
+
+I'd worried `_alpha` might call `alpha_rule(0)` on the first visit, which
+numpy turns into `inf` with only a warning. Checked your actual code: `_alpha`
+reads `self._visits[action] + 1`, so the first call is always `alpha_rule(1)`.
+Confirmed by `test_sample_average_first_update_overwrites_q_init_exactly`.
+Nothing to do.
+
+### 5.2 `greedy_action` and randomness: mostly already handled, two small adds left
+
+Your tie-break uses a separately spawned `_tie_rng`, not the main `rng`, so
+reading it for logging can't perturb explore/exploit decisions, confirmed by
+`test_greedy_action_tiebreak_uses_a_separate_rng_stream`. `train.py` never
+calls it anyway; it computes its own `np.argmax(q_values)` for logging.
+
+Two cheap things still worth adding:
+- a docstring note on `greedy_action` that reading it can consume a draw from `_tie_rng` (only when an actual tie exists, which is free to check for but costs nothing to document)
+- a public `epsilon` property exposing `_epsilon()`, so `train.py` can stop recomputing `epsilon0 * exp(-beta * t)` independently. Harmless today since the two formulas agree, but would silently drift if the schedule ever changes shape.
+
+### 5.3 Full Q-table copy every episode: real, open interface decision
+
+`train.py` calls `agent.q_values` once per episode just to read one scalar
+(`new_q[action]`). Fine at the 20% grid; it's the dominant cost at the 10%
+grid (table above). Proposed fix: have `update()` return the new `Q(action)`
+value, and `train.py` keeps its own local mirror it updates at one index
+instead of re-copying the whole table every time. This changes the agreed
+interface, so it needs your sign-off before either of us touches it. Not
+urgent before the 20% grid baseline; worth doing before the 10% robustness
+runs.
+
+### 5.4 Log format differs from what §2 originally promised: informational
+
+A per-episode log (action, reward, ε) would be hundreds of MB at 13M
+episodes, so `train.py` saves windowed checkpoints instead (every
+`log_every` episodes: mean reward, largest |ΔQ|, logged greedy action,
+per-action choice counts, ε, a float32 Q snapshot) plus every change of the
+logged greedy action. Enough for learning curves, exact regret, "greedy
+unchanged for K episodes" at any K, and the final policy to evaluate. Not
+enough for a per-episode reward plot: say so if the report needs one and
+I'll add an optional full log for short runs.
+
+
+---
+
+## 6. Decisions of 2026-10-16, and what I changed
+
+### 6.1 The decisions
+
+| Setting | Value | Where |
+|---|---|---|
+| γ | {3, 5, 8}; 5 is the baseline for headline tables, 3 and 8 are the Part VI risk-aversion check | `src/config.py` |
+| Episode length B | 20 trading days | `src/config.py` |
+| Convergence rule | Greedy action unchanged for K = 10% of training episodes (K = 1,300,000 at 13M episodes). Primary reading: the final greedy action held for at least K episodes through the end (`greedy_stable_through_end`); "first time any action held for K" is secondary | `src/config.py` |
+
+That settles both items in §3.1. Most of §3.2 is now set as adopted defaults
+(all one-line changes in `src/config.py`):
+
+- 10 seeds, master seed 20261016;
+- 13 million episodes per seed;
+- β chosen so ε = 1% halfway through training (about 7.08e-7);
+- \|ΔQ\| tolerance 1e-5 per window, held for good;
+- near-optimal line 25 bps/yr of certainty-equivalent loss;
+- 20% grid baseline, 25% grid as the second resolution;
+- the second Part VI check is the γ sweep.
+
+### 6.2 Edits to your files, flagged here as CLAUDE.md requires
+
+`PROJECT_PROSPECTUS.md`:
+
+- **Row 7** (training loop + convergence criterion) is now marked done, with
+  the decisions listed.
+- **Rows 8 and 9** said `evaluate.py` was empty. They now say the code is done
+  and waiting on the full-scale run.
+
+Nothing else in the prospectus changed. Revert or reword freely.
+
+### 6.3 Still yours
+
+`DATA_CLEANING.md` §8.4 now records the γ decision, but the written
+outside-grounds justification is still missing. I left two candidates there:
+
+- a market-implied value for an SPY-only investor, about 2.9;
+- the conventional 1-to-10 range.
+
+### 6.4 New code and docs
+
+- `src/config.py`: every experiment setting, plus the list of four
+  experiments (baseline, 25% grid, γ = 3, γ = 8).
+- `src/run_experiments.py`: one command trains, evaluates, compares the two
+  grids and writes `results/INDEX.md`. It resumes after interruption and
+  refuses half-finished folders.
+- `src/tests/test_config.py`: 12 tests pinning the decisions and exercising
+  the runner.
+- `EXPERIMENTS.md`: the runbook.
+- `EVALUATION.md`: §7 updated.
+
+Two more items for you:
+
+- **`requirements.txt` is unpinned.** The README quotes the versions that
+  produced our data (numpy 2.3.5 and others), but pinning them would need
+  Python 3.11 or later. If your machine is still on Python 3.10 (the old
+  `.vscode` path suggested it), tell me which Python you use and we can pin
+  versions that work for both of us.
+- **All four experiments share the master seed.** Seed i sees the same
+  simulated returns in every experiment, and every experiment uses the same
+  evaluation sample. That makes the comparisons paired; it is recorded in
+  `EXPERIMENTS.md`.
+
+A full run is about 3.5 hours, and `results/` is git-ignored. EXPERIMENTS.md
+§4 proposes committing the small evaluation outputs and keeping the training
+logs local; that needs both of us to agree.
