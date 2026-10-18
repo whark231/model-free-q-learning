@@ -10,8 +10,14 @@ returns, and measure how close it gets.
 
 ## Requirements
 
-Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
-yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data):
+Tested on two combinations, both passing the full test suite:
+
+- Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
+  yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
+- Python 3.10 with the versions pinned in `requirements.txt` (numpy 2.2.6,
+  the newest available for Python 3.10)
+
+`requirements.txt` installs the Python 3.10 combination:
 
 ```bash
 pip install -r requirements.txt

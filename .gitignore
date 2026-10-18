@@ -41,8 +41,17 @@ Thumbs.db
 # clean.py on every run - no reason to store it twice.
 data/interim/
 
+# Albert's proposal, adopted (EXPERIMENTS.md §4): commit the small,
+# reproducible outputs (the index, manifests, settings, and evaluation/
+# folders) so Part V/VI numbers can be reviewed without re-running a
+# multi-hour experiment. Keep the large training logs (run_*.npz) local
+# only, since the same master seed and code regenerate them exactly.
 results/*
 !results/.gitkeep
+!results/INDEX.md
+!results/index.json
+!results/*/
+results/*/*.npz
 
 # --- R ---
 .Rhistory

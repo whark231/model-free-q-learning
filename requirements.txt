@@ -1,10 +1,18 @@
-numpy
-scipy
-pandas
-matplotlib
-seaborn
-yfinance
-requests
-jupyter
-tqdm
-pytest
+# Pinned to the versions tested on Python 3.10 (William's machine). All 244
+# tests pass with this exact set.
+#
+# numpy>=2.3 requires Python>=3.11 (a hard floor, not just untested), so this
+# project runs on two verified combinations rather than one: Python 3.10 with
+# the versions below, or Python 3.13 with the newer versions in README.md's
+# Requirements section (Albert's machine, used to produce the committed data).
+# Either combination reproduces the same results; see DATA_CLEANING.md §7.5.
+numpy==2.2.6
+scipy==1.15.3
+pandas==2.3.3
+matplotlib==3.10.9
+seaborn==0.13.2
+yfinance==1.7.0
+requests==2.33.1
+jupyter==1.1.1
+tqdm==4.67.3
+pytest==9.1.1

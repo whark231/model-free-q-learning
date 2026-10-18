@@ -346,10 +346,17 @@ objective on the whole feasible set, so the argmax does not move. Verified:
 constraint were relaxed, which is the bounded-leverage bonus extension.
 
 ### 7.5 Version pinning
-`requirements.txt` does not pin versions. The environment used was numpy 2.3.5,
-scipy 1.16.3, pandas 2.3.3, yfinance 1.7.0. `MANIFEST.json` records yfinance,
-pandas and requests but not numpy or scipy, both of which affect Part II
-(`np.linalg.eigvalsh`, SLSQP).
+`requirements.txt` is pinned, as of 2026-10-18. The data in this file was
+produced with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, yfinance 1.7.0
+(Albert's machine, Python 3.13). `requirements.txt` pins numpy 2.2.6 and
+scipy 1.15.3 instead, the latest versions available on Python 3.10
+(William's machine): numpy dropped Python 3.10 support entirely starting at
+2.3, so the two machines cannot share one exact numpy version. The full test
+suite (244 tests, including exact-value checks on `np.linalg.eigvalsh` and
+SLSQP results) passes under both combinations, so this does not affect
+reproducibility of the results, only of installing the dependencies.
+`MANIFEST.json` records yfinance, pandas and requests but not numpy or
+scipy, both of which affect Part II (`np.linalg.eigvalsh`, SLSQP).
 
 ---
 
