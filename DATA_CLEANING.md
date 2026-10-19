@@ -417,15 +417,43 @@ assets. That is the standard corner-solution behaviour of mean-variance
 optimization, which treats noisy estimates of μ as certain, and it is the
 concrete form the Part VI estimation-error discussion should take.
 
-### 8.4 γ: decided 2026-10-16
+### 8.4 γ: decided 2026-10-16, justified 2026-10-19
 
 **Decision:** γ ∈ {3, 5, 8}, with γ = 5 as the baseline for every headline
 table and 3 and 8 as the Part VI risk-aversion check (`src/config.py`). The
-written outside-grounds justification is still to be added here (William).
-Candidates already discussed: a market-implied value for an investor holding
-only SPY, (annual excess mean) ÷ (annual variance) ≈ 2.9, and the conventional
-range of roughly 1 to 10 for relative risk aversion. The decision was made
-before any real experiment ran.
+decision was made before any real experiment ran.
+
+**Justification (William):** We set γ = 5 as the headline value, with
+γ ∈ {3, 8} as the Part VI risk-aversion robustness check. γ = 5 sits within
+the 2 to 7 range of publication-bias-corrected relative risk aversion
+estimates for finance applications (Elminejad, Havranek and Irsova, 2022),
+below the median of roughly 7 from survey-based household estimates (Barsky
+et al., 1997), and well under the conventional cap of 10 used in
+asset-pricing calibrations (Mehra and Prescott, 1985). γ = 3 also falls
+inside the Elminejad et al. range; γ = 8 is chosen to probe past it, toward
+the household-survey median and the Mehra-Prescott convention, while
+remaining inside both. No single source pins down one "correct" value for a
+nine-asset synthetic problem like this one, so these three give a defensible
+range rather than a point estimate.
+
+Sources:
+- Elminejad, A., Havranek, T. and Irsova, Z. (2022/2025). "Relative Risk
+  Aversion: A Meta-Analysis." CEPR Discussion Paper DP17411; published in
+  *Journal of Economic Surveys*, 39(5), 2315–2333.
+- Barsky, R. B., Juster, F. T., Kimball, M. S. and Shapiro, M. D. (1997).
+  "Preference Parameters and Behavioral Heterogeneity: An Experimental
+  Approach in the Health and Retirement Study." *Quarterly Journal of
+  Economics*, 112(2), 537–579. The median-of-about-7 figure is from a
+  secondary source characterizing the paper's risk-aversion categories; the
+  primary table (QJE, paywalled) was not directly checked.
+- Mehra, R. and Prescott, E. C. (1985). "The Equity Premium: A Puzzle."
+  *Journal of Monetary Economics*, 15(2), 145–161.
+
+An earlier candidate, a market-implied value for an investor holding only
+SPY, (annual excess mean) ÷ (annual variance) ≈ 2.9, was considered and not
+used: it is calibrated from the same dataset this project's benchmarks are
+built on, which risks the same researcher-degrees-of-freedom problem this
+section otherwise avoids by citing outside sources.
 
 The original guidance follows.
 
