@@ -3,11 +3,12 @@
 **From:** Albert
 **Date:** 2026-10-16 (first written 2026-10-13)
 **Status:** `agent.py`, `train.py` and `evaluate.py` are built, tested and on
-`dev`. Every review issue across all rounds is closed; the §5.3 interface
-question (a per-action Q accessor for speed) is still open. **New in this update
-(§6): γ, B and the convergence threshold are decided and wired into
-`src/config.py`, and I edited three rows of your prospectus to match.** The
-γ justification paragraph is the one item still yours.
+`dev`. Every review issue across all rounds is closed, including a new one
+found 2026-10-19 (§1, item D). γ, B and the convergence threshold are decided
+and wired into `src/config.py`. The γ justification, the `requirements.txt`
+pinning, and the results-sharing agreement, all previously open, are closed
+as of 2026-10-19 (§6.3, §6.4). §5.3 (a per-action Q accessor for speed) is
+not fixed, but is now a confirmed deferral rather than an open question.
 
 ---
 
@@ -35,6 +36,7 @@ record of how the decisions were framed.
 | A | Reward NaN for a one-day batch | `0e2201d` |
 | B | `best_discrete_weights` returned a view | `0e2201d` |
 | C | `nit <= 1` guard replaced with a relative KKT check | `0e2201d` |
+| D | `run_experiments.py` wrote `INDEX.md` with no encoding; crashed on Windows (`UnicodeEncodeError` on γ under cp1252, never surfaced on Mac). Fixed on all six read/write calls in that file, not just the one that failed | William, 2026-10-19 |
 
 Re-checked against real calibration (γ 0.25–30), 200 random 9-asset problems,
 and deliberately bad solves. Nothing fires at realistic scales; everything
@@ -160,16 +162,19 @@ Two cheap things still worth adding:
 - a docstring note on `greedy_action` that reading it can consume a draw from `_tie_rng` (only when an actual tie exists, which is free to check for but costs nothing to document)
 - a public `epsilon` property exposing `_epsilon()`, so `train.py` can stop recomputing `epsilon0 * exp(-beta * t)` independently. Harmless today since the two formulas agree, but would silently drift if the schedule ever changes shape.
 
-### 5.3 Full Q-table copy every episode: real, open interface decision
+### 5.3 Full Q-table copy every episode: confirmed deferred, 2026-10-19
 
 `train.py` calls `agent.q_values` once per episode just to read one scalar
 (`new_q[action]`). Fine at the 20% grid; it's the dominant cost at the 10%
-grid (table above). Proposed fix: have `update()` return the new `Q(action)`
-value, and `train.py` keeps its own local mirror it updates at one index
-instead of re-copying the whole table every time. This changes the agreed
-interface, so it needs your sign-off before either of us touches it. Not
-urgent before the 20% grid baseline; worth doing before the 10% robustness
-runs.
+grid (table above). Proposed fix, still not applied: have `update()` return
+the new `Q(action)` value, and `train.py` keeps its own local mirror it
+updates at one index instead of re-copying the whole table every time.
+
+Decided to defer rather than fix: none of the four planned experiments use
+the 10% grid (`src/config.py` only has 20% and 25%), so this costs nothing
+today. Fixing it would also need both files to change together (my `update()`
+return value plus Albert's loop using it), so a one-sided fix would buy
+nothing. Revisit only if a 10% grid run gets added to the plan.
 
 ### 5.4 Log format differs from what §2 originally promised: informational
 
@@ -217,13 +222,16 @@ That settles both items in §3.1. Most of §3.2 is now set as adopted defaults
 
 Nothing else in the prospectus changed. Revert or reword freely.
 
-### 6.3 Still yours
+### 6.3 Done, 2026-10-19
 
-`DATA_CLEANING.md` §8.4 now records the γ decision, but the written
-outside-grounds justification is still missing. I left two candidates there:
-
-- a market-implied value for an SPY-only investor, about 2.9;
-- the conventional 1-to-10 range.
+`DATA_CLEANING.md` §8.4 now has the written outside-grounds justification:
+γ = 5 within the 2–7 corrected finance-literature range (Elminejad, Havranek
+and Irsova, 2022), below the ~7 household-survey median (Barsky et al.,
+1997), under the Mehra-Prescott (1985) cap of 10; γ = 8 chosen to probe past
+the finance range while staying under the other two. Sources are listed in
+that section. The market-implied SPY-only candidate (≈2.9) was considered
+and not used, since it's calibrated from the same dataset the benchmarks are
+built on.
 
 ### 6.4 New code and docs
 
@@ -237,18 +245,20 @@ outside-grounds justification is still missing. I left two candidates there:
 - `EXPERIMENTS.md`: the runbook.
 - `EVALUATION.md`: §7 updated.
 
-Two more items for you:
+One more item for awareness:
 
-- **`requirements.txt` is unpinned.** The README quotes the versions that
-  produced our data (numpy 2.3.5 and others), but pinning them would need
-  Python 3.11 or later. If your machine is still on Python 3.10 (the old
-  `.vscode` path suggested it), tell me which Python you use and we can pin
-  versions that work for both of us.
 - **All four experiments share the master seed.** Seed i sees the same
   simulated returns in every experiment, and every experiment uses the same
   evaluation sample. That makes the comparisons paired; it is recorded in
   `EXPERIMENTS.md`.
 
-A full run is about 3.5 hours, and `results/` is git-ignored. EXPERIMENTS.md
-§4 proposes committing the small evaluation outputs and keeping the training
-logs local; that needs both of us to agree.
+A full run is about 3.5 hours. Two items closed, 2026-10-19:
+
+- **`requirements.txt` is pinned**, to the versions tested on William's
+  Python 3.10 (numpy capped at 2.2.6; 2.3+ requires Python 3.11+). Both
+  combinations (3.10 and Albert's 3.13) are documented in `README.md` and
+  `DATA_CLEANING.md` §7.5.
+- **Results-sharing is adopted.** `.gitignore` now commits `INDEX.md`,
+  `index.json`, each experiment's `manifest.json`/`settings.json`, and every
+  `evaluation/` folder; only the `.npz` training logs stay local. Verified
+  against the documented `results/` layout before trusting it.

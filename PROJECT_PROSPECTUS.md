@@ -25,7 +25,7 @@ As skills develop, the split should shift — by the extension phase (weeks 7–
 Mapped to the assignment's required parts (Parts I–VI):
 
 ### Core (required for base grade)
-| # | Component | Assignment Part | Status (2026-10-15) |
+| # | Component | Assignment Part | Status (2026-10-19) |
 |---|---|---|---|
 | 1 | ~~Nine-ETF data pipeline: download, align, clean, adjust for distributions~~ | Part I | ✅ Done — `src/data/`, `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
 | 2 | ~~Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator~~ | Part I | ✅ Done — μ, Σ in `data/processed/`; generator in `src/environment.py`, `ENVIRONMENT.md`, 69 tests |
@@ -41,16 +41,16 @@ Mapped to the assignment's required parts (Parts I–VI):
 Full suite: 244 tests passing (`python -m pytest src/tests -q`).
 
 ### Extension (our chosen bonus angle)
-| # | Component | Notes | Status (2026-10-13) |
+| # | Component | Notes | Status (2026-10-19) |
 |---|---|---|---|
 | 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP | ⬜ Not started |
 | 12 | Function approximation Q-learning: replaces the table once state × action space is too large | Compare directly against the tabular baseline at the same grid resolution | ⬜ Not started |
 
 ### Deliverables
-| # | Component | Notes | Status (2026-10-13) |
+| # | Component | Notes | Status (2026-10-19) |
 |---|---|---|---|
 | 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started |
-| 14 | Clean, reproducible Python code + README (run instructions, seeds, requirements) | | 🔶 Code and tests exist; `README.md` is still a one-line stub |
+| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 244 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
 | 15 | Class presentation | | ⬜ Not started |
 
 ## 4. Task Ownership (draft — adjust as we go)
@@ -100,7 +100,9 @@ Full suite: 244 tests passing (`python -m pytest src/tests -q`).
 The Q-learning core's decisions (γ, the convergence rule, episode length,
 episode count, seed count, β and the second Part VI robustness check) were
 settled on 2026-10-16 and live in `src/config.py`, with the reasoning in
-`EXPERIMENTS.md` and `REVIEW_NOTES_FOR_WILLIAM.md` §6.
+`EXPERIMENTS.md` and `REVIEW_NOTES_FOR_WILLIAM.md` §6. γ's written,
+outside-grounds justification (the last piece of this that was still open)
+was added 2026-10-19 in `DATA_CLEANING.md` §8.4.
 
 ## 7. Known Risks
 
