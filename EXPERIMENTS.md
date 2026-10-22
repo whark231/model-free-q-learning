@@ -25,7 +25,8 @@ Albert's Mac and can be stopped and restarted.
 
 - Part IV (row 7 of the prospectus) has its convergence rule and settings fixed;
   the next step is the full-scale run.
-- Results land in `results/`, which git ignores by default (see §4).
+- Results land in `results/`. The small outputs are committed; the training
+  logs stay local (see §4).
 
 ---
 
@@ -102,13 +103,15 @@ results/
 Start with `results/INDEX.md`, then open an experiment's `evaluation/` folder.
 Definitions of every number are in `EVALUATION.md`.
 
-**Sharing.** `results/` is in `.gitignore`, so nothing here reaches GitHub yet.
-The evaluation outputs are small (well under 1 MB per experiment). The training
-logs are larger (about 2.5 MB per seed measured at full scale, so about 25 MB
-per experiment and 100 MB for all four) and can always be regenerated from the
-settings and seeds. The recommended option is to commit `INDEX.md`, `index.json`,
-the manifests and the `evaluation/` folders, and keep the `.npz` logs local. That
-needs a team decision and a small `.gitignore` change.
+**Sharing.** Adopted 2026-10-19 (`.gitignore`, results block). Git tracks
+`INDEX.md`, `index.json`, `settings.json`, each experiment's `manifest.json`
+and every `evaluation/` folder, well under 1 MB per experiment. The `.npz`
+training logs (about 2.5 MB per seed, so about 100 MB for all four
+experiments) stay local at any folder depth; the same settings and seeds
+regenerate them. Anything under `results/smoke*/` stays local entirely, so
+put every reduced-settings run there. Commit results with
+`git add results/`, never `git add -A`, and only after a full-scale run
+(`INDEX.md` says "Full-scale settings").
 
 ## 5. Before reading results
 

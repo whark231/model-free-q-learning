@@ -4,7 +4,8 @@
 **Date:** 2026-10-16 (first written 2026-10-13)
 **Status:** `agent.py`, `train.py` and `evaluate.py` are built, tested and on
 `dev`. Every review issue across all rounds is closed, including a new one
-found 2026-10-19 (§1, item D). γ, B and the convergence threshold are decided
+found 2026-10-19 (§1, item D) and a `.gitignore` gap fixed 2026-10-20 (§1,
+item E; details in §6.5). γ, B and the convergence threshold are decided
 and wired into `src/config.py`. The γ justification, the `requirements.txt`
 pinning, and the results-sharing agreement, all previously open, are closed
 as of 2026-10-19 (§6.3, §6.4). §5.3 (a per-action Q accessor for speed) is
@@ -37,6 +38,7 @@ record of how the decisions were framed.
 | B | `best_discrete_weights` returned a view | `0e2201d` |
 | C | `nit <= 1` guard replaced with a relative KKT check | `0e2201d` |
 | D | `run_experiments.py` wrote `INDEX.md` with no encoding; crashed on Windows (`UnicodeEncodeError` on γ under cp1252, never surfaced on Mac). Fixed on all six read/write calls in that file, not just the one that failed | William, 2026-10-19 |
+| E | `.gitignore` rule `results/*/*.npz` only matched logs one folder deep, so a run with `--results-dir results/smoke` left its 8 `.npz` logs and 58 reduced-settings outputs trackable; `results/settings.json` was also ignored despite the comment saying settings get committed. Fixed by Albert in your file, see §6.5 | Albert, 2026-10-20 |
 
 Re-checked against real calibration (γ 0.25–30), 200 random 9-asset problems,
 and deliberately bad solves. Nothing fires at realistic scales; everything
@@ -262,3 +264,32 @@ A full run is about 3.5 hours. Two items closed, 2026-10-19:
   `index.json`, each experiment's `manifest.json`/`settings.json`, and every
   `evaluation/` folder; only the `.npz` training logs stay local. Verified
   against the documented `results/` layout before trusting it.
+
+### 6.5 `.gitignore` fix, 2026-10-20 (edit to your file)
+
+Albert asked for this one to be fixed directly rather than left for you, so
+it is fixed in the code, not just flagged. Revert or reword freely.
+
+Your rule `results/*/*.npz` ignores `results/baseline_g5_grid20/run_000.npz`
+but not `results/smoke/baseline_g5_grid20/run_000.npz`, because `*` matches
+one folder level. After the smoke run, `git status` showed 66 untracked files
+under `results/smoke/`, including all 8 `.npz` logs, so a `git add -A` would
+have committed training logs plus numbers from a 200,000-episode budget that
+could be mistaken for results.
+
+Changes, all in the results block:
+
+- `results/*/*.npz` became `results/**/*.npz`, which matches at any depth.
+- `results/smoke*/` is ignored entirely, since reduced-settings checks are
+  not report results (`INDEX.md` there already says so).
+- `results/.*.new/` is ignored: the runner builds the comparison in a staging
+  folder and renames it at the end, so the folder only survives a crash.
+- `!results/settings.json` added. The comment said settings get committed,
+  but `results/*` ignored that file. It is what makes the runner refuse to mix
+  settings in one folder, so a clone without it loses that guard.
+
+Checked with `git check-ignore` on 15 paths: logs ignored at depth 2 and 3,
+everything under `results/smoke/` and the staging folder ignored; `INDEX.md`,
+`index.json`, `settings.json`, manifests, `evaluation/` files (JSON and PNG),
+the comparison folder, `data/raw/` and `src/` all still trackable. `git
+status` now shows nothing under `results/`.

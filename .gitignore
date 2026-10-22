@@ -46,12 +46,19 @@ data/interim/
 # folders) so Part V/VI numbers can be reviewed without re-running a
 # multi-hour experiment. Keep the large training logs (run_*.npz) local
 # only, since the same master seed and code regenerate them exactly.
+# `**` catches the logs at any depth, including under a --results-dir
+# subfolder. results/smoke*/ holds reduced-settings pipeline checks, which
+# are not report results and stay local entirely, as does the runner's
+# half-written comparison staging folder (.<name>.new/).
 results/*
 !results/.gitkeep
 !results/INDEX.md
 !results/index.json
+!results/settings.json
 !results/*/
-results/*/*.npz
+results/**/*.npz
+results/smoke*/
+results/.*.new/
 
 # --- R ---
 .Rhistory
