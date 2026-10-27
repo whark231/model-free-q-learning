@@ -213,3 +213,60 @@ Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
   after every episode (§5.3).
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
+
+### 7.3 Run `n26m`: 26 million training episodes per seed (post hoc)
+
+**TL;DR / In plain terms:** the agent trains for twice as many episodes,
+26 million per seed instead of 13 million. The exploration schedule is
+stretched to match, so ε still reaches 1% halfway through, now at episode
+13 million. Every portfolio gets about twice as many random tries.
+
+**Key concepts to understand**
+
+- **Stretched schedule.** β is set from the budget: β = ln(100)/(N/2). At
+  N = 26M, β halves (≈ 3.54e-7), so the shape of ε over the fraction of
+  training is identical to the baseline and the share of random episodes is
+  the same 10.9%.
+- **Random tries per portfolio.** (1 − e^(−βN))/β / 1,287 is 1,097 in the
+  baseline and 2,193 here. Separating the top two portfolios needs about
+  1.1 million visits each (`REVIEW_HISTORY.md` §7.1), so doubling random
+  tries alone is still about 500 times short. Any gain has to come from the
+  longer exploitation phase revisiting the top contenders.
+- **Convergence threshold.** K is 10% of the budget, so it doubles to
+  2,600,000 episodes. The convergence share is therefore measured against a
+  stricter absolute bar than the baseline's.
+
+**Key takeaways**
+
+- This is the Part VI "different training budgets" robustness check the
+  assignment lists.
+- Albert confirmed on 2026-10-27 that "double up to 26M" means training
+  episodes, with B left at 20 (B = 60 is run `b60`).
+
+| Setting | Baseline (`baseline-v1`) | This run |
+|---|---|---|
+| Training episodes per seed | 13,000,000 | **26,000,000** (520M simulated days) |
+| Episode length B | 20 | 20 |
+| ε at halfway | 1% (β ≈ 7.08e-7) | 1% of the new budget, at episode 13M (β ≈ 3.54e-7) |
+| Grid | 20% (1,287) | 20% (1,287) |
+| K (convergence) | 1,300,000 episodes | **2,600,000 episodes** |
+| γ | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same |
+
+**Expected direction, written before running.** A slightly smaller learning
+gap and a slightly higher exactly-best share at every γ, likely within noise
+for 10 seeds, because the extra uniform tries are far short of what
+separating the top portfolios needs. Training regret per episode (bps/yr)
+about unchanged, since the exploration share is the same. Discretization gap
+identical to the baseline.
+
+**Command.**
+
+```bash
+python -m src.run_experiments --run n26m --dry-run
+python -m src.run_experiments --run n26m --results-dir results/n26m
+```
+
+**Estimated time.** About 600 s per seed, so about 5 hours for 30 seeds,
+plus a few minutes of evaluation. Training logs are about 5 MB per seed
+(twice the checkpoints).
