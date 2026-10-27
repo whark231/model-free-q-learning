@@ -13,7 +13,7 @@ Team decisions (2026-10-16):
   action held for K" is reported as secondary.
 
 Defaults proposed by Albert and adopted with the decisions above, all easy to
-change here (REVIEW_NOTES_FOR_WILLIAM.md §3):
+change here (REVIEW_HISTORY.md §3):
 
 - 10 seeds, 13 million training episodes per seed (260 million simulated days).
 - Exploration ε_t = exp(-β t), with β set so ε falls to 1% halfway through
@@ -49,7 +49,7 @@ DQ_TOL = 1e-5
 NEAR_OPTIMAL_BPS = 25.0
 N_EVAL_EPISODES = 10_000
 
-# Agent settings settled earlier (REVIEW_NOTES_FOR_WILLIAM.md §3.3).
+# Agent settings settled earlier (REVIEW_HISTORY.md §3.3).
 EPSILON0 = 1.0
 ALPHA_RULE = "sample_average"  # alpha = 1/N(a)
 Q_INIT = 0.0
