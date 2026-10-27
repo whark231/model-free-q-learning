@@ -133,6 +133,11 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         "learning gap and exactly-best share unchanged within noise; training regret about 15 bps/yr higher at γ = 5",
         epsilon_at_halfway=0.03,
     ),
+    "all-three": RunVariant(
+        "all-three", "B60_N26M_eps3", "2026-10-27",
+        "the smallest learning gap of the five runs at every γ, mostly from B; training regret a little above b60's",
+        episode_length=60, n_episodes=26_000_000, epsilon_at_halfway=0.03,
+    ),
 }
 
 

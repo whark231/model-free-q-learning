@@ -378,3 +378,51 @@ python -m src.run_experiments --run eps-decay --results-dir results/eps-decay
 
 **Estimated time.** About 300 s per seed, so about 2.5 hours for 30 seeds,
 plus a few minutes of evaluation.
+
+### 7.6 Run `all-three`: B = 60, 26M episodes and ε = 3% at halfway together (post hoc)
+
+**TL;DR / In plain terms:** this run applies all three changes at once:
+60-day episodes, 26 million episodes per seed, and ε falling to 3% at
+halfway (episode 13 million). It shows how much the changes give together,
+compared with runs `b60`, `n26m` and `eps-decay`, which each change one thing.
+
+**Key concepts to understand**
+
+- **Combined versus one at a time.** The single-change runs say which lever
+  moves the result. This run says how far the levers go together. Its
+  difference from the baseline cannot be split between the three changes
+  without the single-change runs.
+- **Exploration.** β = ln(1/0.03)/13M ≈ 2.70e-7. Random tries per portfolio
+  are 2,878, against 1,097 in the baseline.
+
+**Key takeaways**
+
+- Run 5 (`grid10-robustness`) uses exactly these settings on the 10% grid, so
+  the difference between run 5 and this run is the grid alone.
+- K doubles to 2,600,000 episodes with the budget.
+
+| Setting | Baseline (`baseline-v1`) | This run |
+|---|---|---|
+| Episode length B | 20 | **60** |
+| Training episodes per seed | 13,000,000 | **26,000,000** (1.56B simulated days) |
+| ε at halfway | 1% (β ≈ 7.08e-7) | **3%** of the new budget, at episode 13M (β ≈ 2.70e-7) |
+| Grid | 20% (1,287) | 20% (1,287) |
+| K (convergence) | 1,300,000 episodes | **2,600,000 episodes** |
+| γ | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same |
+
+**Expected direction, written before running.** The smallest learning gap
+of runs 1 to 4 at every γ, mostly from the longer episodes; at γ = 5 a mean
+gap below `b60`'s. Exactly-best share at or above the baseline's. Training
+regret slightly above `b60`'s because of the slower ε decay. Discretization
+gap identical to the baseline.
+
+**Command.**
+
+```bash
+python -m src.run_experiments --run all-three --dry-run
+python -m src.run_experiments --run all-three --results-dir results/all-three
+```
+
+**Estimated time.** 680 to 730 s per seed, so about 6 hours for 30 seeds,
+plus a few minutes of evaluation.
