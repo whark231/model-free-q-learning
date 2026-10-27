@@ -315,3 +315,10 @@ def test_post_hoc_run_b60_is_registered_as_written_in_experiments_md():
     assert run.changes() == {"episode_length": (20, 60)}
     assert run.registered == "2026-10-27"
     assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B60", "robust_g3_grid20_B60", "robust_g8_grid20_B60"]
+
+
+def test_post_hoc_run_n26m_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["n26m"]
+    assert run.changes() == {"n_episodes": (13_000_000, 26_000_000)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_N26M", "robust_g3_grid20_N26M", "robust_g8_grid20_N26M"]

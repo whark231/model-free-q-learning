@@ -123,6 +123,11 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         "a smaller learning gap at every γ; exactly-best share, training regret and discretization gap about unchanged",
         episode_length=60,
     ),
+    "n26m": RunVariant(
+        "n26m", "N26M", "2026-10-27",
+        "a slightly smaller learning gap and a slightly higher exactly-best share at every γ, likely within noise",
+        n_episodes=26_000_000,
+    ),
 }
 
 
