@@ -213,3 +213,55 @@ Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
   after every episode (§5.3).
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
+
+### 7.3 Run `eps-decay`: slower exploration decay, ε = 3% at halfway (post hoc)
+
+**TL;DR / In plain terms:** the agent keeps exploring a little longer. ε
+falls to 3% halfway through training instead of 1%, which means about 31%
+more random episodes in total. Everything else is the baseline.
+
+**Key concepts to understand**
+
+- **The schedule.** ε_t = exp(−βt) with β = ln(1/0.03)/(N/2) ≈ 5.39e-7
+  (baseline 7.08e-7). ε ends training at 0.09% instead of 0.01%.
+- **Random tries per portfolio.** 1,439 instead of 1,097. Both are about 800
+  times fewer than the 1.1 million visits needed to separate the top two
+  portfolios (`REVIEW_HISTORY.md` §7.1).
+- **Regret is the price.** Every random episode is mostly spent on a poor
+  portfolio, so more exploration raises the cumulative regret even if it
+  does not improve the final choice.
+
+**Key takeaways**
+
+- William's surrogate study (`REVIEW_HISTORY.md` §7.2, 100 seeds at γ = 5)
+  found ε = 3% at halfway gave a 9.5 bps/yr mean learning gap vs 9.3, an
+  exactly-best share of 36% vs 44% (±5 points of sampling error), and
+  training regret of 77 vs 62 bps/yr. William's decision of 2026-10-26 was to
+  drop slower decay. Albert chose to run 3% anyway on 2026-10-27 as the
+  mildest tested change. Report it as a post-hoc check of that surrogate
+  result, not as a tuning attempt.
+
+| Setting | Baseline (`baseline-v1`) | This run |
+|---|---|---|
+| ε at halfway | 1% (β ≈ 7.08e-7) | **3%** (β ≈ 5.39e-7) |
+| Episode length B | 20 | 20 |
+| Training episodes per seed | 13,000,000 | 13,000,000 |
+| Grid | 20% (1,287) | 20% (1,287) |
+| K (convergence) | 1,300,000 episodes | 1,300,000 episodes |
+| γ | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same |
+
+**Expected direction, written before running.** Learning gap and
+exactly-best share unchanged within noise at every γ. Training regret higher,
+about 15 bps/yr at γ = 5 per the surrogate. Discretization gap identical to
+the baseline.
+
+**Command.**
+
+```bash
+python -m src.run_experiments --run eps-decay --dry-run
+python -m src.run_experiments --run eps-decay --results-dir results/eps-decay
+```
+
+**Estimated time.** About 300 s per seed, so about 2.5 hours for 30 seeds,
+plus a few minutes of evaluation.

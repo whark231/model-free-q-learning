@@ -308,3 +308,10 @@ def test_variant_dry_run_defaults_to_its_own_training_budget(tmp_path, capsys):
     run_all(tmp_path, run=run, dry_run=True)
     out = capsys.readouterr().out
     assert "26,000,000 episodes" in out and "K=2,600,000" in out and not any(tmp_path.iterdir())
+
+
+def test_post_hoc_run_eps_decay_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["eps-decay"]
+    assert run.changes() == {"epsilon_at_halfway": (0.01, 0.03)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_eps3", "robust_g3_grid20_eps3", "robust_g8_grid20_eps3"]
