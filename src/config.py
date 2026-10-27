@@ -25,6 +25,14 @@ change here (REVIEW_HISTORY.md §3):
 
 Every value here was fixed before any real experiment ran. Change them only
 with a recorded reason, never because of how a run looked.
+
+Post-hoc runs (added 2026-10-27, after the baseline run of 2026-10-22, tag
+`baseline-v1`): each is a `RunVariant` in `POST_HOC_RUNS`, chosen with
+`python -m src.run_experiments --run <run_id>`. A variant changes B, the
+training budget, the ε schedule or the grid, and leaves every constant above
+untouched, so running without `--run` still reproduces `baseline-v1` exactly.
+Each variant's settings and expected direction are written in EXPERIMENTS.md
+§7 before it runs.
 """
 
 import math
@@ -65,23 +73,64 @@ def convergence_k(n_episodes: int) -> int:
     return math.ceil(CONVERGENCE_K_FRACTION * n_episodes)
 
 
-def beta_for(n_episodes: int) -> float:
-    """β such that ε = exp(-β t) equals EPSILON_AT_HALFWAY at t = n_episodes / 2."""
-    return math.log(1.0 / EPSILON_AT_HALFWAY) / (n_episodes / 2)
+def beta_for(n_episodes: int, epsilon_at_halfway: float = EPSILON_AT_HALFWAY) -> float:
+    """β such that ε = exp(-β t) equals epsilon_at_halfway at t = n_episodes / 2."""
+    return math.log(1.0 / epsilon_at_halfway) / (n_episodes / 2)
 
 
 @dataclass(frozen=True)
 class Experiment:
-    """One training run set: a name for its results folder, plus its settings."""
+    """One training run set: a name for its results folder, plus its settings.
+    The last two default to the baseline; only post-hoc variants change them."""
 
     name: str
     gamma: float
     increment: float
     purpose: str
+    episode_length: int = EPISODE_LENGTH
+    epsilon_at_halfway: float = EPSILON_AT_HALFWAY
 
 
-def experiments() -> list[Experiment]:
-    """Every experiment the report needs, in the order to run them."""
+@dataclass(frozen=True)
+class RunVariant:
+    """A post-hoc change to the baseline, run at all three γ on one grid.
+
+    suffix goes on every experiment name (baseline_g5_grid20_<suffix>) so its
+    folders can never be mistaken for the baseline's. expected is the
+    direction written down before the run, registered the date it was.
+    """
+
+    run_id: str
+    suffix: str
+    registered: str
+    expected: str
+    episode_length: int = EPISODE_LENGTH
+    n_episodes: int = N_EPISODES
+    epsilon_at_halfway: float = EPSILON_AT_HALFWAY
+    increment: float = INCREMENT_BASELINE
+
+    def changes(self) -> dict:
+        """The settings this variant moves away from the baseline, as {name: (baseline, variant)}."""
+        base = {"episode_length": EPISODE_LENGTH, "n_episodes": N_EPISODES,
+                "epsilon_at_halfway": EPSILON_AT_HALFWAY, "increment": INCREMENT_BASELINE}
+        return {k: (v, getattr(self, k)) for k, v in base.items() if getattr(self, k) != v}
+
+
+# Every post-hoc run, by run_id. Each run branch adds its own entry.
+POST_HOC_RUNS: dict[str, RunVariant] = {}
+
+
+def experiments(run: RunVariant | None = None) -> list[Experiment]:
+    """Every experiment the report needs, in the order to run them. With a
+    post-hoc variant: the same three γ on the variant's grid and settings."""
+    if run is not None:
+        grid = f"grid{round(run.increment * 100)}"
+        purpose = f"post-hoc run {run.run_id}: {run.expected}"
+        return [
+            Experiment(f"{'baseline' if g == GAMMA_BASELINE else 'robust'}_g{int(g)}_{grid}_{run.suffix}",
+                       g, run.increment, purpose, run.episode_length, run.epsilon_at_halfway)
+            for g in (GAMMA_BASELINE, *GAMMA_ROBUSTNESS)
+        ]
     return [
         Experiment("baseline_g5_grid20", GAMMA_BASELINE, INCREMENT_BASELINE,
                    "headline results (Part V weights, performance, convergence)"),
@@ -98,11 +147,11 @@ def train_config(experiment: Experiment, n_episodes: int = N_EPISODES, n_runs: i
                  log_every: int = LOG_EVERY) -> TrainConfig:
     return TrainConfig(
         gamma=experiment.gamma,
-        episode_length=EPISODE_LENGTH,
+        episode_length=experiment.episode_length,
         n_episodes=n_episodes,
         master_seed=MASTER_SEED,
         n_runs=n_runs,
-        beta=beta_for(n_episodes),
+        beta=beta_for(n_episodes, experiment.epsilon_at_halfway),
         increment=experiment.increment,
         alpha_rule=ALPHA_RULE,
         epsilon0=EPSILON0,
