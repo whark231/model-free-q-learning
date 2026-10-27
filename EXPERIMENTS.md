@@ -215,3 +215,57 @@ Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
   after every episode (§5.3).
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
+
+### 7.3 Run `b60`: episode length B = 60 (post hoc)
+
+**TL;DR / In plain terms:** each training episode scores a portfolio on 60
+simulated days instead of 20. A longer batch gives a less noisy score for
+every portfolio at once, so the agent should be better at telling the top
+few apart. Nothing else changes.
+
+**Key concepts to understand**
+
+- **Why B matters.** One episode's reward is the sample mean minus γ/2 times
+  the sample variance of 20 daily returns. Its standard deviation falls
+  roughly with √B, so B = 60 cuts the noise of every reward by about √3 ≈ 1.7
+  without needing any extra episodes.
+- **Why B does not touch the benchmark.** μ and Σ are daily, and the reward is
+  a daily mean-variance score at any B, so the best grid portfolio and the
+  discretization gap are the same as in the baseline.
+
+**Key takeaways**
+
+- This is the lever William's surrogate study found strongest (`REVIEW_HISTORY.md`
+  §7.2). It is the Part VI "episode lengths" robustness check the assignment
+  lists.
+- William proposed B = 63 and B = 252 (`REVIEW_NOTES_FOR_WILLIAM.md`, "To
+  decide with Albert"). Albert chose B = 60 (about a quarter, a round multiple
+  of the baseline's 20). B = 252 is not registered here.
+
+| Setting | Baseline (`baseline-v1`) | This run |
+|---|---|---|
+| Episode length B | 20 | **60** |
+| Training episodes per seed | 13,000,000 | 13,000,000 (780M simulated days) |
+| ε at halfway | 1% (β ≈ 7.08e-7) | 1% (same β) |
+| Grid | 20% (1,287) | 20% (1,287) |
+| K (convergence) | 1,300,000 episodes | 1,300,000 episodes |
+| γ | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same |
+
+**Expected direction, written before running.** At every γ the learning gap
+against the best grid portfolio shrinks. The surrogate at γ = 5 with B = 63
+gave a mean gap of 7.6 vs 9.3 bps/yr and an unchanged exactly-best share
+(44%), so with 10 seeds the change in exactly-best share is expected to be
+within noise. Training regret about unchanged (59 vs 62 in the surrogate).
+Discretization gap identical to the baseline (2.5, 5.7, 6.1 bps/yr at γ = 3,
+5, 8).
+
+**Command.**
+
+```bash
+python -m src.run_experiments --run b60 --dry-run
+python -m src.run_experiments --run b60 --results-dir results/b60
+```
+
+**Estimated time.** 340 to 370 s per seed, so about 3 hours for 30 seeds
+(3 γ × 10), plus a few minutes of evaluation.
