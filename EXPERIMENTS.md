@@ -213,3 +213,120 @@ Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
   after every episode (§5.3).
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
+
+### 7.3 Run `grid10-robustness`: the 10% grid at run `all-three`'s settings (post hoc)
+
+**TL;DR / In plain terms:** the agent picks from a finer menu of 43,758
+portfolios (weights in steps of 10%) instead of 1,287. Every other setting
+matches run `all-three` (B = 60, 26M episodes, ε = 3% at halfway), so the
+difference between the two runs is the grid alone. This is the Part VI
+action-space robustness check. A finer menu contains a better portfolio, but
+the agent has 34 times as many portfolios to try with the same budget.
+
+**Key concepts to understand**
+
+- **Two gaps move in opposite directions.** The discretization gap (best grid
+  portfolio vs the continuous optimum) can only shrink, because the 20% grid
+  is a subset of the 10% grid. The learning gap (learned vs best grid
+  portfolio) should grow, because the budget is spread over far more
+  portfolios and more of them sit close to the best.
+- **Near-ties.** On the 10% grid many portfolios are almost as good as the
+  best, so "exactly the best" stops being a meaningful target. Computed from
+  μ and Σ for this section only (the agent never sees them):
+
+  | γ | Discretization gap, 20% → 10% (bps/yr) | 2nd best behind best, 10% grid (bps/yr) | Portfolios within 25 bps, 20% → 10% |
+  |---|---|---|---|
+  | 3 | 2.5 → 2.5 (same best portfolio) | 0.04 | 2 → 5 |
+  | 5 | 5.7 → 1.3 | 4.45 | 4 → 25 |
+  | 8 | 6.1 → 6.1 (same best portfolio) | 1.25 | 2 → 36 |
+
+  At γ = 3 and 8 the finer grid does not find a better portfolio at all, so
+  the check can only show what the extra choices cost the learner.
+- **Discussion of ε decay for this run.** The expected number of random
+  (exploration) episodes is (1 − e^(−βN))/β, and dividing by the number of
+  portfolios gives the random tries each one gets:
+
+  | Schedule | Budget | Random episodes | Random tries per portfolio, 10% grid (20% grid) |
+  |---|---|---|---|
+  | ε 1% at halfway (baseline) | 13M | 1.41M | 32 (1,097) |
+  | ε 1% at halfway | 26M | 2.82M | 65 (2,193) |
+  | **ε 3% at halfway (this run)** | **26M** | **3.70M** | **85** (2,878) |
+  | ε 10% at halfway | 26M | 5.59M | 128 (4,343) |
+
+  `test_random_tries_per_portfolio_quoted_in_experiments_md` re-derives these
+  by summing the schedule episode by episode. With 85 tries, one portfolio's
+  average reward still has a standard error of roughly 370/√85 ≈ 40 times the
+  10.5 bps/yr gap that separates the top two on the 20% grid (`REVIEW_HISTORY.md`
+  §7.1, B = 20; B = 60 cuts that by about √3). Random tries therefore only
+  screen out clearly bad portfolios; the choice among the near-best is made
+  by exploitation, as on the 20% grid. A slower decay (10% at halfway) would
+  add 43 tries per portfolio at a cost of about 1.9M more random episodes,
+  most of them spent on poor portfolios, and William's surrogate study on the
+  20% grid found no gain beyond noise from that change (§7.2 of
+  `REVIEW_HISTORY.md`). We keep 3% so that runs `all-three` and
+  `grid10-robustness` differ only in the grid. Choosing ε for the 10% grid by
+  how this run turns out would be tuning on results, so it is not planned.
+
+**Key takeaways**
+
+- Report this against run `all-three`, not against the baseline. Against the
+  baseline it changes four things at once.
+- William proposed running the 10% grid at baseline settings (B = 20, 13M)
+  so it changes one thing from `baseline-v1` (`REVIEW_NOTES_FOR_WILLIAM.md`).
+  Albert chose `all-three`'s settings on 2026-10-27 so the comparison is with
+  the strongest configuration.
+
+| Setting | Baseline (`baseline-v1`) | Run `all-three` | This run |
+|---|---|---|---|
+| Grid | 20% (1,287) | 20% (1,287) | **10% (43,758)** |
+| Episode length B | 20 | 60 | 60 |
+| Training episodes per seed | 13,000,000 | 26,000,000 | 26,000,000 |
+| ε at halfway | 1% (β ≈ 7.08e-7) | 3% (β ≈ 2.70e-7) | 3% (β ≈ 2.70e-7) |
+| K (convergence) | 1,300,000 | 2,600,000 | 2,600,000 |
+| γ | 3, 5, 8 | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same | same |
+
+**Expected direction, written before running.** At every γ, a larger
+learning gap against the best grid portfolio than run `all-three`'s, an
+exactly-best share near zero, and fewer seeds meeting the primary
+convergence rule. Discretization gap 1.3 instead of 5.7 bps/yr at γ = 5 and
+unchanged at γ = 3 and 8. The loss against the continuous optimum (the sum of
+the two gaps) has no confident direction: at γ = 5 the 4.4 bps/yr the grid
+gains may or may not outweigh the larger learning gap.
+
+**Code changes on this branch.**
+
+- `src/train.py`: `MAX_SNAPSHOT_VALUES` raised from 100M to 120M. This run
+  logs 2,600 checkpoints × 43,758 portfolios = 113.8M values per array. The
+  alternative, logging every 20,000 episodes, would change the |ΔQ| window
+  compared with run `all-three`.
+- `src/train.py`: Albert's half of the Q-table copy fix
+  (`REVIEW_HISTORY.md` §5.3). When `update()` returns the new Q(action),
+  `train.py` updates its own copy of the table at one entry and checks it
+  against `agent.q_values` at every checkpoint. `TabularQAgent.update()`
+  returns nothing today, so until William's half lands the runner copies the
+  full table every episode, as before. Tests show identical logs either way,
+  with both a stand-in agent and `TabularQAgent`.
+
+**Command.**
+
+```bash
+python -m src.run_experiments --run grid10-robustness --dry-run
+python -m src.run_experiments --run grid10-robustness --results-dir results/grid10-robustness
+```
+
+**Estimated time and resources.** Per episode at the 10% grid: 91 µs with the
+current runner, 51.6 µs for the bare loop, plus about 5 µs for B = 60.
+
+- Without William's half of the copy fix: about 2,500 to 2,700 s per seed,
+  so 21 to 23 hours for 30 seeds.
+- With it: about 1,500 to 1,800 s per seed, so 12 to 15 hours. The 51.6 µs
+  bare loop is a lower bound; the runner's logging adds some time on top.
+- Memory: about 910 MB per seed for the logged arrays, on a 16 GB machine.
+- Disk: the training logs are not committed. The Q snapshots compress poorly
+  at this grid size, so expect several GB for 30 seeds (very rough: 6 to 14 GB).
+  Evaluation reads one seed at a time.
+
+Run it in three parts if an overnight run is not possible:
+`--only baseline_g5_grid10_B60_N26M_eps3` and so on, into the same results
+folder. Finished experiments are reused.
