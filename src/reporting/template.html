@@ -1,0 +1,583 @@
+<meta charset="utf-8">
+<title>Q-Learning Run Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column with wider figures; sections numbered because the report is read in order. Built by src/reporting/build.py; do not edit report.html by hand. */
+:root {
+  --bg: #f5f6f7; --surface: #fdfdfc; --ink: #15181d; --ink-2: #4a4f58; --muted: #80858d;
+  --rule: #dcdfe3; --grid: #e7e9ec; --axis: #c3c7cd; --seed: #b3b7be; --bench: #4a4f58;
+  --chip: #eceef1; --code: #eceef1; --good: #0a7d0a; --warn: #9a6a00; --crit: #c23434; --accent: #2a78d6;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111316; --surface: #181a1e; --ink: #eceef1; --ink-2: #b8bdc5; --muted: #8a8f97;
+    --rule: #2c2f34; --grid: #24272b; --axis: #3b3f45; --seed: #4f535a; --bench: #c3c2b7;
+    --chip: #23262b; --code: #23262b; --good: #2fbf2f; --warn: #e0a526; --crit: #e66767; --accent: #3987e5;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111316; --surface: #181a1e; --ink: #eceef1; --ink-2: #b8bdc5; --muted: #8a8f97;
+  --rule: #2c2f34; --grid: #24272b; --axis: #3b3f45; --seed: #4f535a; --bench: #c3c2b7;
+  --chip: #23262b; --code: #23262b; --good: #2fbf2f; --warn: #e0a526; --crit: #e66767; --accent: #3987e5;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 40px 96px; }
+.page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 52px; }
+.prose { max-width: 70ch; }
+header.masthead { display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 26px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.12; margin: 0; font-weight: 600; letter-spacing: -.015em; text-wrap: balance; }
+h2 { font-size: 25px; line-height: 1.2; margin: 0; font-weight: 600; text-wrap: balance; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+h4 { font-size: 15px; margin: 0; font-weight: 600; }
+p { margin: 0; }
+code { font-family: var(--mono); font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+.meta { color: var(--ink-2); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 20px; }
+section { display: flex; flex-direction: column; gap: 20px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-top: 1px solid var(--rule); padding-top: 24px; }
+.sec-num { font-family: var(--mono); font-size: 14px; color: var(--muted); min-width: 2ch; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+.label { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 7px; }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px 34px; }
+.cols2 > * { min-width: 0; }
+.fig { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fig-num { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.fig-sub { font-size: 14px; color: var(--ink-2); max-width: 82ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.sw.line { height: 3px; width: 14px; border-radius: 2px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; overflow: visible; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45; z-index: 5; min-width: 150px; font-variant-numeric: tabular-nums; }
+.tip .r { display: flex; gap: 10px; justify-content: space-between; align-items: center; }
+.tip .r > span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.toggle { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; align-self: flex-start; }
+.toggle button { font: inherit; font-size: 13px; background: transparent; color: var(--ink-2); border: 0; padding: 5px 12px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--chip); color: var(--ink); font-weight: 500; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.caption { font-size: 13px; color: var(--muted); max-width: 92ch; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { font-weight: 600; color: var(--ink-2); font-size: 12.5px; vertical-align: bottom; }
+th:first-child, td:first-child, .l { text-align: left; }
+td.wrap { white-space: normal; min-width: 240px; text-align: left; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--chip); }
+td.changed { background: color-mix(in srgb, var(--s4) 16%, transparent); font-weight: 500; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--ink-2); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.crit { color: var(--crit); }
+.pill.plain::before { display: none; }
+.port { font-family: var(--mono); font-size: 12.5px; }
+.delta-up { color: var(--crit); } .delta-down { color: var(--good); }
+.small-multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.sm-panel { border: 1px solid var(--grid); border-radius: 8px; padding: 10px 10px 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sm-title { font-size: 13px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sm-title .port { color: var(--ink-2); }
+.banner { border: 1px solid var(--rule); border-left: 4px solid var(--warn); background: var(--surface); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: var(--ink-2); }
+.empty { border: 1px dashed var(--rule); border-radius: 10px; padding: 18px; color: var(--ink-2); font-size: 14px; }
+details { border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); padding: 12px 16px; }
+details summary { cursor: pointer; font-weight: 500; }
+details[open] summary { margin-bottom: 10px; }
+nav.toc ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 26px; padding-left: 1.4em; font-size: 14px; }
+nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
+a { color: inherit; }
+@media (max-width: 560px) { body { font-size: 15px; padding-block: 24px 64px; } .fig { padding: 12px 10px 10px; } .small-multiples { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="page">
+<header class="masthead">
+  <div class="eyebrow" id="eyebrow"></div>
+  <h1 id="title"></h1>
+  <p class="prose" id="what-changed" style="color:var(--ink-2)"></p>
+  <div class="meta" id="meta"></div>
+  <div id="scale-banner"></div>
+</header>
+
+<nav class="toc" aria-label="Contents"><ol>
+  <li><a href="#summary">Summary</a></li>
+  <li><a href="#settings">Run settings</a></li>
+  <li><a href="#results">Results by experiment</a></li>
+  <li><a href="#detail">Each experiment, seed by seed</a></li>
+  <li><a href="#compare">Comparison with earlier runs</a></li>
+  <li><a href="#notes">Notes, caveats and definitions</a></li>
+</ol></nav>
+
+<section id="summary">
+  <div class="sec-head"><span class="sec-num">1</span><h2>Summary</h2></div>
+  <div class="box prose"><div class="label">TL;DR / In plain terms</div><div class="stack" id="tldr"></div></div>
+  <div class="tbl-wrap"><table id="tbl-headline"></table></div>
+  <div class="cols2">
+    <div class="stack"><h3>Key concepts to understand</h3>
+      <ul>
+        <li><b>CE loss (bps/yr).</b> The difference in U = expected return − (γ/2) × variance between two portfolios, times 252 × 10,000. This is the guaranteed annual return an investor gives up by holding the worse one.</li>
+        <li><b>Discretization, learning and total gap.</b> The grid's best portfolio loses the discretization gap to the continuous optimum; the agent's choice loses the learning gap to the grid's best; the total gap is their sum.</li>
+        <li><b>Settled.</b> Post-hoc: the first checkpoint after which the final portfolio is greedy at every checkpoint. The pre-registered rule (final action held ≥ K episodes) is reported beside it.</li>
+        <li><b>Family.</b> Experiments with the same γ and grid. Comparisons line up entries of the same family across runs, so the table shows what else changed.</li>
+      </ul>
+    </div>
+    <div class="stack"><h3>Key takeaways</h3><ul id="takeaways"></ul></div>
+  </div>
+</section>
+
+<section id="settings">
+  <div class="sec-head"><span class="sec-num">2</span><h2>Run settings</h2></div>
+  <p class="prose" id="settings-intro"></p>
+  <div class="tbl-wrap"><table id="tbl-settings"></table></div>
+  <p class="caption">Highlighted cells differ from the same family in the reference run. All values are read from each experiment's manifest and the run's settings.json.</p>
+</section>
+
+<section id="results">
+  <div class="sec-head"><span class="sec-num">3</span><h2>Results by experiment</h2></div>
+  <div class="tbl-wrap"><table id="tbl-results"></table></div>
+  <p class="caption">Day counts are simulated trading days (episodes × B), median over the seeds that met each measure, with the share of seeds in front. "Near-optimal" uses the near-optimal line in Section 2, checked every log interval.</p>
+  <div class="fig"><div class="fig-num">FIGURE 3.1</div><h3>Where each experiment's shortfall comes from</h3>
+    <p class="fig-sub">Total CE loss against the continuous optimum: discretization gap (forced by the grid) plus the median learning gap.</p>
+    <div class="legend" id="lg-decomp"></div><div class="chart" id="ch-decomp"></div></div>
+  <div class="fig"><div class="fig-num">FIGURE 3.2</div><h3>Every seed's total gap</h3>
+    <p class="fig-sub">One dot per seed. The tick at the left of each row is that experiment's discretization gap, the floor no seed can beat; the coloured bar is the median.</p>
+    <div class="chart" id="ch-totaldots"></div></div>
+</section>
+
+<section id="detail">
+  <div class="sec-head"><span class="sec-num">4</span><h2>Each experiment, seed by seed</h2></div>
+  <div class="toggle" role="group" aria-label="Experiment" id="pick-exp"></div>
+  <p class="prose" id="exp-intro"></p>
+  <div class="fig"><div class="fig-num">FIGURE 4.1</div><h3>Each seed's greedy portfolio over time</h3>
+    <p class="fig-sub">CE loss of the greedy portfolio against the grid's best, clipped at 150 bps/yr; when the log is long, each point is the worst value in its bin so brief spikes stay visible. Solid vertical line: settled. Dotted: pre-registered rule met. Dashed horizontal: near-optimal line.</p>
+    <div class="small-multiples" id="sm"></div></div>
+  <div class="cols2">
+    <div class="fig"><div class="fig-num">FIGURE 4.2</div><h3>Learning curve, every seed</h3><p class="fig-sub">CE return %/yr, 5-window moving average. Grey: seeds. Coloured: median.</p><div class="chart" id="sp-lc"></div></div>
+    <div class="fig"><div class="fig-num">FIGURE 4.3</div><h3>Share of episodes on the final portfolio</h3><p class="fig-sub">Dashed: 1 − ε, the expected share if the final portfolio is greedy for the whole window.</p><div class="chart" id="sp-share"></div></div>
+  </div>
+  <div class="fig"><div class="fig-num">FIGURE 4.4</div><h3>Brief excursions after settling</h3>
+    <p class="fig-sub">Each dot is the worst temporary portfolio in one excursion away from the final portfolio after the seed settled; excursions with the same loss share a dot.</p><div class="chart" id="sw"></div></div>
+  <div class="tbl-wrap"><table id="tbl-seeds"></table></div>
+</section>
+
+<section id="compare">
+  <div class="sec-head"><span class="sec-num">5</span><h2>Comparison with earlier runs</h2></div>
+  <div class="prose stack" id="compare-intro"></div>
+  <div class="tbl-wrap"><table id="tbl-runs"></table></div>
+  <div class="fig" id="matrix-fig"><div class="fig-num">FIGURE 5.1</div><h3>Every family across runs</h3>
+    <p class="fig-sub">Median total gap to the continuous optimum (bps/yr) and exact-best share for each family in each run. A blank cell means that run did not include the family.</p>
+    <div class="tbl-wrap" style="border:0"><table id="tbl-matrix"></table></div></div>
+  <div class="stack" id="family-block">
+    <h3>One family in detail</h3>
+    <div class="toggle" role="group" aria-label="Family" id="pick-fam"></div>
+    <div id="fam-body" class="stack"></div>
+  </div>
+</section>
+
+<section id="notes">
+  <div class="sec-head"><span class="sec-num">6</span><h2>Notes, caveats and definitions</h2></div>
+  <ul class="prose" id="caveats"></ul>
+  <details><summary>Definitions of every measure</summary>
+    <ul class="prose">
+      <li><b>Learning gap:</b> CE loss of the seed's final greedy portfolio against the best portfolio on its grid, from μ and Σ exactly.</li>
+      <li><b>Total gap:</b> CE loss of that portfolio against the continuous long-only optimum.</li>
+      <li><b>Settled (post hoc):</b> first log checkpoint from which the final portfolio is greedy at every later checkpoint.</li>
+      <li><b>Primary rule (pre-registered):</b> the final greedy action held for at least K episodes through the end of training; the count includes the K window.</li>
+      <li><b>First hold ≥ K:</b> first time any action stayed greedy for K episodes.</li>
+      <li><b>|ΔQ| rule:</b> largest change in any Q-value stays below the tolerance in every full log window from then on.</li>
+      <li><b>Near-optimal (checkpoints):</b> greedy portfolio within the near-optimal line at every later checkpoint. <b>Every episode:</b> the same, counting brief switches between checkpoints.</li>
+      <li><b>Average regret:</b> expected CE loss of the portfolios actually played, averaged over all training episodes.</li>
+      <li><b>Tries to separate the top two:</b> 8 sd² / gap², the tries of each before the two best grid portfolios differ by two standard errors, using the exact reward SD for that B.</li>
+    </ul>
+  </details>
+</section>
+<footer class="caption" id="footer"></footer>
+</div>
+
+<script>
+const R = /*__REPORT_DATA__*/null;
+(function () {
+"use strict";
+const $ = id => document.getElementById(id);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS = "http://www.w3.org/2000/svg";
+const S = (tag, a, p) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const f = (x, d = 1) => x == null || Number.isNaN(x) ? "n/a" : Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const md = obs => obs == null ? "never" : f(obs / 1e6, 1) + "M";
+const pct = (x, d = 0) => f(x * 100, d) + "%";
+const median = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+const RUNS = Object.fromEntries(R.runs.map(r => [r.run.id, r]));
+const CUR = RUNS[R.current_id], REG = R.registry, T = CUR.tickers;
+const port = w => w.map((v, i) => v > 1e-9 ? `${T[i]} ${Math.round(v * 100)}` : null).filter(Boolean).join(" · ");
+const runColor = id => css(`--s${(R.color_slot[id] % 8) + 1}`);
+// Runs 9 to 16 reuse the eight hues with a dashed line, so no two runs look the same.
+const runDash = id => R.color_slot[id] >= 8 ? "7 3" : "";
+const runLabel = id => `${id}${REG[id]?.title ? " · " + REG[id].title : ""}`;
+const expLabel = e => `γ = ${e.params.gamma}, ${Math.round(e.params.increment * 100)}% grid${e.params.episode_length !== 20 ? ", B = " + e.params.episode_length : ""}`;
+const famLabel = key => { const m = key.match(/gamma([\d.]+)_grid(\d+)/); return m ? `γ = ${m[1]}, ${m[2]}% grid` : key; };
+const fmtParam = (k, v) => {
+  if (v == null) return "n/a";
+  if (k === "increment") return Math.round(v * 100) + "%";
+  if (k === "beta") return Number(v).toExponential(3);
+  if (k === "master_seed") return String(v);
+  if (["epsilon_at_half", "epsilon_final", "dq_tol"].includes(k)) return Number(v) < 0.001 ? Number(v).toExponential(1) : f(v, 3);
+  if (k === "random_tries_per_portfolio") return f(v, 0);
+  if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString("en-US") : f(v, 3);
+  return esc(v);
+};
+
+// ---------- chart kit ----------
+function niceTicks(lo, hi, n = 5) { const span = hi - lo || 1, mag = Math.pow(10, Math.floor(Math.log10(span / n))); const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag; const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10)); return out; }
+function tipBox(h) { let t = h.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; t.hidden = true; h.appendChild(t); } return t; }
+function placeTip(h, t, x, y) { t.hidden = false; const w = t.offsetWidth, hh = t.offsetHeight; let l = x + 14; if (l + w > h.clientWidth) l = x - w - 14; t.style.left = Math.max(0, l) + "px"; t.style.top = Math.max(0, y - hh / 2) + "px"; }
+function legend(id, items) { $(id).innerHTML = items.map(it => `<span><i class="sw ${it.line ? "line" : ""}" style="background:${it.dash ? `repeating-linear-gradient(90deg,${it.color} 0 4px,transparent 4px 7px)` : it.color}"></i>${esc(it.label)}</span>`).join(""); }
+
+// series: [{label,color,xs,data,width,step,band:[lo,hi],background,dash}]; each series has its own xs
+function lineChart(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 260), H = o.height || 300;
+  const m = { t: 12, r: 18, b: o.compact ? 26 : 44, l: o.compact ? 34 : 54 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const x0 = o.x.min, x1 = o.x.max, y0 = o.y.min, y1 = o.y.max;
+  const X = v => m.l + (v - x0) / (x1 - x0) * iw, Y = v => m.t + (1 - (Math.min(Math.max(v, y0), y1) - y0) / (y1 - y0)) * ih;
+  const muted = css("--muted"), ink2 = css("--ink-2"), grid = css("--grid"), axis = css("--axis"), fs = o.compact ? 10.5 : 12;
+  (o.y.ticks || niceTicks(y0, y1, o.compact ? 3 : 5)).forEach(v => { S("line", { x1: m.l, x2: m.l + iw, y1: Y(v), y2: Y(v), stroke: grid }, svg); S("text", { x: m.l - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": fs, fill: muted }, svg).textContent = (o.y.fmt || (v => v))(v); });
+  (o.x.ticks || niceTicks(x0, x1, o.compact ? 4 : 6)).forEach(v => { S("text", { x: X(v), y: m.t + ih + (o.compact ? 14 : 17), "text-anchor": "middle", "font-size": fs, fill: muted }, svg).textContent = (o.x.fmt || (v => v))(v); });
+  S("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: axis }, svg);
+  if (o.x.label && !o.compact) S("text", { x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.x.label;
+  if (o.y.label && !o.compact) S("text", { x: 12, y: m.t + ih / 2, transform: `rotate(-90 12 ${m.t + ih / 2})`, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.y.label;
+  const id = "c" + Math.random().toString(36).slice(2); S("rect", { x: m.l, y: m.t - 2, width: iw, height: ih + 4 }, S("clipPath", { id }, S("defs", {}, svg)));
+  const plot = S("g", { "clip-path": `url(#${id})` }, svg);
+  (o.refs || []).forEach(r => { S("line", { x1: m.l, x2: m.l + iw, y1: Y(r.y), y2: Y(r.y), stroke: r.color || muted, "stroke-dasharray": "4 4" }, svg); if (r.label) S("text", { x: m.l + iw - 4, y: Y(r.y) - 5, "text-anchor": "end", "font-size": fs, fill: ink2 }, svg).textContent = r.label; });
+  (o.vmarks || []).forEach(v => { if (v.x == null || v.x < x0 || v.x > x1) return; S("line", { x1: X(v.x), x2: X(v.x), y1: m.t, y2: m.t + ih, stroke: v.color || ink2, "stroke-width": 1.5, "stroke-dasharray": v.dash ? "2 3" : "" }, svg); });
+  // step: each binned value covers (x[i-1], x[i]], so rise first, then run to x[i]
+  const path = (xs, d, step) => { let p = ""; xs.forEach((x, i) => { if (d[i] == null) return; const px = X(x), py = Y(d[i]); p += p ? (step ? `V${py}H${px}` : `L${px},${py}`) : `M${px},${py}`; }); return p; };
+  o.series.forEach(s => {
+    if (s.band) { let p = ""; s.xs.forEach((x, i) => p += (i ? "L" : "M") + X(x) + "," + Y(s.band[1][i])); for (let i = s.xs.length - 1; i >= 0; i--) p += "L" + X(s.xs[i]) + "," + Y(s.band[0][i]); S("path", { d: p + "Z", fill: s.color, "fill-opacity": .12 }, plot); }
+    S("path", { d: path(s.xs, s.data, s.step), fill: "none", stroke: s.color, "stroke-width": s.width || 2, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": s.dash === true ? "5 4" : (s.dash || "") }, plot);
+  });
+  const fg = o.series.filter(s => !s.background), tip = tipBox(host);
+  const cross = S("line", { y1: m.t, y2: m.t + ih, stroke: axis, visibility: "hidden" }, svg);
+  const dots = fg.map(s => S("circle", { r: 4, fill: s.color, stroke: css("--surface"), "stroke-width": 2, visibility: "hidden" }, svg));
+  const hit = S("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  const move = ev => { const rc = svg.getBoundingClientRect(), px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rc.left, xv = x0 + (px - m.l) / iw * (x1 - x0);
+    cross.setAttribute("x1", X(xv)); cross.setAttribute("x2", X(xv)); cross.setAttribute("visibility", "visible"); let rows = "", yAt = y1;
+    fg.forEach((s, k) => { let bi = 0, bd = Infinity; s.xs.forEach((x, i) => { const dd = Math.abs(x - xv); if (dd < bd) { bd = dd; bi = i; } }); const v = s.data[bi];
+      dots[k].setAttribute("cx", X(s.xs[bi])); dots[k].setAttribute("cy", Y(v ?? y0)); dots[k].setAttribute("visibility", v == null ? "hidden" : "visible"); if (k === 0 && v != null) yAt = v;
+      rows += `<div class="r"><span><i class="sw" style="background:${s.color}"></i>${esc(s.label)}</span><b>${(o.y.tipFmt || o.y.fmt || (v => f(v)))(v)}</b></div>`; });
+    tip.innerHTML = `<div style="color:var(--muted);margin-bottom:3px">${(o.x.tipFmt || o.x.fmt || (v => f(v)))(xv)}</div>` + rows; placeTip(host, tip, X(xv), Y(yAt)); };
+  const leave = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); };
+  hit.addEventListener("mousemove", move); hit.addEventListener("touchstart", move, { passive: true }); hit.addEventListener("touchmove", move, { passive: true }); hit.addEventListener("mouseleave", leave);
+}
+
+// rows: [{label, sub, color, dots:[{v,tip}], floor, median, never}]
+function dotPlot(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 260), rowH = o.rowH || 44, labW = Math.min(o.labelW || 170, W * .38);
+  const m = { t: 8, r: o.neverCol ? 64 : 18, b: 44, l: labW }, H = m.t + m.b + rowH * o.rows.length, iw = W - m.l - m.r;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const lg = Math.log10, X = o.x.log ? v => m.l + (lg(Math.max(v, o.x.min)) - lg(o.x.min)) / (lg(o.x.max) - lg(o.x.min)) * iw : v => m.l + (Math.min(Math.max(v, o.x.min), o.x.max) - o.x.min) / (o.x.max - o.x.min) * iw;
+  const muted = css("--muted"), ink2 = css("--ink-2"), grid = css("--grid"), axis = css("--axis"), surf = css("--surface");
+  (o.x.ticks || niceTicks(o.x.min, o.x.max, 6)).forEach(v => { S("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, stroke: grid }, svg); S("text", { x: X(v), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: muted }, svg).textContent = (o.x.fmt || (v => v))(v); });
+  S("line", { x1: m.l, x2: m.l + iw, y1: H - m.b, y2: H - m.b, stroke: axis }, svg);
+  if (o.x.label) S("text", { x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.x.label;
+  (o.vlines || []).forEach(v => { S("line", { x1: X(v.x), x2: X(v.x), y1: m.t, y2: H - m.b, stroke: v.color || ink2, "stroke-width": 1.5, "stroke-dasharray": "4 4" }, svg); if (v.label) S("text", { x: X(v.x) + 5, y: m.t + 11, "font-size": 11.5, fill: ink2 }, svg).textContent = v.label; });
+  if (o.neverCol) S("text", { x: W - 4, y: H - m.b + 17, "text-anchor": "end", "font-size": 12, fill: muted }, svg).textContent = "never";
+  const tip = tipBox(host);
+  o.rows.forEach((row, ri) => { const cy = m.t + rowH * ri + rowH / 2;
+    if (row.sep) S("line", { x1: 0, x2: W, y1: m.t + rowH * ri, y2: m.t + rowH * ri, stroke: grid }, svg);
+    const t = S("text", { x: 0, y: row.sub ? cy - 3 : cy + 4, "font-size": 12.5, fill: ink2 }, svg); t.textContent = row.label;
+    if (row.sub) S("text", { x: 0, y: cy + 12, "font-size": 11, fill: muted }, svg).textContent = row.sub;
+    if (row.floor != null) S("line", { x1: X(row.floor), x2: X(row.floor), y1: cy - 12, y2: cy + 12, stroke: ink2, "stroke-width": 2 }, svg);
+    if (row.median != null) S("line", { x1: X(row.median), x2: X(row.median), y1: cy - 9, y2: cy + 9, stroke: row.color, "stroke-width": 3, "stroke-linecap": "round" }, svg);
+    const placed = [], r = row.r || 4.5;
+    row.dots.forEach(d => { const px = X(d.v); let k = 0; while (placed.some(p => Math.abs(p.x - px) < 2 * r && p.k === k)) k++; placed.push({ x: px, k });
+      const off = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * r * 1.7; const c = S("circle", { cx: px, cy: cy + off, r, fill: row.color, "fill-opacity": .9, stroke: surf, "stroke-width": 1.5 }, svg);
+      const hc = S("circle", { cx: px, cy: cy + off, r: r + 5, fill: "transparent" }, svg); const show = () => { tip.innerHTML = d.tip; placeTip(host, tip, px, cy + off); c.setAttribute("r", r + 1.5); };
+      hc.addEventListener("mouseenter", show); hc.addEventListener("touchstart", show, { passive: true }); hc.addEventListener("mouseleave", () => { tip.hidden = true; c.setAttribute("r", r); }); });
+    if (o.neverCol && row.never != null) S("text", { x: W - 4, y: cy + 4, "text-anchor": "end", "font-size": 12.5, fill: row.never ? css("--ink") : muted }, svg).textContent = row.never ? `${row.never} seed${row.never > 1 ? "s" : ""}` : "0";
+  });
+}
+
+// rows: [{label, color, segs:[{label,v,color,textOn}]}]
+function stackedH(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 280), rowH = 46, m = { t: 6, r: 64, b: 40, l: Math.min(o.labelW || 200, W * .4) }, H = m.t + m.b + rowH * o.rows.length, iw = W - m.l - m.r;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const max = o.xMax || Math.max(5, ...o.rows.map(r => r.segs.reduce((a, s) => a + s.v, 0))) * 1.08, X = v => m.l + v / max * iw;
+  const muted = css("--muted"), grid = css("--grid"), ink = css("--ink"), ink2 = css("--ink-2"), surf = css("--surface"), tip = tipBox(host);
+  niceTicks(0, max, 5).forEach(v => { S("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, stroke: grid }, svg); S("text", { x: X(v), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: muted }, svg).textContent = v; });
+  S("text", { x: m.l + iw / 2, y: H - 5, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.xLabel;
+  o.rows.forEach((r, ri) => { const cy = m.t + rowH * ri + rowH / 2, bh = 20; let acc = 0;
+    S("text", { x: 0, y: cy + 4, "font-size": 12.5, fill: ink2 }, svg).textContent = r.label;
+    r.segs.forEach((s, si) => { const x = X(acc), last = si === r.segs.length - 1, w = Math.max(0, X(acc + s.v) - x - (last ? 0 : 2)), rr = last ? Math.min(4, w) : 0;
+      S("path", { d: `M${x},${cy - bh / 2}H${x + w - rr}Q${x + w},${cy - bh / 2} ${x + w},${cy - bh / 2 + rr}V${cy + bh / 2 - rr}Q${x + w},${cy + bh / 2} ${x + w - rr},${cy + bh / 2}H${x}Z`, fill: s.color }, svg);
+      if (w > 40) S("text", { x: x + w / 2, y: cy + 4, "text-anchor": "middle", "font-size": 11.5, fill: s.textOn || surf, "font-weight": 500 }, svg).textContent = f(s.v);
+      const hit = S("rect", { x, y: cy - bh / 2 - 4, width: Math.max(w, 6), height: bh + 8, fill: "transparent" }, svg);
+      const show = () => { tip.innerHTML = `<b>${esc(r.label)}</b><div class="r"><span><i class="sw" style="background:${s.color}"></i>${esc(s.label)}</span><b>${f(s.v, 2)} bps/yr</b></div>`; placeTip(host, tip, x + w / 2, cy); };
+      hit.addEventListener("mouseenter", show); hit.addEventListener("touchstart", show, { passive: true }); hit.addEventListener("mouseleave", () => tip.hidden = true); acc += s.v; });
+    S("text", { x: X(acc) + 8, y: cy + 4, "font-size": 13, fill: ink, "font-weight": 600 }, svg).textContent = f(acc); });
+}
+
+function table(id, head, rows, opts = {}) {
+  const cls = i => [(opts.left || []).includes(i) ? "l" : "", (opts.wrap || []).includes(i) ? "wrap" : ""].join(" ");
+  $(id).innerHTML = `<thead><tr>${head.map((h, i) => `<th class="${cls(i)}">${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => typeof c === "object" && c !== null ? `<td class="${cls(i)} ${c.cls || ""}">${c.v}</td>` : `<td class="${cls(i)}">${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+
+// ---------- helpers on data ----------
+const famOf = (run, fam) => run.experiments.find(e => e.family === fam);
+// Axis range from the data with a little padding, so nothing is clipped.
+const yRange = vals => { const v = vals.filter(x => x != null && Number.isFinite(x)); const lo = Math.min(0, ...v), hi = Math.max(...v); const pad = (hi - lo) * 0.06 || 1; return { min: lo < 0 ? lo - pad : 0, max: hi + pad }; };
+const mfmt = v => v >= 10 ? f(v, 0) + "M" : v >= 1 ? f(v, 1) + "M" : f(v * 1000, 0) + "k";
+const refRun = R.reference_id ? RUNS[R.reference_id] : null;
+const expColor = (i) => css(`--s${(i % 8) + 1}`);
+
+// ---------- static sections ----------
+function header() {
+  const reg = REG[R.current_id] || {}, run = CUR.run, idx = CUR.index || {};
+  document.title = `Q-Learning Run Report · ${run.id}`;
+  $("eyebrow").textContent = `Model-free Q-learning · nine-ETF portfolio · run ${run.id} · ${run.date || ""}`;
+  $("title").textContent = `${run.title || run.id}: run report`;
+  $("what-changed").innerHTML = esc(run.what_changed || "");
+  const exps = CUR.experiments;
+  $("meta").innerHTML = [`Run <code>${esc(run.id)}</code>`, run.date ? `Date ${esc(run.date)}` : "", run.git_ref ? `Code <code>${esc(run.git_ref)}</code>` : "",
+    idx.git_commit ? `Commit <code>${esc(String(idx.git_commit).slice(0, 7))}</code>` : "", `${exps.length} experiment${exps.length > 1 ? "s" : ""}`, `Results <code>${esc(run.results_dir)}</code>`,
+    reg.original_report ? `Original report <code>${esc(reg.original_report)}</code>` : ""].filter(Boolean).map(x => `<span>${x}</span>`).join("");
+  const banners = [];
+  if (run.scale !== "full") banners.push(`<b>Reduced settings.</b> This run is a pipeline or exploratory check (scale: ${esc(run.scale || "unknown")}); its numbers are not report results.`);
+  if (reg.pre_registered === false) banners.push(`<b>Post hoc.</b> These settings were chosen after earlier results were seen. Report this run as a labelled sensitivity check; the pre-registered baseline stays the headline.`);
+  $("scale-banner").innerHTML = banners.map(b => `<div class="banner">${b}</div>`).join("");
+  const notes = reg.notes || {};
+  $("tldr").innerHTML = (notes.tldr && notes.tldr.length ? notes.tldr : ["<i>No TL;DR yet. Write two or three plain sentences in this run's <code>notes.tldr</code> in <code>reports/registry.json</code>, then rebuild.</i>"]).map(t => `<p>${t}</p>`).join("");
+  $("takeaways").innerHTML = (notes.takeaways && notes.takeaways.length ? notes.takeaways : ["<i>Add takeaways in <code>notes.takeaways</code>.</i>"]).map(t => `<li>${t}</li>`).join("");
+  table("tbl-headline", ["Experiment", "Discretization gap", "Learning gap, median (range)", "Total gap, median", "Exact best", "Settled, median", "Primary rule"],
+    exps.map(e => { const s = e.summary, n = s.n_seeds; return [`<b>${esc(e.name)}</b><br><span class="caption">${expLabel(e)}</span>`, f(s.disc_gap_bps), `${f(s.learning_gap.median)} (${f(s.learning_gap.min)} to ${f(s.learning_gap.max)})`, f(s.total_gap.median), `${s.exact_best}/${n}`, md(s.settled.median), `${s.primary.n}/${n} · ${md(s.primary.median)}`]; }), { left: [0] });
+}
+
+function settingsSection() {
+  const exps = CUR.experiments, P = R.compared_params;
+  $("settings-intro").innerHTML = refRun && R.reference_id !== R.current_id ? `Compared cell by cell with the same family in the reference run, <code>${esc(R.reference_id)}</code>.` : "This is the reference run, so nothing is highlighted.";
+  const head = ["Parameter", ...exps.map(e => esc(e.name))];
+  const rows = P.map(p => [p.label, ...exps.map(e => { const v = e.params[p.key]; const ref = refRun && R.reference_id !== R.current_id ? famOf(refRun, e.family) : null;
+    const changed = ref && String(ref.params[p.key]) !== String(v) && !(typeof v === "number" && Math.abs(v - ref.params[p.key]) <= 1e-12 * Math.max(1, Math.abs(v)));
+    return { v: fmtParam(p.key, v) + (changed ? `<br><span class="caption">was ${fmtParam(p.key, ref.params[p.key])}</span>` : ""), cls: changed ? "changed" : "" }; })]);
+  rows.push(["Best portfolio on the grid", ...exps.map(e => `<span class="port">${port(e.benchmarks.best_weights)}</span>`)]);
+  rows.push(["Rivals within the near-optimal line", ...exps.map(e => e.benchmarks.rivals_within_near)]);
+  rows.push(["Gap between the top two portfolios (bps/yr)", ...exps.map(e => f(e.benchmarks.gap_best_second_bps))]);
+  rows.push(["Tries of each needed to separate the top two", ...exps.map(e => f(e.benchmarks.tries_to_separate_top_two, 0))]);
+  rows.push(["Median seconds per seed", ...exps.map(e => f(e.summary.seconds_per_seed, 0))]);
+  table("tbl-settings", head, rows, { left: [0] });
+}
+
+function resultsSection() {
+  const exps = CUR.experiments;
+  table("tbl-results", ["Measure", ...exps.map(e => esc(e.name))], [
+    ["Discretization gap (bps/yr)", ...exps.map(e => f(e.summary.disc_gap_bps, 2))],
+    ["Learning gap, median (range)", ...exps.map(e => `${f(e.summary.learning_gap.median)} (${f(e.summary.learning_gap.min)} to ${f(e.summary.learning_gap.max)})`)],
+    ["Learning gap, mean", ...exps.map(e => f(e.summary.learning_gap.mean))],
+    ["Total gap, median (range)", ...exps.map(e => `${f(e.summary.total_gap.median)} (${f(e.summary.total_gap.min)} to ${f(e.summary.total_gap.max)})`)],
+    ["Exact best found", ...exps.map(e => `${e.summary.exact_best}/${e.summary.n_seeds}`)],
+    ["Within the near-optimal line at the end", ...exps.map(e => `${e.summary.within_near_of_best}/${e.summary.n_seeds}`)],
+    ["Different final portfolios", ...exps.map(e => e.summary.distinct_final_portfolios)],
+    ["Settled (post hoc)", ...exps.map(e => `${e.summary.settled.n}/${e.summary.n_seeds} · ${md(e.summary.settled.median)}`)],
+    ["Primary rule (pre-registered)", ...exps.map(e => `${e.summary.primary.n}/${e.summary.n_seeds} · ${md(e.summary.primary.median)}`)],
+    ["First hold ≥ K", ...exps.map(e => `${e.summary.first_stable.n}/${e.summary.n_seeds} · ${md(e.summary.first_stable.median)}`)],
+    ["Near-optimal for good, checkpoints", ...exps.map(e => `${e.summary.near_ckpt.n}/${e.summary.n_seeds} · ${md(e.summary.near_ckpt.median)}`)],
+    ["Near-optimal for good, every episode", ...exps.map(e => `${e.summary.near_episode.n}/${e.summary.n_seeds} · ${md(e.summary.near_episode.median)}`)],
+    ["|ΔQ| rule", ...exps.map(e => `${e.summary.dq.n}/${e.summary.n_seeds} · ${md(e.summary.dq.median)}`)],
+    ["Average regret over training (bps/yr)", ...exps.map(e => f(e.summary.regret_avg.median))],
+  ], { left: [0] });
+}
+
+function resultsCharts() {
+  const exps = CUR.experiments, neutral = css("--axis");
+  legend("lg-decomp", [{ label: "Discretization gap", color: neutral }, ...exps.map((e, i) => ({ label: `Learning gap, ${e.name}`, color: expColor(i) }))]);
+  stackedH($("ch-decomp"), { xLabel: "CE loss vs. continuous optimum (bps/yr)", rows: exps.map((e, i) => ({ label: e.name, segs: [{ label: "Discretization gap", v: e.summary.disc_gap_bps, color: neutral, textOn: css("--ink") }, { label: "Learning gap (median across seeds)", v: e.summary.learning_gap.median, color: expColor(i) }] })) });
+  const max = Math.max(30, ...exps.flatMap(e => e.seeds.map(s => s.loss_cont))) * 1.05;
+  dotPlot($("ch-totaldots"), { x: { min: 0, max, label: "Total CE loss vs. continuous optimum (bps/yr)" }, rows: exps.map((e, i) => ({ label: e.name, sub: expLabel(e), color: expColor(i), floor: e.summary.disc_gap_bps, median: e.summary.total_gap.median,
+    dots: e.seeds.map(s => ({ v: s.loss_cont, tip: `<b>${esc(e.name)}, seed ${s.run}</b><div>${port(s.weights)}</div><div class="r"><span>Total gap</span><b>${f(s.loss_cont)}</b></div><div class="r"><span>Learning gap</span><b>${f(s.loss_best)}</b></div>` })) })), rowH: 50 });
+}
+
+// ---------- experiment detail ----------
+let expIdx = 0;
+function detailSection() {
+  const exps = CUR.experiments;
+  $("pick-exp").innerHTML = exps.map((e, i) => `<button type="button" aria-pressed="${i === expIdx}" data-i="${i}">${esc(e.name)}</button>`).join("");
+  const e = exps[expIdx], c = expColor(expIdx), B = e.params.episode_length, xs = e.series.x_episodes.map(x => x * B / 1e6), xmax = e.params.simulated_days_per_seed / 1e6, near = e.params.near_optimal_bps;
+  $("exp-intro").innerHTML = `${expLabel(e)}. Best grid portfolio <span class="port">${port(e.benchmarks.best_weights)}</span>, ${f(e.summary.disc_gap_bps, 2)} bps/yr below the continuous optimum (<span class="port">${port(e.benchmarks.cont_weights.map(v => Math.round(v * 100) / 100))}</span>). ${e.benchmarks.rivals_within_near} other grid portfolio${e.benchmarks.rivals_within_near === 1 ? "" : "s"} lie within ${f(near, 0)} bps/yr of it.`;
+  const hasSeries = e.seeds[0] && e.seeds[0].series;
+  const sm = $("sm"); sm.innerHTML = "";
+  if (!hasSeries) { sm.innerHTML = `<div class="empty">Per-seed time series are not stored for this experiment.</div>`; }
+  e.seeds.forEach(s => { if (!hasSeries) return; const p = document.createElement("div"); p.className = "sm-panel";
+    p.innerHTML = `<div class="sm-title"><b>Seed ${s.run}</b><span class="port">${port(s.weights)} · ${s.is_best ? "best" : f(s.loss_best) + " bps"}</span></div><div class="chart"></div>`; sm.appendChild(p);
+    lineChart(p.querySelector(".chart"), { compact: true, height: 140, x: { min: 0, max: xmax, fmt: v => f(v, 0) + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 150, ticks: [0, 50, 100, 150], tipFmt: v => f(v) + " bps" }, refs: [{ y: near }],
+      vmarks: [{ x: s.settled_obs / 1e6 }, { x: s.primary_obs == null ? null : s.primary_obs / 1e6, dash: true }], series: [{ label: "Greedy loss", color: c, xs, data: s.series.loss, step: true, width: 1.75 }] }); });
+  const seedC = css("--seed"), muted = css("--muted");
+  if (hasSeries) {
+    lineChart($("sp-lc"), { height: 250, x: { min: 0, max: xmax, label: "Simulated days (millions)", fmt: v => f(v, 0) + "M", tipFmt: v => f(v, 1) + "M days" }, y: { ...yRange([...e.seeds.flatMap(s => s.series.reward_pct), e.benchmarks.u_best_daily * 25200]), label: "CE return (%/yr)", fmt: v => v + "%", tipFmt: v => f(v, 2) + "%" },
+      refs: [{ y: e.benchmarks.u_best_daily * 25200, label: "Best on grid" }], series: [...e.seeds.map(s => ({ label: "Seed " + s.run, color: seedC, xs, data: s.series.reward_pct, width: 1, background: true })), { label: "Median", color: c, xs, data: e.series.reward_median }] });
+    lineChart($("sp-share"), { height: 250, x: { min: 0, max: xmax, label: "Simulated days (millions)", fmt: v => f(v, 0) + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 1, label: "Share of window", fmt: v => Math.round(v * 100) + "%", tipFmt: v => f(v * 100) + "%" },
+      series: [...e.seeds.map(s => ({ label: "Seed " + s.run, color: seedC, xs, data: s.series.share_final, width: 1, background: true })), { label: "1 − ε", color: muted, xs, data: e.series.epsilon.map(v => 1 - v), dash: true, width: 1.5 }, { label: "Median", color: c, xs, data: e.series.share_median }] });
+    dotPlot($("sw"), { x: { min: 0, max: 400, label: "Loss of temporary portfolio (bps/yr; 400+ at edge)" }, labelW: 120, rowH: 30, vlines: [{ x: near, label: f(near, 0) + " bps" }],
+      rows: e.seeds.map(s => { const cts = {}; (s.excursion_losses || []).forEach(v => { const k = Math.min(v, 400).toFixed(0); cts[k] = (cts[k] || 0) + 1; });
+        return { label: `Seed ${s.run}`, sub: `${s.excursions} excursions`, color: c, r: 3.5, dots: Object.entries(cts).map(([v, n]) => ({ v: +v, tip: `<b>Seed ${s.run}</b><div class="r"><span>Loss</span><b>${v}${+v >= 400 ? "+" : ""} bps/yr</b></div><div class="r"><span>Excursions</span><b>${n}</b></div>` })) }; }) });
+  } else { ["sp-lc", "sp-share", "sw"].forEach(id => $(id).innerHTML = `<div class="empty">Not stored for this experiment.</div>`); }
+  table("tbl-seeds", ["Seed", "Final portfolio", "Rank", "Learning gap", "Total gap", "Tries of best", "Settled", "Excursions after settling", "Longest after halfway (episodes)", "Primary rule", "Near-opt. (checkpoints)", "Near-opt. (every episode)", "|ΔQ| rule", "Avg regret"],
+    e.seeds.map(s => [s.run, `<span class="port">${port(s.weights)}</span>`, s.rank, s.is_best ? `<span class="pill good">0.0</span>` : f(s.loss_best), f(s.loss_cont), s.visits_best.toLocaleString(), md(s.settled_obs), s.excursions, s.longest_excursion_after_half.toLocaleString(),
+      s.primary_obs == null ? `<span class="pill warn">not met</span>` : md(s.primary_obs), md(s.near_obs_ckpt), md(s.near_obs_episode), md(s.dq_obs), f(s.regret_avg_bps)]), { left: [1] });
+}
+
+// ---------- comparison ----------
+let famKey = null, xMode = "days";
+function compareSection() {
+  const prior = R.run_order.filter(id => id !== R.current_id);
+  const intro = $("compare-intro");
+  if (!prior.length) {
+    intro.innerHTML = `<p><b>In plain terms:</b> this is the first registered run, so there is nothing earlier to compare with. Later reports will line up their experiments against this one, family by family (same γ and grid), and show what changed and how the results moved.</p>`;
+    table("tbl-runs", ["Run", "Date", "Title", "Code", "Scale", "What changed"], [[`<span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:${runColor(R.current_id)}"></i><b>${esc(R.current_id)}</b></span>`, esc(CUR.run.date), esc(CUR.run.title), `<code>${esc(CUR.run.git_ref || "")}</code>`, esc(CUR.run.scale), esc(CUR.run.what_changed)]], { left: [0, 2, 5], wrap: [5] });
+    $("tbl-matrix").innerHTML = ""; $("matrix-fig").hidden = true; $("family-block").hidden = true; return;
+  }
+  $("family-block").hidden = false; $("matrix-fig").hidden = false;
+  intro.innerHTML = `<p><b>In plain terms:</b> this section lines up this run against ${prior.length} earlier run${prior.length > 1 ? "s" : ""}. Experiments are matched by family (same γ and grid), every parameter that differs is listed, and the charts overlay the runs on one axis. </p>
+    <p>In this section colours follow the run, the same in every report. Two rules for reading it. A difference between runs can only be attributed to a parameter if that parameter is the only thing that changed for that family (the "What changed" table shows this). And runs chosen after earlier results were seen are sensitivity checks; the pre-registered reference stays the headline.</p>`;
+  table("tbl-runs", ["Run", "Date", "Title", "Code", "Scale", "Pre-registered", "What changed", "Experiments"], R.run_order.map(id => { const r = RUNS[id], reg = REG[id] || {};
+    return [`<span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:${runColor(id)}"></i><b>${esc(id)}</b>${id === R.current_id ? ' <span class="pill plain">this report</span>' : ""}${id === R.reference_id ? ' <span class="pill plain">reference</span>' : ""}</span>`,
+      esc(r.run.date), esc(r.run.title), `<code>${esc(r.run.git_ref || "")}</code>`, r.run.scale === "full" ? "full" : `<span class="pill warn">${esc(r.run.scale)}</span>`, reg.pre_registered === true ? "yes" : reg.pre_registered === false ? `<span class="pill warn">post hoc</span>` : `<span class="pill warn">not stated</span>`, esc(r.run.what_changed), r.experiments.map(e => esc(e.name)).join("<br>")]; }), { left: [0, 2, 6, 7], wrap: [6] });
+  // matrix
+  const fams = R.families.map(x => x.family);
+  table("tbl-matrix", ["Family", ...R.run_order.map(id => `<span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:${runColor(id)}"></i>${esc(id)}</span>`)],
+    fams.map(fk => [famLabel(fk), ...R.run_order.map(id => { const e = famOf(RUNS[id], fk); return e ? `${f(e.summary.total_gap.median)} · ${e.summary.exact_best}/${e.summary.n_seeds} best` : ""; })]), { left: [0] });
+  // family picker: prefer families present in current run and at least one earlier run
+  const mine = R.families.filter(x => x.entries.some(en => en.run_id === R.current_id) && x.entries.length > 1);
+  const others = R.families.filter(x => !mine.includes(x) && x.entries.length > 1);
+  const list = [...mine, ...others];
+  const newOnly = R.families.filter(x => x.entries.length === 1 && x.entries[0].run_id === R.current_id).map(x => famLabel(x.family));
+  if (!list.length) { $("pick-fam").innerHTML = ""; $("fam-body").innerHTML = `<div class="empty">No family appears in more than one run yet${newOnly.length ? `; this run's ${newOnly.join(", ")} ${newOnly.length > 1 ? "are" : "is"} new` : ""}.</div>`; return; }
+  if (!famKey || !list.some(x => x.family === famKey)) famKey = list[0].family;
+  $("pick-fam").innerHTML = list.map(x => `<button type="button" aria-pressed="${x.family === famKey}" data-k="${x.family}">${famLabel(x.family)} · ${x.entries.length} runs${mine.includes(x) ? "" : " (not in this run)"}</button>`).join("");
+  const note = (!mine.length ? `<div class="empty">None of this run's families appears in an earlier run${newOnly.length ? ` (${newOnly.join(", ")} ${newOnly.length > 1 ? "are" : "is"} new)` : ""}. The families below compare earlier runs only.</div>` : "");
+  familyDetail(R.families.find(x => x.family === famKey), note);
+}
+
+function familyDetail(fam, note = "") {
+  const body = $("fam-body");
+  const entries = fam.entries.map(en => ({ ...en, e: RUNS[en.run_id].experiments.find(x => x.name === en.experiment), color: runColor(en.run_id) }));
+  const ref = entries.find(en => en.run_id === fam.reference.run_id && en.experiment === fam.reference.experiment) || entries[0];
+  const head = entries.map(en => `<span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:${en.color}"></i>${esc(en.run_id)}</span><br><span class="caption">${esc(en.experiment)}</span>`);
+  const changedKeys = new Set(entries.flatMap(en => en.vs_reference.map(c => c.param)));
+  const P = R.compared_params.filter(p => changedKeys.has(p.key));
+  const otherChanges = entries.flatMap(en => en.vs_reference.filter(c => c.param === "calibration" || c.param === "code").map(c => ({ ...c, run: en.run_id })));
+  // Settings that follow mechanically from another change (e.g. more episodes -> new β and K) do not count as separate changes.
+  const DERIVED = ["simulated_days_per_seed", "beta", "epsilon_final", "random_tries_per_portfolio", "convergence_k", "n_actions"];
+  // Code and calibration changes get their own banner, so they are not counted here.
+  const singleChange = entries.slice(1).every(en => en.vs_previous.filter(c => !DERIVED.includes(c.param) && c.param !== "code" && c.param !== "calibration").length <= 1);
+  const same = (a, b) => typeof a === "number" && typeof b === "number" ? Math.abs(a - b) <= 1e-12 * Math.max(1, Math.abs(a), Math.abs(b)) : String(a) === String(b);
+  const diffRows = P.map(p => [p.label, ...entries.map(en => { const v = en.e.params[p.key]; return { v: fmtParam(p.key, v), cls: !same(v, ref.e.params[p.key]) && en !== ref ? "changed" : "" }; })]);
+  const fmtChange = c => { let a = fmtParam(c.param, c.from), b = fmtParam(c.param, c.to); if (a === b && typeof c.from === "number") { a = Number(c.from).toPrecision(4); b = Number(c.to).toPrecision(4); } return c.from === "" ? b : `${a} → ${b}`; };
+  const vsPrev = entries.slice(1).map(en => `<li><b>${esc(en.run_id)}</b> vs. ${esc(entries[entries.indexOf(en) - 1].run_id)}: ${en.vs_previous.length ? en.vs_previous.map(c => `${esc(c.label)} ${fmtChange(c)}`).join("; ") : "no parameter changes"}</li>`).join("");
+  const metric = (label, fn, fmt, lowerBetter) => [label, ...entries.map(en => { const v = fn(en.e), r = fn(ref.e); let d = "";
+    if (en !== ref && typeof v === "number" && typeof r === "number") { const dv = v - r; if (Math.abs(dv) > 1e-9) d = ` <span class="${(dv > 0) === lowerBetter ? "delta-up" : "delta-down"}">(${dv > 0 ? "+" : ""}${fmt(dv)})</span>`; }
+    return (v == null ? "n/a" : typeof v === "number" ? fmt(v) : v) + d; })];
+  const mRows = [
+    metric("Discretization gap (bps/yr)", e => e.summary.disc_gap_bps, v => f(v, 2), true),
+    metric("Learning gap, median (bps/yr)", e => e.summary.learning_gap.median, v => f(v), true),
+    metric("Learning gap, mean (bps/yr)", e => e.summary.learning_gap.mean, v => f(v), true),
+    metric("Learning gap, worst seed", e => e.summary.learning_gap.max, v => f(v), true),
+    metric("Total gap, median (bps/yr)", e => e.summary.total_gap.median, v => f(v), true),
+    metric("Exact best (share of seeds)", e => e.summary.exact_best / e.summary.n_seeds, v => pct(v), false),
+    metric("Within near-optimal line at end", e => e.summary.within_near_of_best / e.summary.n_seeds, v => pct(v), false),
+    metric("Settled, median (M days)", e => e.summary.settled.median == null ? null : e.summary.settled.median / 1e6, v => f(v), true),
+    metric("Settled, median (episodes, M)", e => e.summary.settled.median == null ? null : e.summary.settled.median / e.params.episode_length / 1e6, v => f(v, 2), true),
+    metric("Primary rule met (share)", e => e.summary.primary.n / e.summary.n_seeds, v => pct(v), false),
+    metric("Near-optimal for good, checkpoints (share)", e => e.summary.near_ckpt.n / e.summary.n_seeds, v => pct(v), false),
+    metric("Average regret (bps/yr)", e => e.summary.regret_avg.median, v => f(v), true),
+    metric("Tries to separate top two", e => e.benchmarks.tries_to_separate_top_two, v => f(v, 0), true),
+    metric("Random tries per portfolio", e => e.params.random_tries_per_portfolio, v => f(v, 0), false),
+    metric("Seconds per seed", e => e.summary.seconds_per_seed, v => f(v, 0), true),
+  ];
+  const sameSeeds = entries.every(en => en.e.params.master_seed === ref.e.params.master_seed);
+  const nSeed = Math.min(...entries.map(en => en.e.seeds.length));
+  body.innerHTML = note + `
+    <div class="stack"><h4>What changed</h4>
+      ${P.length ? `<div class="tbl-wrap"><table id="t-diff"></table></div>` : `<div class="empty">No compared parameter differs across these entries.</div>`}
+      ${entries.length > 1 ? `<ul class="prose caption" style="font-size:14px;color:var(--ink-2)">${vsPrev}</ul>` : ""}
+      ${otherChanges.length ? `<div class="banner">${otherChanges.map(c => `<b>${esc(c.run)}:</b> ${esc(c.label)}${c.to ? " (" + esc(c.to) + ")" : ""}`).join("<br>")}</div>` : ""}
+      ${singleChange ? "" : `<div class="banner">At least one step between runs in this family changed more than one setting, so the change in results cannot be put down to a single parameter.</div>`}
+    </div>
+    <div class="stack"><h4>How the results moved</h4><div class="tbl-wrap"><table id="t-metric"></table></div>
+      <p class="caption">Brackets: change against the reference entry (${esc(ref.run_id)}). Red means worse, green better. Settled is shown in simulated days and in episodes, because a longer B uses more days per episode.</p></div>
+    <div class="fig"><div class="fig-num">FIGURE 5.2</div><h3>Median greedy loss over training, by run</h3>
+      <p class="fig-sub">Median across seeds of the greedy portfolio's CE loss against the grid's best, taken at every checkpoint and then averaged into at most 650 points so runs of different lengths compare fairly; clipped at 150. Switch the x-axis to compare by simulated days (data seen), episodes (decisions made) or share of each run's budget.</p>
+      <div class="toggle" role="group" aria-label="X axis" id="tg-x">${[["days", "Simulated days"], ["episodes", "Episodes"], ["share", "Share of budget"]].map(([k, l]) => `<button type="button" aria-pressed="${k === xMode}" data-x="${k}">${l}</button>`).join("")}</div>
+      <div class="legend" id="lg-f1"></div><div class="chart" id="c-f1"></div></div>
+    <div class="cols2">
+      <div class="fig"><div class="fig-num">FIGURE 5.3</div><h3>Learning gap per seed, by run</h3><p class="fig-sub">One dot per seed; bar = median.</p><div class="chart" id="c-f2"></div></div>
+      <div class="fig"><div class="fig-num">FIGURE 5.4</div><h3>Total gap, by run</h3><p class="fig-sub">Discretization plus median learning gap.</p><div class="chart" id="c-f3"></div></div>
+    </div>
+    <div class="fig"><div class="fig-num">FIGURE 5.5</div><h3>Learning curve, by run</h3><p class="fig-sub">Median CE return %/yr across seeds, on the same x-axis as Figure 5.2.</p><div class="legend" id="lg-f4"></div><div class="chart" id="c-f4"></div></div>
+    <div class="fig"><div class="fig-num">FIGURE 5.6</div><h3>When each run settles and converges</h3><p class="fig-sub">One dot per seed, in simulated days. Seeds that never meet a measure are counted on the right.</p><div class="chart" id="c-f5"></div></div>
+    ${sameSeeds && entries.length > 1 ? `<div class="stack"><h4>Seed by seed</h4><p class="prose caption" style="font-size:14px;color:var(--ink-2)">Every entry uses master seed ${ref.e.params.master_seed}, so seed <i>i</i> starts from the same random streams. If B or the grid changed, the same streams are cut into different episodes or exploration picks, so treat this as a loose pairing.</p><div class="tbl-wrap"><table id="t-seed"></table></div></div>` : ""}`;
+  if (P.length) table("t-diff", ["Parameter", ...head], diffRows, { left: [0] });
+  table("t-metric", ["Measure", ...head], mRows, { left: [0] });
+  // figures
+  const xOf = (en, xe) => xMode === "days" ? xe * en.e.params.episode_length / 1e6 : xMode === "episodes" ? xe / 1e6 : xe / en.e.params.n_episodes;
+  const xMax = Math.max(...entries.map(en => xMode === "days" ? en.e.params.simulated_days_per_seed / 1e6 : xMode === "episodes" ? en.e.params.n_episodes / 1e6 : 1));
+  const xfmt = xMode === "share" ? (v => Math.round(v * 100) + "%") : mfmt;
+  const xlab = { days: "Simulated days (millions)", episodes: "Episodes (millions)", share: "Share of the run's training budget" }[xMode];
+  const ser = en => en.e.series;
+  legend("lg-f1", entries.map(en => ({ label: `${en.run_id} (${en.experiment})`, color: en.color, line: true })));
+  lineChart($("c-f1"), { height: 320, x: { min: 0, max: xMax, label: xlab, fmt: xfmt, tipFmt: xfmt }, y: { min: 0, max: 150, label: "Median CE loss vs. best on grid (bps/yr)", tipFmt: v => f(v) + " bps" }, refs: [{ y: ref.e.params.near_optimal_bps, label: "near-optimal line" }],
+    series: entries.map(en => ({ label: en.run_id, color: en.color, dash: runDash(en.run_id), xs: ser(en).x_episodes.map(x => xOf(en, x)), data: ser(en).loss_median, step: true })) });
+  legend("lg-f4", entries.map(en => ({ label: en.run_id, color: en.color, line: true })));
+  lineChart($("c-f4"), { height: 280, x: { min: 0, max: xMax, label: xlab, fmt: xfmt, tipFmt: xfmt }, y: { ...yRange([...entries.flatMap(en => ser(en).reward_median), ref.e.benchmarks.u_best_daily * 25200]), label: "CE return (%/yr)", fmt: v => v + "%", tipFmt: v => f(v, 2) + "%" },
+    refs: [{ y: ref.e.benchmarks.u_best_daily * 25200, label: "best on grid" }], series: entries.map(en => ({ label: en.run_id, color: en.color, dash: runDash(en.run_id), xs: ser(en).x_episodes.map(x => xOf(en, x)), data: ser(en).reward_median })) });
+  const gmax = Math.max(30, ...entries.flatMap(en => en.e.seeds.map(s => s.loss_best))) * 1.05;
+  dotPlot($("c-f2"), { x: { min: 0, max: gmax, label: "Learning gap (bps/yr)" }, labelW: 120, rowH: 48, vlines: [{ x: ref.e.params.near_optimal_bps, label: "line" }],
+    rows: entries.map(en => ({ label: en.run_id, sub: `B = ${en.e.params.episode_length}, ${f(en.e.params.n_episodes / 1e6, 1)}M ep.`, color: en.color, median: en.e.summary.learning_gap.median, dots: en.e.seeds.map(s => ({ v: s.loss_best, tip: `<b>${esc(en.run_id)}, seed ${s.run}</b><div>${port(s.weights)}</div><div class="r"><span>Learning gap</span><b>${f(s.loss_best)}</b></div>` })) })) });
+  stackedH($("c-f3"), { labelW: 120, xLabel: "Total CE loss vs. continuous optimum (bps/yr)", rows: entries.map(en => ({ label: en.run_id, segs: [{ label: "Discretization gap", v: en.e.summary.disc_gap_bps, color: css("--axis"), textOn: css("--ink") }, { label: "Learning gap (median)", v: en.e.summary.learning_gap.median, color: en.color }] })) });
+  const measures = [["Settled (post hoc)", s => s.settled_obs], ["Near-optimal, checkpoints", s => s.near_obs_ckpt], ["Primary rule", s => s.primary_obs]];
+  const cmax = Math.max(...entries.map(en => en.e.params.simulated_days_per_seed)) / 1e6;
+  const crow = []; measures.forEach(([lab, fn], mi) => entries.forEach((en, ei) => { const v = en.e.seeds.map(fn);
+    crow.push({ label: ei === 0 ? lab : "", sub: en.run_id, sep: ei === 0 && mi > 0, color: en.color, median: median(v) == null ? null : median(v) / 1e6, never: v.filter(x => x == null).length,
+      dots: en.e.seeds.map((s, i) => v[i] == null ? null : { v: v[i] / 1e6, tip: `<b>${esc(en.run_id)}, seed ${s.run}</b><div class="r"><span>${lab}</span><b>${md(v[i])} days</b></div>` }).filter(Boolean) }); }));
+  dotPlot($("c-f5"), { x: { min: 0, max: cmax, label: "Simulated trading days (millions)", fmt: v => f(v, 0) + "M" }, rows: crow, rowH: 32, labelW: 180, neverCol: true });
+  if (sameSeeds && entries.length > 1) {
+    const rows = []; for (let i = 0; i < nSeed; i++) rows.push([i, ...entries.map(en => { const s = en.e.seeds.find(x => x.run === i); if (!s) return "n/a"; const rs = ref.e.seeds.find(x => x.run === i);
+      const d = en !== ref && rs ? s.loss_best - rs.loss_best : null; return `${s.is_best ? "best" : f(s.loss_best)}${d != null && Math.abs(d) > 1e-9 ? ` <span class="${d > 0 ? "delta-up" : "delta-down"}">(${d > 0 ? "+" : ""}${f(d)})</span>` : ""}<br><span class="caption port">${port(s.weights)}</span>`; })]);
+    table("t-seed", ["Seed", ...head], rows, {});
+  }
+  $("tg-x").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return; xMode = b.dataset.x; familyDetail(fam, note); });
+}
+
+function notesSection() {
+  const reg = REG[R.current_id] || {}, cav = (reg.notes && reg.notes.caveats) || [];
+  const std = [
+    "All gaps are exact values from the calibrated μ and Σ, which only evaluation code uses; the agent never sees them.",
+    "Runs that share a master seed are paired: seed i draws from the same random streams. Treat differences between runs in a family as paired only when nothing but the parameter of interest changed.",
+    "The pre-registered convergence rule restarts its clock on every brief excursion, so the post-hoc settled measure is reported beside it (RUN_ISSUES_2026-10-22.md Finding 1).",
+  ];
+  $("caveats").innerHTML = [...cav, ...std].map(c => `<li>${c}</li>`).join("");
+  const idx = CUR.index || {};
+  $("footer").innerHTML = `Built by <code>python -m src.reporting.build ${esc(R.current_id)}</code> from <code>reports/registry.json</code> and the committed <code>reports/&lt;run&gt;/data.json</code> files of ${R.run_order.map(id => `<code>${esc(id)}</code>`).join(", ")}. ${idx.written_utc ? `Run index written ${esc(idx.written_utc)}. ` : ""}numpy ${esc(CUR.experiments[0].code.numpy || idx.numpy || "")}.`;
+}
+
+function renderAll() { header(); settingsSection(); resultsSection(); resultsCharts(); detailSection(); compareSection(); notesSection(); }
+renderAll();
+$("pick-exp").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return; expIdx = +b.dataset.i; detailSection(); });
+$("pick-fam").addEventListener("click", ev => { const b = ev.target.closest("button"); if (!b) return; famKey = b.dataset.k; compareSection(); });
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderAll, 150); });
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+new MutationObserver(renderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>

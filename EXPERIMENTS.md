@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; no full-scale run yet
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py` (19)
 
 ---
@@ -112,6 +112,8 @@ regenerate them. Anything under `results/smoke*/` stays local entirely, so
 put every reduced-settings run there. Commit results with
 `git add results/`, never `git add -A`, and only after a full-scale run
 (`INDEX.md` says "Full-scale settings").
+
+**Later runs and their reports.** Every run after `baseline-v1` trains into its own `--results-dir results/<run_id>`, is registered in `reports/registry.json`, extracted once with `python -m src.reporting.extract <run_id>` on the machine that ran it, and gets a report from `python -m src.reporting.build <run_id>` that compares it with every earlier run. The checklist, including writing the expected direction here before training, is in `reports/README.md`.
 
 ## 5. Before reading results
 

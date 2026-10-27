@@ -1,0 +1,31 @@
+{
+  "about": "One entry per run, oldest first. A run is one --results-dir folder with one set of settings. Reports compare each run with every run listed before it (or with `compare_with`). See reports/README.md for how to add a run.",
+  "reference_run": "baseline-v1",
+  "runs": [
+    {
+      "id": "baseline-v1",
+      "title": "Full-scale baseline",
+      "date": "2026-10-22",
+      "results_dir": "results",
+      "git_ref": "baseline-v1",
+      "scale": "full",
+      "what_changed": "First full-scale run. Settings fixed in src/config.py on 2026-10-16 before any results existed.",
+      "pre_registered": true,
+      "original_report": "reports/full_run_2026-10-22/report.html",
+      "notes": {
+        "tldr": [
+          "All four experiments trained 10 seeds each with no crashes. On every grid and γ the agent learns to hold SPY and GLD, often with one bond slice, which is the right neighbourhood.",
+          "At γ = 5 the coarser 25% grid gives the smaller median total gap (14.3 against 19.8 bps/yr). Its best portfolio is further from the optimum, but the agent finds it far more often."
+        ],
+        "takeaways": [
+          "Exact recovery of the best grid portfolio happens in 3 to 5 seeds in 10. Rewards are too noisy for the top few portfolios to be told apart at this budget.",
+          "Every seed settles on its final portfolio in the first third of training; the pre-registered rule reports later dates because of brief excursions (RUN_ISSUES_2026-10-22.md Finding 1)."
+        ],
+        "caveats": [
+          "The original hand-written report for this run is kept unchanged at reports/full_run_2026-10-22/report.html.",
+          "The tag baseline-v1 points at commit f70296a, which includes later behaviour-equivalent edits to src/agent.py and src/train.py. Training ran at commit 80a6e9c, recorded in every manifest."
+        ]
+      }
+    }
+  ]
+}
