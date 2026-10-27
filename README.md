@@ -33,6 +33,9 @@ python -m src.data.clean               # rebuild data/processed/ from the commit
 python -m src.run_experiments          # train and evaluate every experiment (about 3.5 hours)
 ```
 
+Post-hoc variants run with `--run <run_id>` into their own results folder;
+`EXPERIMENTS.md` §7 lists each one, its command and its expected run time.
+
 Do not re-run `src.data.download_raw` to reproduce results. The raw data
 (downloaded 2026-09-24) is committed because Yahoo restates history, and a new
 download would change the calibration.

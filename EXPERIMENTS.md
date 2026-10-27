@@ -1,7 +1,7 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); later runs follow `reports/README.md`
-**Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py` (19)
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, not yet run (§7); later runs follow `reports/README.md`
+**Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---
 
@@ -136,3 +136,82 @@ put every reduced-settings run there. Commit results with
 - **The near-optimal line across γ.** 25 bps/yr is 3.5%, 4.8% and 6.7% of the
   best grid portfolio's value at γ = 3, 5 and 8, so it is a tighter bar at
   γ = 3 than at γ = 8 (`EVALUATION.md` §7).
+
+## 7. Post-hoc runs (registered 2026-10-27, not yet run)
+
+**TL;DR / In plain terms:** after the baseline run we planned five more runs
+that change the episode length, the training budget, the exploration schedule
+or the grid. They were chosen after seeing results, so the report must label
+them post hoc. Each one's settings, expected result, command and run time are
+written here before it runs, so the expectation cannot be fitted to the
+outcome afterwards.
+
+**Key concepts to understand**
+
+- **Post hoc.** A run designed after looking at results can be cherry-picked
+  without anyone meaning to. Writing down the expected direction first, and
+  reporting the run whichever way it comes out, is the standard defence.
+- **One variant per results folder.** Each run trains all three γ on its own
+  settings into its own `results/<run_id>/`, and the folder's `settings.json`
+  refuses anything else, so a variant can never mix with the baseline.
+- **Random tries per portfolio.** With ε_t = exp(−βt), the expected number of
+  random (exploration) episodes over N episodes is (1 − e^(−βN))/β. Divided by
+  the number of portfolios, it says how often an untried portfolio gets
+  sampled. The baseline gives about 1,100 per portfolio, while telling the top
+  two portfolios apart needs about 1.1 million (`REVIEW_HISTORY.md` §7.1).
+
+**Key takeaways**
+
+- Running without `--run` is unchanged and reproduces `baseline-v1`:
+  `test_baseline_settings_still_match_the_committed_baseline_v1_run` checks the
+  settings and every training config against the files that run wrote.
+- Each run lives on its own branch (`run/b60`, `run/n26m`, `run/eps-decay`,
+  `run/all-three`, `run/grid10-robustness`) holding only its own entry in
+  `src/config.py: POST_HOC_RUNS`, its tests and its section below.
+
+### 7.1 How a variant is defined and run
+
+A `RunVariant` in `src/config.py` names what changes (B, training episodes,
+ε at halfway, grid) and keeps every other setting at the baseline's. Its
+experiments are `baseline_g5_<grid>_<suffix>`, `robust_g3_<grid>_<suffix>` and
+`robust_g8_<grid>_<suffix>`. The runner adds `post_hoc_run` and
+`epsilon_at_halfway` to `settings.json` and writes the registration date and
+expected direction into `INDEX.md`.
+
+```bash
+python -m src.run_experiments --run <run_id> --dry-run                      # the plan, nothing written
+python -m src.run_experiments --run <run_id> --episodes 200000 --runs 2 --results-dir results/smoke_<run_id>
+python -m src.run_experiments --run <run_id> --results-dir results/<run_id>   # full scale
+```
+
+Assumptions that apply to every variant:
+
+- **Same seeds.** Master seed 20261016, 10 seeds, as in the baseline. Seed i
+  starts from the same random streams, but a different B or ε uses them
+  differently, so trajectories are not paired draw for draw with the baseline.
+- **ε is defined at halfway of the variant's own budget.** With 26M episodes,
+  "1% at halfway" means ε = 1% at episode 13M, so β halves.
+- **K stays 10% of the training episodes.** With 26M episodes K is 2.6M, so
+  "converged" is a stricter test in absolute episodes than in the baseline.
+- **The discretization gap does not depend on B, N or ε.** It is computed
+  from μ and Σ on the grid. Only the 10% grid run can change it.
+- **No resolution comparison.** Each variant uses one grid, so the runner's
+  grid-comparison folder is not written.
+
+### 7.2 Run-time basis
+
+Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
+23.6 µs per episode) at B = 20 on the 20% grid with 13M episodes, so about
+2.5 hours for 30 seeds (3 γ × 10). Scaling rules used below:
+
+- **Episode length.** B = 63 measured 43.8 µs vs 38.2 µs at B = 20 in
+  William's timing, about 0.13 µs per extra simulated day. B = 60 adds about
+  5.2 µs per episode, so +14% to +22% depending on whether it scales with the
+  total or adds a fixed amount. Estimates below use the range.
+- **Training budget.** Time is proportional to the number of episodes.
+- **ε.** No effect on speed worth estimating.
+- **10% grid.** 91 µs per episode with the current runner and 51.6 µs for the
+  bare loop (`REVIEW_HISTORY.md` §4). The difference is the full Q-table copy
+  after every episode (§5.3).
+
+Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
