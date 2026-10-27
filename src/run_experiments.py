@@ -4,7 +4,7 @@
     python -m src.run_experiments --only baseline_g5_grid20
     python -m src.run_experiments --episodes 200000 --runs 2 --results-dir results/smoke   # quick check
     python -m src.run_experiments --dry-run            # print the plan only
-    python -m src.run_experiments --run b60 --results-dir results/b60   # a post-hoc variant (config.POST_HOC_RUNS)
+    python -m src.run_experiments --run b63 --results-dir results/b63   # a post-hoc variant (config.POST_HOC_RUNS)
 
 Each experiment trains into <results-dir>/<name>/ (one .npz per seed plus
 manifest.json) and is evaluated into <results-dir>/<name>/evaluation/.

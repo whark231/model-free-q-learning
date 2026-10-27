@@ -121,10 +121,10 @@ class RunVariant:
 
 # Every post-hoc run, by run_id. Each run branch adds its own entry.
 POST_HOC_RUNS: dict[str, RunVariant] = {
-    "b60": RunVariant(
-        "b60", "B60", "2026-10-27",
+    "b63": RunVariant(
+        "b63", "B63", "2026-10-27",
         "a smaller learning gap at every γ; exactly-best share, training regret and discretization gap about unchanged",
-        episode_length=60,
+        episode_length=63,
     ),
     "n26m": RunVariant(
         "n26m", "N26M", "2026-10-27",
@@ -137,15 +137,15 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         epsilon_at_halfway=0.03,
     ),
     "all-three": RunVariant(
-        "all-three", "B60_N26M_eps3", "2026-10-27",
-        "the smallest learning gap of runs 1 to 4 at every γ, mostly from B; training regret a little above b60's",
-        episode_length=60, n_episodes=26_000_000, epsilon_at_halfway=0.03,
+        "all-three", "B63_N26M_eps3", "2026-10-27",
+        "the smallest learning gap of runs 1 to 4 at every γ, mostly from B; training regret a little above b63's",
+        episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.03,
     ),
     "grid10-robustness": RunVariant(
-        "grid10-robustness", "B60_N26M_eps3", "2026-10-27",
+        "grid10-robustness", "B63_N26M_eps3", "2026-10-27",
         "a larger learning gap against the best grid portfolio than run all-three's at every γ, exactly-best share "
         "near zero, discretization gap 5.7 -> 1.3 bps/yr at γ = 5 and unchanged at γ = 3 and 8",
-        episode_length=60, n_episodes=26_000_000, epsilon_at_halfway=0.03, increment=0.1,
+        episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.03, increment=0.1,
     ),
 }
 

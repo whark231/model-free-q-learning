@@ -165,7 +165,7 @@ outcome afterwards.
 - Running without `--run` is unchanged and reproduces `baseline-v1`:
   `test_baseline_settings_still_match_the_committed_baseline_v1_run` checks the
   settings and every training config against the files that run wrote.
-- The five runs are numbered in the order they were planned: run 1 `b60`
+- The five runs are numbered in the order they were planned: run 1 `b63`
   (§7.3), run 2 `n26m` (§7.4), run 3 `eps-decay` (§7.5), run 4 `all-three`
   (§7.6) and run 5 `grid10-robustness` (§7.7). Each was built on its own
   branch (`run/<run_id>`) and all five were merged into `dev` on 2026-10-27.
@@ -208,9 +208,9 @@ about 313 s, 24 µs per episode) at B = 20 on the 20% grid with 13M episodes, so
 2.5 hours for 30 seeds (3 γ × 10). Scaling rules used below:
 
 - **Episode length.** B = 63 measured 43.8 µs vs 38.2 µs at B = 20 in
-  William's timing, about 0.13 µs per extra simulated day. B = 60 adds about
-  5.2 µs per episode, so +14% to +22% depending on whether it scales with the
-  total or adds a fixed amount. Estimates below use the range.
+  William's timing, about 0.13 µs per extra simulated day. B = 63 adds about
+  5.6 µs per episode, so +15% (William's measured ratio) to +24% (the same
+  5.6 µs added to the baseline's 23.6 µs). Estimates below use the range.
 - **Training budget.** Time is proportional to the number of episodes.
 - **ε.** No effect on speed worth estimating.
 - **10% grid.** 91 µs per episode with the current runner and 51.6 µs for the
@@ -221,10 +221,10 @@ about 313 s, 24 µs per episode) at B = 20 on the 20% grid with 13M episodes, so
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
 
-### 7.3 Run `b60`: episode length B = 60 (post hoc)
+### 7.3 Run `b63`: episode length B = 63 (post hoc)
 
-**TL;DR / In plain terms:** each training episode scores a portfolio on 60
-simulated days instead of 20. A longer batch gives a less noisy score for
+**TL;DR / In plain terms:** each training episode scores a portfolio on 63
+simulated days (about a quarter of a trading year) instead of 20. A longer batch gives a less noisy score for
 every portfolio at once, so the agent should be better at telling the top
 few apart. Nothing else changes.
 
@@ -232,7 +232,7 @@ few apart. Nothing else changes.
 
 - **Why B matters.** One episode's reward is the sample mean minus γ/2 times
   the sample variance of 20 daily returns. Its standard deviation falls
-  roughly with √B, so B = 60 cuts the noise of every reward by about √3 ≈ 1.7
+  roughly with √B, so B = 63 cuts the noise of every reward by about √(63/20) ≈ 1.8
   without needing any extra episodes.
 - **Why B does not touch the benchmark.** μ and Σ are daily, and the reward is
   a daily mean-variance score at any B, so the best grid portfolio and the
@@ -244,13 +244,14 @@ few apart. Nothing else changes.
   §7.2). It is the Part VI "episode lengths" robustness check the assignment
   lists.
 - William proposed B = 63 and B = 252 (`REVIEW_NOTES_FOR_WILLIAM.md`, "To
-  decide with Albert"). Albert chose B = 60 (about a quarter, a round multiple
-  of the baseline's 20). B = 252 is not registered here.
+  decide with Albert"). Albert first registered B = 60 and changed it to
+  B = 63 on 2026-10-27, before anything ran, to match William's proposal and
+  the B = 63 surrogate estimate. B = 252 is not registered here.
 
 | Setting | Baseline (`baseline-v1`) | This run |
 |---|---|---|
-| Episode length B | 20 | **60** |
-| Training episodes per seed | 13,000,000 | 13,000,000 (780M simulated days) |
+| Episode length B | 20 | **63** |
+| Training episodes per seed | 13,000,000 | 13,000,000 (819M simulated days) |
 | ε at halfway | 1% (β ≈ 7.08e-7) | 1% (same β) |
 | Grid | 20% (1,287) | 20% (1,287) |
 | K (convergence) | 1,300,000 episodes | 1,300,000 episodes |
@@ -268,11 +269,11 @@ Discretization gap identical to the baseline (2.5, 5.7, 6.1 bps/yr at γ = 3,
 **Command.**
 
 ```bash
-python -m src.run_experiments --run b60 --dry-run
-python -m src.run_experiments --run b60 --results-dir results/b60
+python -m src.run_experiments --run b63 --dry-run
+python -m src.run_experiments --run b63 --results-dir results/b63
 ```
 
-**Estimated time.** 340 to 370 s per seed, so about 3 hours for 30 seeds
+**Estimated time.** 345 to 375 s per seed, so about 3 hours for 30 seeds
 (3 γ × 10), plus a few minutes of evaluation.
 
 ### 7.4 Run `n26m`: 26 million training episodes per seed (post hoc)
@@ -302,7 +303,7 @@ stretched to match, so ε still reaches 1% halfway through, now at episode
 - This is the Part VI "different training budgets" robustness check the
   assignment lists.
 - Albert confirmed on 2026-10-27 that "double up to 26M" means training
-  episodes, with B left at 20 (B = 60 is run `b60`).
+  episodes, with B left at 20 (B = 63 is run `b63`).
 
 | Setting | Baseline (`baseline-v1`) | This run |
 |---|---|---|
@@ -384,12 +385,12 @@ python -m src.run_experiments --run eps-decay --results-dir results/eps-decay
 **Estimated time.** About 300 s per seed, so about 2.5 hours for 30 seeds,
 plus a few minutes of evaluation.
 
-### 7.6 Run `all-three`: B = 60, 26M episodes and ε = 3% at halfway together (post hoc)
+### 7.6 Run `all-three`: B = 63, 26M episodes and ε = 3% at halfway together (post hoc)
 
 **TL;DR / In plain terms:** this run applies all three changes at once:
-60-day episodes, 26 million episodes per seed, and ε falling to 3% at
+63-day episodes, 26 million episodes per seed, and ε falling to 3% at
 halfway (episode 13 million). It shows how much the changes give together,
-compared with runs `b60`, `n26m` and `eps-decay`, which each change one thing.
+compared with runs `b63`, `n26m` and `eps-decay`, which each change one thing.
 
 **Key concepts to understand**
 
@@ -408,8 +409,8 @@ compared with runs `b60`, `n26m` and `eps-decay`, which each change one thing.
 
 | Setting | Baseline (`baseline-v1`) | This run |
 |---|---|---|
-| Episode length B | 20 | **60** |
-| Training episodes per seed | 13,000,000 | **26,000,000** (1.56B simulated days) |
+| Episode length B | 20 | **63** |
+| Training episodes per seed | 13,000,000 | **26,000,000** (1.64B simulated days) |
 | ε at halfway | 1% (β ≈ 7.08e-7) | **3%** of the new budget, at episode 13M (β ≈ 2.70e-7) |
 | Grid | 20% (1,287) | 20% (1,287) |
 | K (convergence) | 1,300,000 episodes | **2,600,000 episodes** |
@@ -418,8 +419,8 @@ compared with runs `b60`, `n26m` and `eps-decay`, which each change one thing.
 
 **Expected direction, written before running.** The smallest learning gap
 of runs 1 to 4 at every γ, mostly from the longer episodes; at γ = 5 a mean
-gap below `b60`'s. Exactly-best share at or above the baseline's. Training
-regret slightly above `b60`'s because of the slower ε decay. Discretization
+gap below `b63`'s. Exactly-best share at or above the baseline's. Training
+regret slightly above `b63`'s because of the slower ε decay. Discretization
 gap identical to the baseline.
 
 **Command.**
@@ -429,14 +430,14 @@ python -m src.run_experiments --run all-three --dry-run
 python -m src.run_experiments --run all-three --results-dir results/all-three
 ```
 
-**Estimated time.** 680 to 730 s per seed, so about 6 hours for 30 seeds,
+**Estimated time.** 690 to 745 s per seed, so about 6 hours for 30 seeds,
 plus a few minutes of evaluation.
 
 ### 7.7 Run `grid10-robustness`: the 10% grid at run `all-three`'s settings (post hoc)
 
 **TL;DR / In plain terms:** the agent picks from a finer menu of 43,758
 portfolios (weights in steps of 10%) instead of 1,287. Every other setting
-matches run `all-three` (B = 60, 26M episodes, ε = 3% at halfway), so the
+matches run `all-three` (B = 63, 26M episodes, ε = 3% at halfway), so the
 difference between the two runs is the grid alone. This is the Part VI
 action-space robustness check. A finer menu contains a better portfolio, but
 the agent has 34 times as many portfolios to try with the same budget.
@@ -475,7 +476,7 @@ the agent has 34 times as many portfolios to try with the same budget.
   by summing the schedule episode by episode. With 85 tries, one portfolio's
   average reward still has a standard error of roughly 370/√85 ≈ 40 times the
   10.5 bps/yr gap that separates the top two on the 20% grid (`REVIEW_HISTORY.md`
-  §7.1, B = 20; B = 60 cuts that by about √3). Random tries therefore only
+  §7.1, B = 20; B = 63 cuts that by about 1.8). Random tries therefore only
   screen out clearly bad portfolios; the choice among the near-best is made
   by exploitation, as on the 20% grid. A slower decay (10% at halfway) would
   add 43 tries per portfolio at a cost of about 1.9M more random episodes,
@@ -494,7 +495,7 @@ the agent has 34 times as many portfolios to try with the same budget.
   The comparison is therefore paired seed by seed, and `evaluate.py` can
   compare the two directly since their training configs differ only in the
   grid:
-  `python -m src.evaluate --compare results/all-three/baseline_g5_grid20_B60_N26M_eps3 results/grid10-robustness/baseline_g5_grid10_B60_N26M_eps3 --labels 20% 10% --out results/grid10-robustness/comparison_g5_grid20_vs_grid10 --eval-episodes 10000 --converge-k 2600000 --dq-tol 1e-5 --near-optimal-bps 25`.
+  `python -m src.evaluate --compare results/all-three/baseline_g5_grid20_B63_N26M_eps3 results/grid10-robustness/baseline_g5_grid10_B63_N26M_eps3 --labels 20% 10% --out results/grid10-robustness/comparison_g5_grid20_vs_grid10 --eval-episodes 10000 --converge-k 2600000 --dq-tol 1e-5 --near-optimal-bps 25`.
 - William proposed running the 10% grid at baseline settings (B = 20, 13M)
   so it changes one thing from `baseline-v1` (`REVIEW_NOTES_FOR_WILLIAM.md`).
   Albert chose `all-three`'s settings on 2026-10-27 so the comparison is with
@@ -503,7 +504,7 @@ the agent has 34 times as many portfolios to try with the same budget.
 | Setting | Baseline (`baseline-v1`) | Run `all-three` | This run |
 |---|---|---|---|
 | Grid | 20% (1,287) | 20% (1,287) | **10% (43,758)** |
-| Episode length B | 20 | 60 | 60 |
+| Episode length B | 20 | 63 | 63 |
 | Training episodes per seed | 13,000,000 | 26,000,000 | 26,000,000 |
 | ε at halfway | 1% (β ≈ 7.08e-7) | 3% (β ≈ 2.70e-7) | 3% (β ≈ 2.70e-7) |
 | K (convergence) | 1,300,000 | 2,600,000 | 2,600,000 |
@@ -540,7 +541,7 @@ python -m src.run_experiments --run grid10-robustness --results-dir results/grid
 ```
 
 **Estimated time and resources.** Per episode at the 10% grid: 91 µs with the
-current runner, plus about 5 µs for B = 60, so about 96 to 104 µs.
+current runner, plus 15% or 5.6 µs for B = 63, so about 97 to 105 µs.
 
 - As the code stands: about 2,500 to 2,700 s per seed, so 21 to 23 hours for
   30 seeds.
@@ -557,5 +558,5 @@ current runner, plus about 5 µs for B = 60, so about 96 to 104 µs.
   Evaluation reads one seed at a time.
 
 Run it in three parts if an overnight run is not possible:
-`--only baseline_g5_grid10_B60_N26M_eps3` and so on, into the same results
+`--only baseline_g5_grid10_B63_N26M_eps3` and so on, into the same results
 folder. Finished experiments are reused.

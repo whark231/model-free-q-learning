@@ -310,11 +310,11 @@ def test_variant_dry_run_defaults_to_its_own_training_budget(tmp_path, capsys):
     assert "26,000,000 episodes" in out and "K=2,600,000" in out and not any(tmp_path.iterdir())
 
 
-def test_post_hoc_run_b60_is_registered_as_written_in_experiments_md():
-    run = cfg.POST_HOC_RUNS["b60"]
-    assert run.changes() == {"episode_length": (20, 60)}
+def test_post_hoc_run_b63_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["b63"]
+    assert run.changes() == {"episode_length": (20, 63)}
     assert run.registered == "2026-10-27"
-    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B60", "robust_g3_grid20_B60", "robust_g8_grid20_B60"]
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B63", "robust_g3_grid20_B63", "robust_g8_grid20_B63"]
 
 
 def test_post_hoc_run_n26m_is_registered_as_written_in_experiments_md():
@@ -333,18 +333,18 @@ def test_post_hoc_run_eps_decay_is_registered_as_written_in_experiments_md():
 
 def test_post_hoc_run_all_three_is_registered_as_written_in_experiments_md():
     run = cfg.POST_HOC_RUNS["all-three"]
-    assert run.changes() == {"episode_length": (20, 60), "n_episodes": (13_000_000, 26_000_000), "epsilon_at_halfway": (0.01, 0.03)}
+    assert run.changes() == {"episode_length": (20, 63), "n_episodes": (13_000_000, 26_000_000), "epsilon_at_halfway": (0.01, 0.03)}
     assert run.registered == "2026-10-27"
-    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B60_N26M_eps3", "robust_g3_grid20_B60_N26M_eps3", "robust_g8_grid20_B60_N26M_eps3"]
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B63_N26M_eps3", "robust_g3_grid20_B63_N26M_eps3", "robust_g8_grid20_B63_N26M_eps3"]
 
 
 def test_post_hoc_run_grid10_robustness_is_registered_as_written_in_experiments_md():
     run = cfg.POST_HOC_RUNS["grid10-robustness"]
-    assert run.changes() == {"episode_length": (20, 60), "n_episodes": (13_000_000, 26_000_000),
+    assert run.changes() == {"episode_length": (20, 63), "n_episodes": (13_000_000, 26_000_000),
                              "epsilon_at_halfway": (0.01, 0.03), "increment": (0.2, 0.1)}
     assert run.registered == "2026-10-27"
     assert [e.name for e in cfg.experiments(run)] == [
-        "baseline_g5_grid10_B60_N26M_eps3", "robust_g3_grid10_B60_N26M_eps3", "robust_g8_grid10_B60_N26M_eps3"]
+        "baseline_g5_grid10_B63_N26M_eps3", "robust_g3_grid10_B63_N26M_eps3", "robust_g8_grid10_B63_N26M_eps3"]
     assert generate_weight_grid(9, run.increment).shape[0] == 43_758  # the count the assignment states
 
 
