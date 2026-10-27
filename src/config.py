@@ -117,7 +117,13 @@ class RunVariant:
 
 
 # Every post-hoc run, by run_id. Each run branch adds its own entry.
-POST_HOC_RUNS: dict[str, RunVariant] = {}
+POST_HOC_RUNS: dict[str, RunVariant] = {
+    "all-three": RunVariant(
+        "all-three", "B60_N26M_eps3", "2026-10-27",
+        "the smallest learning gap of the five runs at every γ, mostly from B; training regret a little above b60's",
+        episode_length=60, n_episodes=26_000_000, epsilon_at_halfway=0.03,
+    ),
+}
 
 
 def experiments(run: RunVariant | None = None) -> list[Experiment]:
