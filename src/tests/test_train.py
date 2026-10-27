@@ -351,3 +351,61 @@ def test_train_module_does_not_load_the_benchmarks():
     loaded = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env, check=True).stdout.split()
     assert "src.train" in loaded
     assert not [m for m in loaded if m.startswith("src.benchmarks")]
+
+
+# ---------------------------------------------------------------------------
+# train.py's own Q-table copy (REVIEW_HISTORY.md §5.3): used only when
+# update() returns the new Q(action), and must change nothing in the logs
+# ---------------------------------------------------------------------------
+
+class ReturningAverager(EpsilonGreedyAverager):
+    def update(self, action, reward):
+        super().update(action, reward)
+        return self._q[action]
+
+
+class ReturningTabularQAgent(train.TabularQAgent):
+    """William's proposed update(): the same agent, returning the new Q(action)."""
+
+    def update(self, action, reward):
+        super().update(action, reward)
+        return float(self._q[action])
+
+
+def returning_tabular_factory(config, n_actions, rng):
+    agent = train.default_agent_factory(config, n_actions, rng)
+    agent.__class__ = ReturningTabularQAgent
+    return agent
+
+
+@pytest.mark.parametrize("plain, returning", [
+    (averager_factory, lambda c, n, rng: ReturningAverager(n, rng)),
+    (train.default_agent_factory, returning_tabular_factory),
+])
+def test_returned_q_value_gives_bit_identical_logs(tmp_path, plain, returning):
+    run_experiment(small_config(), tmp_path / "copy", agent_factory=plain)
+    run_experiment(small_config(), tmp_path / "mirror", agent_factory=returning)
+    for run in range(2):
+        a, b = load_run(tmp_path / "copy", run), load_run(tmp_path / "mirror", run)
+        assert a.keys() == b.keys()
+        for key in a:
+            np.testing.assert_array_equal(a[key], b[key], err_msg=key)
+
+
+class WrongReturn(EpsilonGreedyAverager):
+    def update(self, action, reward):
+        super().update(action, reward)
+        return self._q[action] + 1e-12
+
+
+class TouchesAnotherEntry(EpsilonGreedyAverager):
+    def update(self, action, reward):
+        super().update(action, reward)
+        self._q[(action + 1) % self._q.size] += 1e-9
+        return self._q[action]
+
+
+@pytest.mark.parametrize("cls", [WrongReturn, TouchesAnotherEntry])
+def test_a_copy_that_drifts_from_the_agent_stops_the_run(tmp_path, cls):
+    with pytest.raises(RuntimeError, match="copy of the Q-table differs"):
+        run_experiment(small_config(), tmp_path, agent_factory=lambda c, n, rng: cls(n, rng))

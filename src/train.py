@@ -30,6 +30,14 @@ The logged greedy action is the lowest-index argmax of the Q-values. It is
 for logging only, never feeds back into training, and never calls the agent's
 own greedy_action (which may draw from the agent's random stream).
 
+If agent.update() returns the new Q(action), train.py keeps its own copy of the
+Q-table and changes that one entry, instead of copying the whole table every
+episode (REVIEW_HISTORY.md §5.3). At the 10% grid that copy is about 6 µs of
+the roughly 91 µs per episode; the per-episode argmax below is about 36 µs.
+The copy is checked against agent.q_values at every checkpoint. An update()
+that returns None, as TabularQAgent's does until William's half of the fix
+lands, gets the full copy as before.
+
 Usage, from the repo root:
 
     python -m src.train --gamma 5 --episode-length 20 --episodes 200000 \\
@@ -63,10 +71,12 @@ CODE_FILES = (
     "src/rewards.py",
     "src/action_space/grid.py",
 )
-# Q snapshots are checkpoints x actions float32 values. At the 10% grid
-# (43,758 actions) with 13M episodes and log_every=10,000 that is 57M values
-# (227 MB); the 5% grid would be far larger. Refuse rather than run out of memory.
-MAX_SNAPSHOT_VALUES = 100_000_000
+# Q snapshots are checkpoints x actions float32 values, and the action counts
+# are the same size again in int32. At the 10% grid (43,758 actions) with 26M
+# episodes and log_every=10,000 that is 114M values each (455 MB, so about
+# 910 MB for both); the 5% grid would be far larger. Refuse rather than run out
+# of memory. Raised from 100M on 2026-10-27 for post-hoc run grid10-robustness.
+MAX_SNAPSHOT_VALUES = 120_000_000
 
 
 @dataclass(frozen=True)
@@ -164,6 +174,7 @@ def train_one_run(config: TrainConfig, grid: np.ndarray, simulator: ReturnSimula
     logged_greedy = int(np.argmax(q))
     greedy_change_episode, greedy_change_action = [0], [logged_greedy]
     window_rewards, window_max_dq, checkpoint = 0.0, 0.0, 0
+    mirrored = False  # True once update() has returned a value
     window_counts = np.zeros(n_actions, dtype=np.int32)
 
     done = 0
@@ -173,17 +184,21 @@ def train_one_run(config: TrainConfig, grid: np.ndarray, simulator: ReturnSimula
         for batch in block:
             action = int(agent.select_action())
             reward = float(episodic_mean_variance_reward(grid[action], batch, config.gamma))
-            agent.update(action, reward)
+            old_value = q[action]
+            returned = agent.update(action, reward)
             done += 1
 
-            new_q = agent.q_values
-            if not np.isfinite(new_q[action]):
+            if returned is None:
+                q = agent.q_values  # full copy
+            else:
+                q[action] = returned  # q is train.py's own copy; update() changed only Q(action)
+                mirrored = True
+            if not np.isfinite(q[action]):
                 raise FloatingPointError(
-                    f"Q-value of action {action} became {new_q[action]} at episode {done}; "
+                    f"Q-value of action {action} became {q[action]} at episode {done}; "
                     "check the learning-rate rule"
                 )
-            window_max_dq = max(window_max_dq, abs(new_q[action] - q[action]))
-            q = new_q
+            window_max_dq = max(window_max_dq, abs(q[action] - old_value))
             window_rewards += reward
             window_counts[action] += 1
 
@@ -194,6 +209,11 @@ def train_one_run(config: TrainConfig, grid: np.ndarray, simulator: ReturnSimula
                 greedy_change_action.append(greedy)
 
             if done % config.log_every == 0 or done == config.n_episodes:
+                if mirrored and not np.array_equal(q, agent.q_values):
+                    raise RuntimeError(
+                        f"train.py's copy of the Q-table differs from the agent's at episode {done}: "
+                        "update() must return the new Q(action) and change no other entry"
+                    )
                 checkpoint_episode[checkpoint] = done
                 # Read from the agent, after `done` selections: the rate the next episode uses.
                 checkpoint_next_epsilon[checkpoint] = agent.epsilon
