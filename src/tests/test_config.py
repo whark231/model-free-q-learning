@@ -110,6 +110,8 @@ def test_every_full_scale_experiment_fits_the_snapshot_memory_guard():
 class AveragingExplorer:
     """Uniform exploration with sample-average Q-values: fast and Q-dependent."""
 
+    epsilon = 1.0  # always explores
+
     def __init__(self, n_actions, rng):
         self._rng, self._q, self._n = rng, np.zeros(n_actions), np.zeros(n_actions, dtype=int)
 

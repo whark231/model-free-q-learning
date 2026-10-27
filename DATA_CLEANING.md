@@ -392,7 +392,7 @@ William fixed it in `51b3eb7` (2026-09-29) by solving on annualized moments
 internally, which leaves the argmax unchanged (§8.1). Checked on 2026-10-02
 against an exact solution that enumerates every set of held assets: every
 weight agrees within 3e-6 for each whole-number γ from 1 to 15. The history is
-in `REVIEW_NOTES_FOR_WILLIAM.md`.
+in `REVIEW_HISTORY.md`.
 
 ### 8.3 Sanity check of the calibrated environment
 

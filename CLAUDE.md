@@ -181,7 +181,8 @@ Existing docs:
 | `ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
 | `EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
 | `EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
-| `REVIEW_NOTES_FOR_WILLIAM.md` | Open issues found in William's files, with fixes |
+| `REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
+| `REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
 | `CLAUDE.md` | This working agreement |
 
 ## 5. Project-specific conventions

@@ -91,6 +91,13 @@ class TabularQAgent:
         per-action visit logging in train.py."""
         return self._visits.copy()
 
+    @property
+    def epsilon(self) -> float:
+        """The exploration rate the next select_action call will use. train.py
+        logs this instead of recomputing the schedule itself, so the log
+        always matches what the agent actually did."""
+        return self._epsilon()
+
     # -- Internal helpers --
 
     def _epsilon(self) -> float:
@@ -147,6 +154,11 @@ class TabularQAgent:
     @property
     def greedy_action(self) -> int:
         """The action with the highest current Q-value, ties broken
-        uniformly at random rather than by numpy's silent first-index rule."""
+        uniformly at random rather than by numpy's silent first-index rule.
+
+        Reading this when two or more actions tie consumes a draw from
+        _tie_rng. That stream is separate from self.rng, so reading it never
+        changes which actions select_action explores, but it does mean two
+        reads in a row can return different tied actions."""
         tied = np.flatnonzero(self._q == self._q.max())
         return int(self._tie_rng.choice(tied))
