@@ -54,7 +54,7 @@ def check_results_dir(results_dir: Path, settings: dict) -> None:
     """Refuse a results folder that already holds different settings."""
     path = results_dir / "settings.json"
     if path.exists():
-        existing = json.loads(path.read_text())
+        existing = json.loads(path.read_text(encoding="utf-8"))
         diff = sorted(k for k in set(existing) | set(settings) if existing.get(k) != settings.get(k))
         if diff:
             raise ValueError(
@@ -63,7 +63,7 @@ def check_results_dir(results_dir: Path, settings: dict) -> None:
             )
     else:
         results_dir.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(settings, indent=2) + "\n")
+        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
 
 
 def training_status(run_dir: Path, train_cfg) -> str:
@@ -73,7 +73,7 @@ def training_status(run_dir: Path, train_cfg) -> str:
         if run_dir.exists() and any(run_dir.iterdir()):
             raise ValueError(f"{run_dir} has files but no manifest; delete that folder and run again")
         return "new"
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     wanted = json.loads(json.dumps(asdict(train_cfg)))
     diff = sorted(k for k in wanted if manifest["config"].get(k) != wanted[k])
     if diff:
@@ -121,7 +121,7 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int = cf
     for experiment in cfg.experiments():
         summary_path = results_dir / experiment.name / "evaluation" / "summary.json"
         if summary_path.exists():
-            entries.append(_index_entry(experiment, json.loads(summary_path.read_text())))
+            entries.append(_index_entry(experiment, json.loads(summary_path.read_text(encoding="utf-8"))))
 
     comparison = None
     if {"baseline_g5_grid20", "resolution_g5_grid25"} <= {e["name"] for e in entries}:
@@ -146,8 +146,8 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int = cf
         "experiments": entries,
         "comparison": {"folder": COMPARISON_NAME, "results": comparison} if comparison else None,
     }
-    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n")
-    (results_dir / "INDEX.md").write_text(_index_markdown(index))
+    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
+    (results_dir / "INDEX.md").write_text(_index_markdown(index), encoding="utf-8")
     return index
 
 

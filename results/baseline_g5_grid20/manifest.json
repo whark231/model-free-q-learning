@@ -1,0 +1,254 @@
+{
+  "config": {
+    "gamma": 5.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "beta": 7.084877209212449e-07,
+    "increment": 0.2,
+    "alpha_rule": "sample_average",
+    "epsilon0": 1.0,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "block_size": 10000
+  },
+  "seed_plan": {
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+    "streams": {
+      "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+      "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+      "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+    },
+    "numpy_version": "2.3.5"
+  },
+  "n_actions": 1287,
+  "grid_sha256": "1f1537ce9a93b0cda5eca4c82d435980577907f0681efd7ca7a8eacc55b6c328",
+  "calibration_sha256": {
+    "summary_statistics.csv": "7f6608cdeb5c505e645a9f688c84a1f99de51ab3f56ec06e4a8f02b161a6eab9",
+    "covariance_daily.csv": "f95eecc418bf0937071109234818d96a3c2d0ae33d5c909ede1b1b337ad1bfe2"
+  },
+  "code_sha256": {
+    "src/train.py": "263fcc1fd8e8d1478198d8c9d2af5863249b3b3d057b7ccba8f46228d8e225bd",
+    "src/agent.py": "5f6917e24bfb8c2b5fbc725ea54e568c4147f2be3b45a66c133b79e3045be881",
+    "src/environment.py": "f794a81a1c8fc7eb824a15283f2171e6a499e4c46e11708989bf119af6757765",
+    "src/rewards.py": "b6b5fbece06f860d970317241c404856db3cf7e947b9cd2fcef17e52e64de786",
+    "src/action_space/grid.py": "1e610e2d670e9116cfdf19af82197e4a05eb85be6806e14f8bfc55936b2e579e"
+  },
+  "git_commit": "80a6e9c3f7b79d6d94a7c8d134836f7046d652b3",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "log_schema": {
+    "checkpoint_*": "one row per log_every episodes; the last row covers the final, possibly shorter, window",
+    "checkpoint_next_epsilon": "epsilon0 * exp(-beta * episodes done): the rate for the next episode",
+    "greedy_change_*": "episode number and new logged greedy action at every change; first entry is episode 0",
+    "logged_greedy": "lowest-index argmax of the Q-values; logging only",
+    "observations": "episodes x episode_length simulated days"
+  },
+  "runs": [
+    {
+      "run": 0,
+      "file": "run_000.npz",
+      "seconds": 306.97,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1162,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 7977
+    },
+    {
+      "run": 1,
+      "file": "run_001.npz",
+      "seconds": 303.2,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1247,
+      "final_greedy_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 9098
+    },
+    {
+      "run": 2,
+      "file": "run_002.npz",
+      "seconds": 299.53,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1174,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 11074
+    },
+    {
+      "run": 3,
+      "file": "run_003.npz",
+      "seconds": 303.67,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1137,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8472
+    },
+    {
+      "run": 4,
+      "file": "run_004.npz",
+      "seconds": 301.9,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1147,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 10258
+    },
+    {
+      "run": 5,
+      "file": "run_005.npz",
+      "seconds": 304.02,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1162,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8642
+    },
+    {
+      "run": 6,
+      "file": "run_006.npz",
+      "seconds": 305.47,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1247,
+      "final_greedy_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 9726
+    },
+    {
+      "run": 7,
+      "file": "run_007.npz",
+      "seconds": 301.56,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1259,
+      "final_greedy_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8592
+    },
+    {
+      "run": 8,
+      "file": "run_008.npz",
+      "seconds": 301.58,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1169,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.2,
+        0.0,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 10704
+    },
+    {
+      "run": 9,
+      "file": "run_009.npz",
+      "seconds": 301.93,
+      "episodes": 13000000,
+      "simulated_days": 260000000,
+      "final_greedy_action": 1162,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 11205
+    }
+  ],
+  "agent_class": "src.agent.TabularQAgent"
+}

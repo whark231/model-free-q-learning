@@ -31,7 +31,7 @@ def test_initial_visit_counts_are_zero():
 
 
 def test_q_values_returns_a_copy_not_a_view():
-    """Same bug class fixed in best_discrete_weights (REVIEW_NOTES_FOR_WILLIAM.md
+    """Same bug class fixed in best_discrete_weights (REVIEW_HISTORY.md
     issue B): a caller mutating a returned array must not corrupt agent state."""
     agent = make_agent(n_actions=3, q_init=0.0)
     w = agent.q_values
@@ -65,6 +65,25 @@ def test_epsilon_decays_exactly_with_the_agreed_formula():
     for _ in range(n_calls):
         agent.select_action()
     assert agent._epsilon() == pytest.approx(epsilon0 * np.exp(-beta * n_calls))
+
+
+def test_public_epsilon_is_the_rate_the_next_selection_uses():
+    """train.py logs agent.epsilon, so it must equal the schedule at the
+    current t: epsilon0 at the start, and after n selections the rate the
+    (n+1)th selection will compare against."""
+    epsilon0, beta = 0.8, 0.02
+    agent = make_agent(epsilon0=epsilon0, beta=beta)
+    assert agent.epsilon == epsilon0
+    for n in range(1, 26):
+        agent.select_action()
+        assert agent.epsilon == pytest.approx(epsilon0 * np.exp(-beta * n), rel=1e-12)
+
+
+def test_reading_epsilon_does_not_advance_the_schedule():
+    agent = make_agent(epsilon0=0.8, beta=0.02)
+    agent.select_action()
+    first = agent.epsilon
+    assert [agent.epsilon for _ in range(5)] == [first] * 5
 
 
 # ---------------------------------------------------------------------------
@@ -164,7 +183,7 @@ def test_update_rejects_nan_before_it_can_poison_the_q_table():
 def test_sample_average_first_update_overwrites_q_init_exactly():
     """With alpha = 1/N(a), the first visit's alpha is 1, so the initial
     value is replaced outright rather than blended in. Noted as an expected
-    property in REVIEW_NOTES_FOR_WILLIAM.md section 4."""
+    property in REVIEW_HISTORY.md section 4."""
     agent = make_agent(n_actions=2, alpha_rule=lambda n: 1 / n, q_init=999.0)
     agent.update(0, reward=3.0)
     assert agent.q_values[0] == pytest.approx(3.0)

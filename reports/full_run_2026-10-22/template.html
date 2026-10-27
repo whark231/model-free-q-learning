@@ -1,0 +1,938 @@
+<meta charset="utf-8">
+<title>Q-Learning Full Run Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column (68ch) with figures allowed to run wider (up to 1120px); sections numbered because the report is read in order. */
+:root {
+  --bg: #f5f6f7;
+  --surface: #fdfdfc;
+  --ink: #15181d;
+  --ink-2: #4a4f58;
+  --muted: #80858d;
+  --rule: #dcdfe3;
+  --grid: #e7e9ec;
+  --axis: #c3c7cd;
+  --g20: #2a78d6;
+  --g20-soft: #9ec5f4;
+  --g25: #eb6834;
+  --g25-soft: #f5b497;
+  --bench: #4a4f58;
+  --seed: #b3b7be;
+  --good: #0a7d0a;
+  --warn: #9a6a00;
+  --crit: #c23434;
+  --chip: #eceef1;
+  --code: #eceef1;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111316; --surface: #181a1e; --ink: #eceef1; --ink-2: #b8bdc5; --muted: #8a8f97;
+    --rule: #2c2f34; --grid: #24272b; --axis: #3b3f45; --g20: #3987e5; --g20-soft: #1c5cab;
+    --g25: #d95926; --g25-soft: #8f3c1a; --bench: #c3c2b7; --seed: #4f535a; --good: #2fbf2f;
+    --warn: #e0a526; --crit: #e66767; --chip: #23262b; --code: #23262b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111316; --surface: #181a1e; --ink: #eceef1; --ink-2: #b8bdc5; --muted: #8a8f97;
+  --rule: #2c2f34; --grid: #24272b; --axis: #3b3f45; --g20: #3987e5; --g20-soft: #1c5cab;
+  --g25: #d95926; --g25-soft: #8f3c1a; --bench: #c3c2b7; --seed: #4f535a; --good: #2fbf2f;
+  --warn: #e0a526; --crit: #e66767; --chip: #23262b; --code: #23262b; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 96px;
+}
+.page { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+.prose { max-width: 68ch; }
+header.masthead { display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(30px, 4.2vw, 44px); line-height: 1.12; margin: 0; font-weight: 600; letter-spacing: -.015em; text-wrap: balance; }
+h2 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+h3 { font-size: 18px; line-height: 1.3; margin: 0; font-weight: 600; text-wrap: balance; }
+h4 { font-size: 15px; margin: 0; font-weight: 600; }
+p { margin: 0; }
+.meta { color: var(--ink-2); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.meta code, code { font-family: var(--mono); font-size: .88em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+section { display: flex; flex-direction: column; gap: 22px; }
+section > .sec-head { display: flex; align-items: baseline; gap: 14px; border-top: 1px solid var(--rule); padding-top: 26px; }
+.sec-num { font-family: var(--mono); font-size: 14px; color: var(--muted); min-width: 2ch; }
+.stack { display: flex; flex-direction: column; gap: 14px; }
+.tldr { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+.tldr .label { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+ul, ol { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px 36px; }
+.cols2 > * { min-width: 0; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tile .t-label { font-size: 13px; color: var(--ink-2); }
+.tile .t-row { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
+.tile .t-val { font-size: 26px; font-weight: 600; line-height: 1.1; }
+.tile .t-key { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.sw.line { height: 3px; border-radius: 2px; width: 14px; }
+.fig { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.fig-head { display: flex; flex-direction: column; gap: 4px; }
+.fig-num { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.fig-sub { font-size: 14px; color: var(--ink-2); max-width: 80ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; overflow: visible; }
+.chart text { font-family: var(--sans); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45; z-index: 5; min-width: 150px; font-variant-numeric: tabular-nums; }
+.tip b { font-weight: 600; }
+.tip .r { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .r > span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.toggle { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; align-self: flex-start; }
+.toggle button { font: inherit; font-size: 13px; background: transparent; color: var(--ink-2); border: 0; padding: 5px 12px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--chip); color: var(--ink); font-weight: 500; }
+.toggle button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--g20); outline-offset: 2px; }
+.caption { font-size: 13px; color: var(--muted); max-width: 90ch; }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { font-weight: 600; color: var(--ink-2); font-size: 12.5px; background: var(--surface); vertical-align: bottom; }
+th:first-child, td:first-child { text-align: left; }
+td.l, th.l { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--chip); }
+td.wrap { white-space: normal; min-width: 260px; text-align: left; }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--chip); color: var(--ink-2); white-space: nowrap; }
+.pill.good { color: var(--good); }
+.pill.warn { color: var(--warn); }
+.pill.crit { color: var(--crit); }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.plain::before { display: none; }
+.mono { font-family: var(--mono); font-size: .92em; }
+.port { font-family: var(--mono); font-size: 12.5px; }
+.small-multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.sm-panel { border: 1px solid var(--grid); border-radius: 8px; padding: 10px 10px 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sm-title { font-size: 13px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.sm-title .port { color: var(--ink-2); }
+.callout { border-left: 3px solid var(--axis); padding: 4px 0 4px 16px; color: var(--ink-2); }
+.findings { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 28px clamp(16px, 3vw, 36px); display: flex; flex-direction: column; gap: 26px; }
+.findings h3 { padding-top: 10px; border-top: 1px solid var(--grid); }
+.findings h3:first-of-type { border-top: 0; padding-top: 0; }
+.findings .fig { background: var(--bg); }
+.findings .tbl-wrap { background: var(--bg); }
+.findings th { background: var(--bg); }
+nav.toc { font-size: 14px; }
+nav.toc ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 6px 28px; padding-left: 1.4em; }
+nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
+nav.toc a:hover { border-bottom-color: var(--ink); }
+a { color: inherit; }
+details { border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); padding: 12px 16px; }
+details summary { cursor: pointer; font-weight: 500; }
+details[open] summary { margin-bottom: 10px; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: 14px; }
+.kv dt { color: var(--ink-2); }
+.kv dd { margin: 0; }
+@media (max-width: 560px) {
+  body { font-size: 15px; padding-block: 24px 64px; }
+  .tldr { padding: 16px; }
+  .fig { padding: 12px 10px 10px; }
+  .small-multiples { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <div class="eyebrow">Model-free Q-learning · nine-ETF portfolio · full-scale run of 22 Oct 2026</div>
+  <h1>Q-Learning Full Run Report: 20% grid vs. 25% grid</h1>
+  <p class="prose" style="color:var(--ink-2)">For Albert and William. Covers the two γ = 5 experiments from the overnight run (10 seeds each, 13 million training episodes per seed), how each seed behaved over time, what went wrong, where to fix it, and a closing section written the way we would present the results if the project stopped today.</p>
+  <div class="meta" id="meta"></div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <ol>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#setup">What was run</a></li>
+    <li><a href="#compare">20% vs. 25%: head to head</a></li>
+    <li><a href="#grid20">The ten seeds on the 20% grid</a></li>
+    <li><a href="#grid25">The ten seeds on the 25% grid</a></li>
+    <li><a href="#why">Why the agent misses the best portfolio</a></li>
+    <li><a href="#fixes">Issues found and where to fix them</a></li>
+    <li><a href="#improve">Ways to make the results more robust</a></li>
+    <li><a href="#findings">Findings as we would present them</a></li>
+  </ol>
+</nav>
+
+<!-- 1 SUMMARY -->
+<section id="summary">
+  <div class="sec-head"><span class="sec-num">1</span><h2>Summary</h2></div>
+  <div class="tldr prose">
+    <div class="label">TL;DR / In plain terms</div>
+    <p>Both runs worked: no crashes, and two independent reviews re-derived the results and this report's numbers from the training logs. On both grids the agent learns to hold SPY and GLD, often with one bond slice (usually IEF), which is the right neighbourhood. It picks the exact best portfolio on its grid in 3 of 10 seeds on the 20% grid and 5 of 10 on the 25% grid.</p>
+    <p>The coarser 25% grid gives the better final result at this training budget. Its best portfolio sits further from the true optimum, but the agent finds it far more reliably, so its median total shortfall is smaller, 14.3 bps/yr against 19.8 bps/yr.</p>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="cols2">
+    <div class="stack">
+      <h3>Key concepts to understand</h3>
+      <ul>
+        <li><b>Certainty-equivalent (CE) loss, in bps per year.</b> Every portfolio has a score U = expected return minus (γ/2) × variance. The difference in U between two portfolios, times 252 days and 10,000, is how much guaranteed annual return the investor would give up by holding the worse one. 25 bps/yr means a quarter of a percent per year.</li>
+        <li><b>Discretization gap vs. learning gap.</b> The grid cannot hold the exact optimum, so even a perfect learner loses the discretization gap. The learning gap is what the agent loses on top of that by not picking the grid's best portfolio. Their sum is the total gap to the continuous optimum.</li>
+        <li><b>Greedy action.</b> The portfolio the agent rates highest right now. Most of the time-series charts track it, because it is what the agent would hold if it stopped exploring.</li>
+        <li><b>Seed.</b> One full training run with its own random draws. Ten seeds per grid show how much the outcome depends on luck.</li>
+      </ul>
+    </div>
+    <div class="stack">
+      <h3>Key takeaways</h3>
+      <ul>
+        <li>The agent settles on its final portfolio early: by 47 million simulated days (median) on the 20% grid and 18.5 million on the 25% grid, out of 260 million. Apart from brief excursions (none longer than 434 episodes), the second half of training never changed any seed's answer.</li>
+        <li>The pre-registered convergence rule reports much later dates (185 and 101 million days) because of brief, harmless switches late in training. Section 7 explains this and proposes a labelled fix.</li>
+        <li>Exact recovery fails because exploration fades out before the top few portfolios are told apart. The best portfolio got 1,100 to 4,300 tries in the 20%-grid seeds that missed it; separating it from the runner-up takes about 1.1 million tries each.</li>
+        <li>No code was changed and nothing is committed. Rows 1 to 3 of the table in Section 7 touch only Albert's evaluation files and need a re-evaluation, not retraining.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2 SETUP -->
+<section id="setup">
+  <div class="sec-head"><span class="sec-num">2</span><h2>What was run</h2></div>
+  <div class="prose stack">
+    <p>Each experiment trains a stateless, tabular Q-learning agent. In every episode it picks one portfolio from the grid, the simulator draws 20 days of returns from the calibrated Gaussian model, and the reward is that portfolio's realized mean minus (γ/2) times its realized variance. The agent never sees μ, Σ or the benchmark portfolios. The two experiments differ only in the grid: 20% steps give 1,287 portfolios, 25% steps give 495. Both use the same master seed, so seed <i>i</i> sees the same simulated returns on both grids.</p>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-settings"></table></div>
+  <p class="caption">All settings come from <code>src/config.py</code>, fixed on 2026-10-16 before any full-scale run. The run took 01:35 to 05:00 EDT on 22 Oct 2026, about 300 seconds per seed.</p>
+</section>
+
+<!-- 3 COMPARE -->
+<section id="compare">
+  <div class="sec-head"><span class="sec-num">3</span><h2>20% vs. 25%: head to head</h2></div>
+  <div class="prose stack">
+    <p>The two grids trade off in opposite directions. The finer grid can get closer to the optimum (its best portfolio loses 5.7 bps/yr against 11.7 on the coarser grid), but it has 2.6 times as many portfolios to tell apart with the same 13 million episodes. At this budget the second effect wins.</p>
+  </div>
+
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 3.1</span><h3>Where the shortfall comes from</h3>
+      <p class="fig-sub">Total CE loss against the continuous optimum, split into the part the grid forces (discretization) and the part the agent adds (learning gap, median across seeds).</p></div>
+    <div class="legend" id="lg-decomp"></div>
+    <div class="chart" id="ch-decomp"></div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 3.2</span><h3>Every seed's total gap to the continuous optimum</h3>
+      <p class="fig-sub">One dot per seed. No seed can do better than its grid's discretization gap (the vertical tick at the left of each row); a dot on that tick means the seed found the exact best grid portfolio.</p></div>
+    <div class="chart" id="ch-totaldots"></div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 3.3</span><h3>How fast each grid closes the learning gap</h3>
+      <p class="fig-sub">CE loss of the current greedy portfolio against the best portfolio on its own grid, checked every 10,000 episodes. Lines are the median across 10 seeds; shaded bands span the middle 50% of seeds. Losses above 150 bps/yr are drawn at the top edge.</p></div>
+    <div class="toggle" role="group" aria-label="Time range" id="tg-loss"><button type="button" aria-pressed="false" data-r="full">All 260M days</button><button type="button" aria-pressed="true" data-r="early">First 100M days</button></div>
+    <div class="legend" id="lg-loss"></div>
+    <div class="chart" id="ch-loss"></div>
+  </div>
+
+  <div class="cols2">
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 3.4</span><h3>Learning curve</h3>
+        <p class="fig-sub">Average realized reward per 10,000-episode window, as a CE return in %/yr, 5-window moving average, median across seeds. It includes exploration, so it sits below the best portfolio until ε is small.</p></div>
+      <div class="legend" id="lg-lc"></div>
+      <div class="chart" id="ch-lc"></div>
+    </div>
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 3.5</span><h3>Average regret so far</h3>
+        <p class="fig-sub">Expected CE loss of the portfolios actually played, averaged over all episodes so far, against the best on each grid. Median across seeds. Early exploration dominates it.</p></div>
+      <div class="legend" id="lg-rg"></div>
+      <div class="chart" id="ch-rg"></div>
+    </div>
+  </div>
+
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 3.6</span><h3>When each convergence measure is reached</h3>
+      <p class="fig-sub">One dot per seed. Seeds that never meet a measure are counted on the right. "Settled" is a post-hoc descriptive measure added for this report (Section 7, Finding 1); the other four were fixed before the run.</p></div>
+    <div class="legend" id="lg-conv"></div>
+    <div class="chart" id="ch-conv"></div>
+  </div>
+
+  <div class="tbl-wrap"><table id="tbl-compare"></table></div>
+  <p class="caption">Observation counts are simulated trading days (episodes × 20). Medians are over the seeds that met the measure. "Near-optimal" is checked every 10,000 episodes as pre-registered; the every-episode column counts brief switches too (Section 7, Finding 2).</p>
+
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 3.7</span><h3>Portfolio weights: benchmarks and what the agents learned</h3>
+      <p class="fig-sub">Learned weights are the average of the ten seeds' final portfolios. The four assets no seed holds (EFA, EEM, VNQ, DBC) are kept because the assignment asks for all nine.</p></div>
+    <div class="legend" id="lg-w"></div>
+    <div class="chart" id="ch-w"></div>
+  </div>
+</section>
+
+<!-- 4 GRID20 -->
+<section id="grid20">
+  <div class="sec-head"><span class="sec-num">4</span><h2>The ten seeds on the 20% grid</h2></div>
+  <div class="prose stack" id="intro-g20"></div>
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 4.1</span><h3>Each seed's greedy portfolio over time</h3>
+      <p class="fig-sub">CE loss of the greedy portfolio against the grid's best, every 10,000 episodes, clipped at 150 bps/yr. The solid vertical line marks when the seed settled on its final portfolio; the dotted one marks when the pre-registered rule was met. The horizontal line is the 25 bps near-optimal line. Excursions that start and end between two checkpoints do not show here; Figure 4.4 has all of them.</p></div>
+    <div class="small-multiples" id="sm-g20"></div>
+  </div>
+  <div class="cols2">
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 4.2</span><h3>Learning curve, every seed</h3>
+        <p class="fig-sub">Grey lines are individual seeds; the coloured line is the median. CE return %/yr, 5-window moving average.</p></div>
+      <div class="chart" id="sp-lc-g20"></div>
+    </div>
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 4.3</span><h3>Share of episodes spent on the final portfolio</h3>
+        <p class="fig-sub">Per 10,000-episode window. It rises as exploration fades; the dashed line is 1 − ε, the expected share if the final portfolio is greedy for the whole window (sampling noise lets single windows sit slightly above it).</p></div>
+      <div class="chart" id="sp-share-g20"></div>
+    </div>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 4.4</span><h3>Brief excursions after settling</h3>
+      <p class="fig-sub">Every time the greedy action moved away from the final portfolio after the seed had settled, the dot shows how bad the temporary portfolio was. Most excursions lasted a handful of episodes (median 3 to 4); the longest lasted 9,645 episodes on the 20% grid and 2,061 on the 25% grid, and none after the halfway point lasted more than 434. If an excursion visits several portfolios, the dot shows the worst. Excursions with the same loss share one dot; hover for the count.</p></div>
+    <div class="chart" id="sw-g20"></div>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-g20"></table></div>
+  <p class="caption" id="cap-g20"></p>
+</section>
+
+<!-- 5 GRID25 -->
+<section id="grid25">
+  <div class="sec-head"><span class="sec-num">5</span><h2>The ten seeds on the 25% grid</h2></div>
+  <div class="prose stack" id="intro-g25"></div>
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 5.1</span><h3>Each seed's greedy portfolio over time</h3>
+      <p class="fig-sub">Same layout as Figure 4.1.</p></div>
+    <div class="small-multiples" id="sm-g25"></div>
+  </div>
+  <div class="cols2">
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 5.2</span><h3>Learning curve, every seed</h3>
+        <p class="fig-sub">Grey lines are individual seeds; the coloured line is the median.</p></div>
+      <div class="chart" id="sp-lc-g25"></div>
+    </div>
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 5.3</span><h3>Share of episodes spent on the final portfolio</h3>
+        <p class="fig-sub">Per 10,000-episode window, with 1 − ε dashed.</p></div>
+      <div class="chart" id="sp-share-g25"></div>
+    </div>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 5.4</span><h3>Brief excursions after settling</h3>
+      <p class="fig-sub">Same layout as Figure 4.4.</p></div>
+    <div class="chart" id="sw-g25"></div>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-g25"></table></div>
+  <p class="caption" id="cap-g25"></p>
+</section>
+
+<!-- 6 WHY -->
+<section id="why">
+  <div class="sec-head"><span class="sec-num">6</span><h2>Why the agent misses the best portfolio</h2></div>
+  <div class="prose stack">
+    <p><b>In plain terms:</b> the rewards are very noisy compared with the differences the agent has to detect, and exploration fades before the top few portfolios have been tried often enough to tell them apart. Once ε is small, whichever near-top portfolio is ahead at that moment keeps almost all the episodes, and the others stop being tested.</p>
+    <p>The numbers behind that, for γ = 5 on the 20% grid:</p>
+    <ul id="why-list"></ul>
+  </div>
+  <div class="fig">
+    <div class="fig-head"><span class="fig-num">FIGURE 6.1</span><h3>How often the best portfolio was tried, in seeds that missed it</h3>
+      <p class="fig-sub">Log scale. Each dot is a seed that ended on some other portfolio. The solid line is how often the final (chosen) portfolio was played. The dashed lines are roughly how many tries each of the top two portfolios needs before the gap between them is two standard errors: about 1.1 million on the 20% grid and 7.4 million on the 25% grid, where the top two are only 5.1 bps/yr apart.</p></div>
+    <div class="legend" id="lg-visits"></div>
+    <div class="chart" id="ch-visits"></div>
+  </div>
+  <div class="prose stack">
+    <p>The same logic explains the late switches in Figures 4.4 and 5.4. A portfolio tried only a thousand or so times has a Q-value with a standard error of roughly 120 bps/yr, while the incumbent usually leads the near-top rivals by only 10 to 50 bps/yr. When exploration picks such a rival and the 20-day draw happens to be good, its Q-value can jump above the incumbent's. It then becomes greedy, gets played, and usually falls back within a handful of episodes (median 3 to 4). Those episodes restart the clock of the pre-registered convergence rule even though the agent's settled answer never changes.</p>
+  </div>
+</section>
+
+<!-- 7 FIXES -->
+<section id="fixes">
+  <div class="sec-head"><span class="sec-num">7</span><h2>Issues found and where to fix them</h2></div>
+  <div class="prose stack">
+    <p><b>In plain terms:</b> the run itself had no failures. The issues below are about how the outputs read: two convergence numbers that look worse than the behaviour behind them, and a missing column that hides the main action-space finding. None needs retraining. Full evidence is in <code>RUN_ISSUES_2026-10-22.md</code>. <b>Status of every item: found and verified, not fixed in code.</b> Albert asked to hold the fixes.</p>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-fixes"></table></div>
+  <details>
+    <summary>How the fix would run, step by step</summary>
+    <ol>
+      <li>Branch <code>feature/eval-reporting-fixes</code> off <code>dev</code>.</li>
+      <li>Make the changes in rows 1 to 3 and add tests that re-derive each new number a different way (for example, the settled-from episode from the change log rather than the checkpoints).</li>
+      <li>Run <code>python -m src.run_experiments</code>. All four experiments report "already trained", so only evaluation, the comparison and INDEX are rewritten (a few minutes).</li>
+      <li>Check that every existing number is unchanged and the new total-gap column equals discretization + learning gap per seed.</li>
+      <li>Independent review agent, then commit results with <code>git add results/</code> on the branch and open a PR to <code>dev</code>.</li>
+    </ol>
+  </details>
+</section>
+
+<!-- 8 IMPROVE -->
+<section id="improve">
+  <div class="sec-head"><span class="sec-num">8</span><h2>Ways to make the results more robust</h2></div>
+  <div class="prose stack">
+    <p><b>In plain terms:</b> the fixes in Section 7 make the current results read correctly. The ideas below would change the results themselves, so each one has to be a new, labelled experiment with its settings written down before it runs. The current settings stay the headline because they were fixed in advance.</p>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-improve"></table></div>
+  <p class="caption">Ownership follows prospectus §4: <code>src/agent.py</code> is William's (prospectus §4, "Agent (agent.py): William"), so changes there are proposed to him, not made by us; <code>src/train.py</code>, <code>src/config.py</code>, <code>src/evaluate.py</code> and <code>src/run_experiments.py</code> are Albert's. Anything touching <code>src/rewards.py</code>, <code>src/benchmarks/</code> or <code>src/action_space/</code> is William's and gets flagged, not edited.</p>
+</section>
+
+<!-- 9 FINDINGS -->
+<section id="findings">
+  <div class="sec-head"><span class="sec-num">9</span><h2>Findings as we would present them</h2></div>
+  <p class="prose" style="color:var(--ink-2)">This section is written as the results part of the report would read if the project stopped here, organized by the assignment's Parts III to VI. Part I (data) and Part II (benchmark derivation) are covered by <code>DATA_CLEANING.md</code> and the benchmark module; their headline numbers are repeated where the analysis needs them.</p>
+
+  <div class="findings">
+    <h3>Answer to the central question</h3>
+    <div class="prose stack">
+      <p>Can a model-free learner recover a near-optimal portfolio from realized rewards alone? <b>Mostly, but not exactly.</b> With γ = 5 and 13 million 20-day episodes, every seed on both grids learns a portfolio built from SPY, GLD and IEF (plus at most one 20% or 25% slice of LQD or TIP), the same assets that make up the continuous optimum. The median learned portfolio gives up 19.8 bps/yr of certainty-equivalent return on the 20% grid and 14.3 bps/yr on the 25% grid, against a continuous optimum worth 5.31%/yr. That keeps about 96% to 97% of the attainable value. Equal weighting, for comparison, gives up about 310 bps/yr.</p>
+      <p>Exact recovery of the best grid portfolio happens in 3 of 10 seeds on the 20% grid and 5 of 10 on the 25% grid. Statistical noise prevents it. One episode's reward has a standard deviation 7.4 times the best portfolio's expected reward, the best and second-best grid portfolios differ by 10.5 bps/yr, and the ε-greedy schedule stops sampling the runner-ups after a few thousand tries each, far short of the roughly 1.1 million needed to separate them.</p>
+    </div>
+
+    <h3>Part III: Q-learning design</h3>
+    <div class="tbl-wrap"><table id="tbl-design"></table></div>
+
+    <h3>Part IV: Training and convergence</h3>
+    <div class="prose stack">
+      <p>Convergence was defined before any full-scale result existed: the final greedy action must hold for at least K = 1.3 million episodes (10% of training) through the end of training. Three secondary measures were also fixed in advance: the first time any action held for K episodes, the largest Q-value change staying below 1e-5 per 10,000-episode window, and the greedy portfolio staying within 25 bps/yr of the grid's best (an evaluation-side measure that uses the benchmark, so it plays no part in training). Every learned portfolio is scored on a separate evaluation sample of 10,000 fresh episodes drawn from its own random stream, never used to update Q-values; an independent rebuild of that sample matched to 1e-12.</p>
+    </div>
+    <div class="tbl-wrap"><table id="tbl-conv"></table></div>
+    <div class="prose stack">
+      <p>Convergence is faster and more frequent on the smaller action set: 10 of 10 seeds meet the primary rule on the 25% grid against 9 of 10 on the 20% grid, at a median of 101 against 185 million simulated days. The primary rule's dates are late because brief exploration-driven switches restart its clock. A post-hoc descriptive measure (final action greedy at every checkpoint from then on) puts the settling point at a median 18.5 and 47.1 million days, and in every seed the greedy action at the halfway checkpoint is already the final one. After the halfway point the only changes are brief excursions, none longer than 434 episodes.</p>
+      <p>Statistical and economic convergence diverge. The Q-value tolerance is met by all 20 seeds, yet 3 seeds on the 20% grid and 1 on the 25% grid end more than 25 bps/yr from the best grid portfolio. Small Q-value changes show that the sample averages have stopped moving. Whether the right portfolio is on top depends on how many tries the top contenders received (Section 6).</p>
+    </div>
+
+    <h3>Part V: Portfolio weights</h3>
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 9.1</span><h3>Nine asset weights, baseline (γ = 5, 20% grid)</h3>
+        <p class="fig-sub">w* is the continuous long-only optimum; w̄<sub>QL</sub> is the learned weight averaged across the ten seeds' final portfolios.</p></div>
+      <div class="legend" id="lg-w9"></div>
+      <div class="chart" id="ch-w9"></div>
+    </div>
+    <div class="tbl-wrap"><table id="tbl-weights"></table></div>
+    <p class="caption">Each seed's evaluation policy is its final greedy portfolio with exploration switched off, so its w̄<sub>QL</sub> over the 10,000-episode evaluation sample equals that portfolio. Distances in brackets are medians across seeds of each seed's own distance; the mean-of-seeds column describes the average and is not itself a portfolio any seed held.</p>
+
+    <h3>Part V: Economic performance</h3>
+    <div class="tbl-wrap"><table id="tbl-perf"></table></div>
+    <p class="caption">Exact values from μ and Σ. Objective = daily U × 252, a certainty-equivalent return. Learned rows give the median across seeds of each column separately and, in parentheses, the range across seeds; the medians of different columns can come from different seeds. The 10,000-episode evaluation sample is reported in the evaluation folders but is too small to resolve gaps of this size (two standard errors are 6 to 37 bps/yr), so the exact values are the primary measure.</p>
+    <div class="fig">
+      <div class="fig-head"><span class="fig-num">FIGURE 9.2</span><h3>Distribution of the learning gap across seeds</h3>
+        <p class="fig-sub">CE loss against the best portfolio on each experiment's own grid. One dot per seed; the vertical tick is the median.</p></div>
+      <div class="chart" id="ch-gapdist"></div>
+    </div>
+
+    <h3>Part V: Convergence speed</h3>
+    <div class="prose stack">
+      <p>Figures 3.3 to 3.5 give the learning curve, regret and the resolution comparison. The observations needed to reach a defined level of optimality, measured as the first checkpoint after which the greedy portfolio stays within 25 bps/yr of the grid's best:</p>
+    </div>
+    <div class="tbl-wrap"><table id="tbl-speed"></table></div>
+
+    <h3>Part VI: Robustness</h3>
+    <div class="prose stack">
+      <p>Two checks were run with every other setting held fixed: the action-space resolution (25% vs. 20% grid, above) and risk aversion (γ = 3 and 8 against the γ = 5 baseline, all on the 20% grid). Because all experiments share the master seed, seed <i>i</i> sees the same returns and the same exploration draws across γ, so these are paired comparisons.</p>
+    </div>
+    <div class="tbl-wrap"><table id="tbl-robust"></table></div>
+    <div class="prose stack">
+      <p>The conclusions hold across γ: the agent always finds the right neighbourhood, exact recovery stays between 3 and 5 seeds in 10, and the median total gap stays between 11.9 and 19.8 bps/yr. By the median, γ = 5 has the largest learning gap, but γ = 3 has the heaviest tail: four of its seeds lose 60 to 81 bps/yr, and its mean learning gap is 30.6 bps/yr against 17.6 at γ = 5 and 13.0 at γ = 8. The number of close rivals does not explain this ranking on its own (three rivals within 25 bps/yr of the best at γ = 5, one at γ = 3 and one at γ = 8).</p>
+    </div>
+
+    <h3>Part VI: Research challenges</h3>
+    <div class="stack" id="challenges"></div>
+
+    <h3>Limitations and what is not done yet</h3>
+    <ul class="prose">
+      <li>Only γ = 5 has a second grid resolution; the 10% grid (43,758 portfolios) was not run. At the current budget each portfolio would get about 300 episodes if they were spread evenly, and about 32 random exploration tries under the current ε schedule, so it would need a different design to say anything.</li>
+      <li>A single calibration window and Gaussian returns. Alternative windows, shrinkage covariance and fat tails are listed in Part VI but not run.</li>
+      <li>The planned extensions (transaction costs with state, function approximation) are not started.</li>
+      <li>The pre-registered convergence rule is reported as fixed; the descriptive settling measure is post hoc and labelled that way.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="caption" id="footer"></footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function () {
+"use strict";
+const G = DATA.grids, T = DATA.tickers, NEAR = DATA.settings.near_optimal_bps;
+const KEYS = ["g20", "g25"];
+const NAME = { g20: "20% grid", g25: "25% grid" };
+const CVAR = { g20: "--g20", g25: "--g25" };
+const SOFT = { g20: "--g20-soft", g25: "--g25-soft" };
+const BPS = 252e4;
+
+// ---------- helpers ----------
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const $ = id => document.getElementById(id);
+const median = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const quant = (a, q) => { const b = a.slice().sort((x, y) => x - y); const p = (b.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return b[lo] + (b[hi] - b[lo]) * (p - lo); };
+const f = (x, d = 1) => x == null ? "n/a" : Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const md = obs => obs == null ? "never" : f(obs / 1e6, 1) + "M";
+const pct = (x, d = 2) => f(x * 100, d) + "%";
+const port = w => w.map((v, i) => v > 1e-9 ? `${T[i]} ${Math.round(v * 100)}` : null).filter(Boolean).join(" · ");
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const NS = "http://www.w3.org/2000/svg";
+function S(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10)); return out;
+}
+function legend(id, items) {
+  $(id).innerHTML = items.map(it => `<span><i class="sw ${it.line ? "line" : ""}" style="background:${it.color}${it.dash ? ";background:repeating-linear-gradient(90deg," + it.color + " 0 4px,transparent 4px 7px)" : ""}"></i>${it.label}</span>`).join("");
+}
+function tipBox(host) { let t = host.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; t.hidden = true; host.appendChild(t); } return t; }
+function placeTip(host, tip, x, y) {
+  tip.hidden = false; const w = tip.offsetWidth, h = tip.offsetHeight, W = host.clientWidth;
+  let left = x + 14; if (left + w > W) left = x - w - 14; if (left < 0) left = 0;
+  tip.style.left = left + "px"; tip.style.top = Math.max(0, y - h / 2) + "px";
+}
+
+// ---------- line chart ----------
+// o: {height, xs, x:{min,max,label,fmt}, y:{min,max,label,fmt,log}, series:[{label,color,data,width,opacity,step,band:[lo,hi],tip}], refs:[{y,label,color,dash}], vmarks:[{x,color,dash}], compact, tipTitle}
+function lineChart(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 260), H = o.height || 300;
+  const m = { t: 12, r: o.right ?? 18, b: o.compact ? 26 : 44, l: o.left ?? (o.compact ? 34 : 54) };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const xs = o.xs, x0 = o.x.min, x1 = o.x.max, y0 = o.y.min, y1 = o.y.max;
+  const ly = v => Math.log10(Math.max(v, 1e-12));
+  const X = v => m.l + (v - x0) / (x1 - x0) * iw;
+  const Y = o.y.log ? v => m.t + (1 - (ly(v) - ly(y0)) / (ly(y1) - ly(y0))) * ih : v => m.t + (1 - (Math.min(Math.max(v, y0), y1) - y0) / (y1 - y0)) * ih;
+  const ink2 = css("--ink-2"), muted = css("--muted"), grid = css("--grid"), axis = css("--axis");
+  const fs = o.compact ? 10.5 : 12;
+  const yt = o.y.ticks || (o.y.log ? [] : niceTicks(y0, y1, o.compact ? 3 : 5));
+  yt.forEach(v => { S("line", { x1: m.l, x2: m.l + iw, y1: Y(v), y2: Y(v), stroke: grid, "stroke-width": 1 }, svg);
+    S("text", { x: m.l - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": fs, fill: muted }, svg).textContent = (o.y.fmt || (v => v))(v); });
+  const xt = o.x.ticks || niceTicks(x0, x1, o.compact ? 4 : 6);
+  xt.forEach(v => { S("text", { x: X(v), y: m.t + ih + (o.compact ? 14 : 17), "text-anchor": "middle", "font-size": fs, fill: muted }, svg).textContent = (o.x.fmt || (v => v))(v); });
+  S("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: axis, "stroke-width": 1 }, svg);
+  if (o.x.label && !o.compact) S("text", { x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.x.label;
+  if (o.y.label && !o.compact) S("text", { x: 12, y: m.t + ih / 2, transform: `rotate(-90 12 ${m.t + ih / 2})`, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.y.label;
+  const clipId = "c" + Math.random().toString(36).slice(2);
+  const cp = S("clipPath", { id: clipId }, S("defs", {}, svg)); S("rect", { x: m.l, y: m.t - 2, width: iw, height: ih + 4 }, cp);
+  const plot = S("g", { "clip-path": `url(#${clipId})` }, svg);
+  const vis = i => xs[i] >= x0 && xs[i] <= x1;
+  (o.refs || []).forEach(r => { S("line", { x1: m.l, x2: m.l + iw, y1: Y(r.y), y2: Y(r.y), stroke: r.color || muted, "stroke-width": 1, "stroke-dasharray": r.dash === false ? "" : "4 4" }, svg);
+    if (r.label) S("text", { x: m.l + iw - 4, y: Y(r.y) - 5, "text-anchor": "end", "font-size": fs, fill: ink2 }, svg).textContent = r.label; });
+  (o.vmarks || []).forEach(v => { if (v.x == null || v.x < x0 || v.x > x1) return; S("line", { x1: X(v.x), x2: X(v.x), y1: m.t, y2: m.t + ih, stroke: v.color || ink2, "stroke-width": v.width || 1.5, "stroke-dasharray": v.dash ? "2 3" : "" }, svg); });
+  const pathFor = (data, step) => { let d = "", started = false, prev = null;
+    for (let i = 0; i < xs.length; i++) { if (data[i] == null || xs[i] > x1 + (x1 - x0) * 0.01) continue; if (xs[i] < x0 && !(i + 1 < xs.length && xs[i + 1] >= x0)) continue;
+      const px = X(xs[i]), py = Y(data[i]);
+      if (!started) { d += `M${px},${py}`; started = true; } else if (step) d += `H${px}V${py}`; else d += `L${px},${py}`; prev = py; }
+    return d; };
+  o.series.forEach(s => {
+    if (s.band) { let d = ""; const idx = xs.map((_, i) => i).filter(vis);
+      idx.forEach((i, k) => { d += (k ? "L" : "M") + X(xs[i]) + "," + Y(s.band[1][i]); });
+      idx.slice().reverse().forEach(i => { d += "L" + X(xs[i]) + "," + Y(s.band[0][i]); });
+      S("path", { d: d + "Z", fill: s.color, "fill-opacity": 0.12, stroke: "none" }, plot); }
+    S("path", { d: pathFor(s.data, s.step), fill: "none", stroke: s.color, "stroke-width": s.width || 2, "stroke-opacity": s.opacity ?? 1, "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": s.dash ? "5 4" : "" }, plot);
+  });
+  // hover
+  const tip = tipBox(host); const cross = S("line", { y1: m.t, y2: m.t + ih, stroke: axis, "stroke-width": 1, visibility: "hidden" }, svg);
+  const dots = o.series.filter(s => s.tip !== false && !s.background).map(s => S("circle", { r: 4, fill: s.color, stroke: css("--surface"), "stroke-width": 2, visibility: "hidden" }, svg));
+  const hit = S("rect", { x: m.l, y: m.t, width: iw, height: ih, fill: "transparent" }, svg);
+  const move = ev => { const r = svg.getBoundingClientRect(); const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    const xv = x0 + (px - m.l) / iw * (x1 - x0); let best = 0, bd = Infinity; xs.forEach((v, i) => { const d = Math.abs(v - xv); if (d < bd) { bd = d; best = i; } });
+    cross.setAttribute("x1", X(xs[best])); cross.setAttribute("x2", X(xs[best])); cross.setAttribute("visibility", "visible");
+    let rows = ""; o.series.filter(s => s.tip !== false && !s.background).forEach((s, k) => { const v = s.data[best]; dots[k].setAttribute("cx", X(xs[best])); dots[k].setAttribute("cy", Y(v)); dots[k].setAttribute("visibility", v == null ? "hidden" : "visible");
+      rows += `<div class="r"><span><i class="sw" style="background:${s.color}"></i>${s.label}</span><b>${(s.fmt || o.y.tipFmt || o.y.fmt || (v => v))(v)}</b></div>`; });
+    if (o.extraTip) rows += o.extraTip(best);
+    tip.innerHTML = `<div style="color:var(--muted);margin-bottom:3px">${(o.x.tipFmt || o.x.fmt || (v => v))(xs[best])}</div>` + rows;
+    placeTip(host, tip, X(xs[best]), Y(o.series.find(s => !s.background && s.tip !== false)?.data[best] ?? y1) ); };
+  const leave = () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); };
+  hit.addEventListener("mousemove", move); hit.addEventListener("touchstart", move, { passive: true }); hit.addEventListener("touchmove", move, { passive: true }); hit.addEventListener("mouseleave", leave);
+}
+
+// ---------- dot plot ----------
+// o: {rows:[{label, color, dots:[{v,tip}], floor, median}], x:{min,max,label,fmt,log}, rowH, never:[count per row]}
+function dotPlot(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 260); const rowH = o.rowH || 44;
+  const labW = Math.min(o.labelW || 150, W * 0.36);
+  const m = { t: 8, r: o.neverCol ? 64 : 18, b: 44, l: labW };
+  const H = m.t + m.b + rowH * o.rows.length; const iw = W - m.l - m.r;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const lg = Math.log10; const X = o.x.log ? v => m.l + (lg(v) - lg(o.x.min)) / (lg(o.x.max) - lg(o.x.min)) * iw : v => m.l + (Math.min(v, o.x.max) - o.x.min) / (o.x.max - o.x.min) * iw;
+  const muted = css("--muted"), ink2 = css("--ink-2"), grid = css("--grid"), axis = css("--axis"), surf = css("--surface");
+  const xt = o.x.ticks || niceTicks(o.x.min, o.x.max, 6);
+  xt.forEach(v => { S("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, stroke: grid, "stroke-width": 1 }, svg);
+    S("text", { x: X(v), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: muted }, svg).textContent = (o.x.fmt || (v => v))(v); });
+  S("line", { x1: m.l, x2: m.l + iw, y1: H - m.b, y2: H - m.b, stroke: axis }, svg);
+  if (o.x.label) S("text", { x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.x.label;
+  (o.vlines || []).forEach(v => { S("line", { x1: X(v.x), x2: X(v.x), y1: m.t, y2: H - m.b, stroke: v.color || ink2, "stroke-width": 1.5, "stroke-dasharray": v.dash ? "4 4" : "" }, svg);
+    if (v.label) S("text", { x: X(v.x) + (v.anchor === "end" ? -5 : 5), y: m.t + 11 + (v.dy || 0), "text-anchor": v.anchor || "start", "font-size": 11.5, fill: ink2 }, svg).textContent = v.label; });
+  if (o.neverCol) S("text", { x: W - 4, y: H - m.b + 17, "text-anchor": "end", "font-size": 12, fill: muted }, svg).textContent = "never";
+  const tip = tipBox(host);
+  o.rows.forEach((row, ri) => {
+    const cy = m.t + rowH * ri + rowH / 2;
+    if (row.sep) S("line", { x1: 0, x2: W, y1: m.t + rowH * ri, y2: m.t + rowH * ri, stroke: grid }, svg);
+    const t = S("text", { x: 0, y: cy + 4, "font-size": 12.5, fill: ink2 }, svg); t.textContent = row.label;
+    if (row.sub) { t.setAttribute("y", cy - 3); S("text", { x: 0, y: cy + 12, "font-size": 11, fill: muted }, svg).textContent = row.sub; }
+    if (row.floor != null) S("line", { x1: X(row.floor), x2: X(row.floor), y1: cy - 12, y2: cy + 12, stroke: ink2, "stroke-width": 2 }, svg);
+    if (row.median != null) S("line", { x1: X(row.median), x2: X(row.median), y1: cy - 9, y2: cy + 9, stroke: row.color, "stroke-width": 3, "stroke-linecap": "round" }, svg);
+    // stack near-identical values vertically
+    const placed = []; const r = row.r || 5;
+    row.dots.forEach(d => { const px = X(d.v); let k = 0; while (placed.some(p => Math.abs(p.x - px) < 2 * r && p.k === k)) k++; placed.push({ x: px, k });
+      const off = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (r * 1.7);
+      const c = S("circle", { cx: px, cy: cy + off, r, fill: row.color, "fill-opacity": d.ghost ? 0.35 : 0.9, stroke: surf, "stroke-width": 1.5 }, svg);
+      const hc = S("circle", { cx: px, cy: cy + off, r: r + 5, fill: "transparent" }, svg);
+      const show = () => { tip.innerHTML = d.tip; placeTip(host, tip, px, cy + off); c.setAttribute("r", r + 1.5); };
+      hc.addEventListener("mouseenter", show); hc.addEventListener("touchstart", show, { passive: true }); hc.addEventListener("mouseleave", () => { tip.hidden = true; c.setAttribute("r", r); }); });
+    if (o.neverCol && row.never != null) S("text", { x: W - 4, y: cy + 4, "text-anchor": "end", "font-size": 12.5, fill: row.never ? css("--ink") : muted }, svg).textContent = row.never ? `${row.never} seed${row.never > 1 ? "s" : ""}` : "0";
+  });
+}
+
+// ---------- grouped columns ----------
+function groupedBars(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 300), H = o.height || 300;
+  const m = { t: 14, r: 10, b: 34, l: 46 }, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const Y = v => m.t + (1 - v / o.yMax) * ih; const muted = css("--muted"), grid = css("--grid"), axis = css("--axis"), ink2 = css("--ink-2");
+  niceTicks(0, o.yMax, 4).forEach(v => { S("line", { x1: m.l, x2: m.l + iw, y1: Y(v), y2: Y(v), stroke: grid }, svg);
+    S("text", { x: m.l - 6, y: Y(v) + 4, "text-anchor": "end", "font-size": 12, fill: muted }, svg).textContent = Math.round(v * 100) + "%"; });
+  const n = o.cats.length, band = iw / n, ns = o.series.length, bw = Math.min(16, (band - 10) / ns - 2);
+  const tip = tipBox(host);
+  o.cats.forEach((c, ci) => {
+    const gx = m.l + band * ci + band / 2 - (ns * (bw + 2) - 2) / 2;
+    S("text", { x: m.l + band * ci + band / 2, y: H - m.b + 18, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = c;
+    o.series.forEach((s, si) => { const v = s.values[ci]; const x = gx + si * (bw + 2);
+      if (v > 1e-9) { const y = Y(v), h = m.t + ih - y, r = Math.min(4, h, bw / 2);
+        S("path", { d: `M${x},${m.t + ih}V${y + r}Q${x},${y} ${x + r},${y}H${x + bw - r}Q${x + bw},${y} ${x + bw},${y + r}V${m.t + ih}Z`, fill: s.color }, svg); }
+      const hit = S("rect", { x: x - 1, y: m.t, width: bw + 2, height: ih, fill: "transparent" }, svg);
+      const show = () => { tip.innerHTML = `<b>${c}</b><div class="r"><span><i class="sw" style="background:${s.color}"></i>${s.label}</span><b>${f(v * 100, 1)}%</b></div>`; placeTip(host, tip, x + bw / 2, Y(Math.max(v, 0.05))); };
+      hit.addEventListener("mouseenter", show); hit.addEventListener("touchstart", show, { passive: true }); hit.addEventListener("mouseleave", () => tip.hidden = true); });
+  });
+  S("line", { x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: axis }, svg);
+}
+
+// ---------- horizontal stacked bars ----------
+function stackedH(host, o) {
+  host.innerHTML = ""; const W = Math.max(host.clientWidth, 280), rowH = 54, m = { t: 6, r: 70, b: 40, l: Math.min(110, W * 0.3) };
+  const H = m.t + m.b + rowH * o.rows.length, iw = W - m.l - m.r;
+  const svg = S("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": o.aria || "" }, host);
+  const X = v => m.l + v / o.xMax * iw; const muted = css("--muted"), grid = css("--grid"), ink = css("--ink"), ink2 = css("--ink-2"), surf = css("--surface");
+  niceTicks(0, o.xMax, 5).forEach(v => { S("line", { x1: X(v), x2: X(v), y1: m.t, y2: H - m.b, stroke: grid }, svg);
+    S("text", { x: X(v), y: H - m.b + 17, "text-anchor": "middle", "font-size": 12, fill: muted }, svg).textContent = v; });
+  S("text", { x: m.l + iw / 2, y: H - 5, "text-anchor": "middle", "font-size": 12, fill: ink2 }, svg).textContent = o.xLabel;
+  const tip = tipBox(host);
+  o.rows.forEach((r, ri) => { const cy = m.t + rowH * ri + rowH / 2, bh = 22; let acc = 0;
+    S("text", { x: 0, y: cy + 4, "font-size": 13, fill: ink2 }, svg).textContent = r.label;
+    r.segs.forEach((s, si) => { const x = X(acc), w = Math.max(0, X(acc + s.v) - x - (si < r.segs.length - 1 ? 2 : 0)); const last = si === r.segs.length - 1; const rr = last ? Math.min(4, w) : 0;
+      S("path", { d: `M${x},${cy - bh / 2}H${x + w - rr}Q${x + w},${cy - bh / 2} ${x + w},${cy - bh / 2 + rr}V${cy + bh / 2 - rr}Q${x + w},${cy + bh / 2} ${x + w - rr},${cy + bh / 2}H${x}Z`, fill: s.color }, svg);
+      if (w > 44) S("text", { x: x + w / 2, y: cy + 4, "text-anchor": "middle", "font-size": 12, fill: s.textOn || surf, "font-weight": 500 }, svg).textContent = f(s.v, 1);
+      const hit = S("rect", { x, y: cy - bh / 2 - 4, width: Math.max(w, 6), height: bh + 8, fill: "transparent" }, svg);
+      const show = () => { tip.innerHTML = `<b>${r.label}</b><div class="r"><span><i class="sw" style="background:${s.color}"></i>${s.label}</span><b>${f(s.v, 2)} bps/yr</b></div>`; placeTip(host, tip, x + w / 2, cy); };
+      hit.addEventListener("mouseenter", show); hit.addEventListener("touchstart", show, { passive: true }); hit.addEventListener("mouseleave", () => tip.hidden = true);
+      acc += s.v; });
+    S("text", { x: X(acc) + 8, y: cy + 4, "font-size": 13, fill: ink, "font-weight": 600 }, svg).textContent = f(acc, 1); });
+}
+
+// ---------- derived numbers ----------
+const D = {};
+KEYS.forEach(k => { const g = G[k], s = g.seeds;
+  D[k] = {
+    learn: median(s.map(x => x.loss_best)), total: median(s.map(x => x.loss_cont)),
+    best: s.filter(x => x.is_best).length, settle: median(s.map(x => x.settled_from_ep * g.episode_length)),
+    xs: g.x_days_m,
+    lossMed: g.x_days_m.map((_, i) => median(s.map(x => x.series.loss[i]))),
+    lossQ1: g.x_days_m.map((_, i) => quant(s.map(x => x.series.loss[i]), 0.25)),
+    lossQ3: g.x_days_m.map((_, i) => quant(s.map(x => x.series.loss[i]), 0.75)),
+    lcMed: g.x_days_m.map((_, i) => median(s.map(x => x.series.reward_pct[i]))),
+    rgMed: g.x_days_m.map((_, i) => median(s.map(x => x.series.regret_avg_bps[i]))),
+    shareMed: g.x_days_m.map((_, i) => median(s.map(x => x.series.share_final[i]))),
+  };
+});
+const col = k => css(CVAR[k]), soft = k => css(SOFT[k]);
+
+// ---------- static tables and text ----------
+function table(id, head, rows, opts = {}) {
+  const th = head.map((h, i) => `<th class="${opts.left && opts.left.includes(i) ? "l" : ""}">${h}</th>`).join("");
+  $(id).innerHTML = `<thead><tr>${th}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${opts.left && opts.left.includes(i) ? "l" : ""}${opts.wrap && opts.wrap.includes(i) ? " wrap" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+function fillStatic() {
+  const ix = DATA.index;
+  $("meta").innerHTML = `<span>Run: 22 Oct 2026, 01:35 to 05:00 EDT</span><span>Code: <code>${ix.git_commit.slice(0, 7)}</code> (clean)</span><span>Python ${ix.python}, numpy ${ix.numpy}</span><span>Report data: <code>reports/full_run_2026-10-22/</code></span>`;
+  const st = DATA.settings;
+  table("tbl-settings", ["Setting", "Value", "Why it matters here"], [
+    ["Risk aversion γ", "5 (γ = 3 and 8 run as robustness, Section 9)", "Sets which portfolio is best and how far apart the top portfolios are"],
+    ["Grids", "20% steps, 1,287 portfolios · 25% steps, 495 portfolios", "The comparison this report is about"],
+    ["Episode length B", "20 trading days per reward", "Longer episodes give less noisy rewards but fewer of them"],
+    ["Training budget", "13,000,000 episodes per seed (260M simulated days)", ""],
+    ["Seeds", `10 per grid, master seed ${st.master_seed}`, "Seed i sees the same returns on both grids"],
+    ["Exploration", `ε = e<sup>−βt</sup>, ε₀ = 1, β = ${st.beta.toExponential(3)}`, "ε hits 1% at episode 6.5M (halfway) and 0.01% at the end"],
+    ["Learning rate", "α = 1/N(a), the sample average of that portfolio's rewards", "Q(a) is just the running mean reward of portfolio a"],
+    ["Discount ρ, Q start", "ρ = 0, Q₀ = 0", "Stateless, bandit-like baseline (assignment Part III)"],
+    ["Convergence (primary)", "Final greedy action held ≥ K = 1.3M episodes through the end", "Fixed in advance; Finding 1 in Section 7"],
+    ["Near-optimal line", `${st.near_optimal_bps} bps/yr CE loss vs. best on the grid`, "Evaluation only; never used in training"],
+  ], { left: [0, 1, 2], wrap: [2] });
+
+  // tiles
+  const tile = (label, fn, unit = "") => `<div class="tile"><div class="t-label">${label}</div><div class="t-row">${KEYS.map(k => `<div><div class="t-val">${fn(k)}${unit}</div><div class="t-key"><i class="sw" style="background:${col(k)}"></i>${NAME[k]}</div></div>`).join("")}</div></div>`;
+  $("tiles").innerHTML = [
+    tile("Total gap to continuous optimum, median across seeds (bps/yr)", k => f(D[k].total, 1)),
+    tile("Learning gap vs. best on grid, median across seeds (bps/yr)", k => f(D[k].learn, 1)),
+    tile("Seeds that found the exact best grid portfolio", k => `${D[k].best}/10`),
+    tile("Settled on final portfolio, median (simulated days)", k => md(D[k].settle)),
+  ].join("");
+
+  // compare table
+  const conv = (k, fld) => { const v = G[k].seeds.map(s => s[fld]); const n = v.filter(x => x != null).length; return `${n}/10 · ${md(median(v))}`; };
+  const rows = [
+    ["Portfolios on the grid", ...KEYS.map(k => G[k].n_actions.toLocaleString())],
+    ["Best grid portfolio", ...KEYS.map(k => `<span class="port">${port(G[k].best_weights)}</span>`)],
+    ["Discretization gap (bps/yr)", ...KEYS.map(k => f(G[k].disc_gap_bps, 2))],
+    ["Grid portfolios within 25 bps/yr of the best", ...KEYS.map(k => G[k].n_within_near)],
+    ["Learning gap, median (range)", ...KEYS.map(k => `${f(D[k].learn)} (${f(Math.min(...G[k].seeds.map(s => s.loss_best)))} to ${f(Math.max(...G[k].seeds.map(s => s.loss_best)))})`)],
+    ["Total gap to continuous, median (range)", ...KEYS.map(k => `${f(D[k].total)} (${f(Math.min(...G[k].seeds.map(s => s.loss_cont)))} to ${f(Math.max(...G[k].seeds.map(s => s.loss_cont)))})`)],
+    ["Exact best found", ...KEYS.map(k => `${D[k].best}/10`)],
+    ["Different final portfolios across the 10 seeds", ...KEYS.map(k => new Set(G[k].seeds.map(s => s.weights.join())).size)],
+    ["Settled on final portfolio (post hoc), median", ...KEYS.map(k => `10/10 · ${md(D[k].settle)}`)],
+    ["Primary rule: final action held ≥ K", ...KEYS.map(k => conv(k, "primary_obs"))],
+    ["First time any action held ≥ K", ...KEYS.map(k => conv(k, "first_stable_obs"))],
+    ["Near-optimal for good, every 10k episodes", ...KEYS.map(k => conv(k, "near_obs_ckpt"))],
+    ["Near-optimal for good, every episode", ...KEYS.map(k => conv(k, "near_obs_episode"))],
+    ["|ΔQ| < 1e-5 for good", ...KEYS.map(k => conv(k, "dq_obs"))],
+    ["Greedy-action changes during training, median", ...KEYS.map(k => median(G[k].seeds.map(s => s.greedy_changes)).toLocaleString())],
+    ["Average regret over training, median (bps/yr)", ...KEYS.map(k => f(median(G[k].seeds.map(s => s.regret_avg_bps))))],
+  ];
+  table("tbl-compare", ["Measure", ...KEYS.map(k => `<span style="display:inline-flex;align-items:center;gap:6px"><i class="sw" style="background:${col(k)}"></i>${NAME[k]}</span>`)], rows, { left: [0] });
+
+  // per-grid intros, tables
+  KEYS.forEach(k => {
+    const g = G[k], s = g.seeds, other = k === "g20" ? "g25" : "g20";
+    const uniq = {}; s.forEach(x => { const key = port(x.weights); uniq[key] = uniq[key] || { n: 0, loss: x.loss_best, rank: x.rank }; uniq[key].n++; });
+    const list = Object.entries(uniq).sort((a, b) => a[1].loss - b[1].loss).map(([p, u]) => `<li><span class="port">${p}</span>: ${u.n} seed${u.n > 1 ? "s" : ""}, rank ${u.rank} on the grid, ${f(u.loss)} bps/yr below the best</li>`).join("");
+    $("intro-" + k).innerHTML = `<p>The best portfolio on this grid is <span class="port">${port(g.best_weights)}</span>, ${f(g.disc_gap_bps, 2)} bps/yr below the continuous optimum. ${g.n_within_near} of the ${g.n_actions.toLocaleString()} grid portfolios lie within 25 bps/yr of it. The ten seeds ended on ${Object.keys(uniq).length} different portfolios:</p><ul>${list}</ul>`;
+    const rowsT = s.map(x => [
+      x.run, `<span class="port">${port(x.weights)}</span>`, x.rank,
+      x.is_best ? `<span class="pill good">0.0</span>` : f(x.loss_best), f(x.loss_cont),
+      x.visits_best.toLocaleString(), md(x.settled_from_ep * g.episode_length), x.switches_after_settle,
+      x.primary_obs == null ? `<span class="pill warn">not met</span>` : md(x.primary_obs), md(x.near_obs_ckpt), md(x.near_obs_episode), md(x.dq_obs), f(x.regret_avg_bps)
+    ]);
+    table("tbl-" + k, ["Seed", "Final portfolio", "Rank on grid", "Learning gap (bps/yr)", "Total gap (bps/yr)", "Tries of the best portfolio", "Settled from (days)", "Excursions after settling", "Primary rule met at", "Near-optimal (10k checks)", "Near-optimal (every episode)", "|ΔQ| rule met at", "Avg regret (bps/yr)"], rowsT, { left: [1] });
+    $("cap-" + k).textContent = `Day counts are simulated trading days. "Tries of the best portfolio" counts how many of the 13 million episodes played the grid's best portfolio; for seeds that found it, nearly all of them did. Rank 1 is the best portfolio on the grid.`;
+  });
+
+  // why list
+  const c = DATA.calibration, g20 = G.g20;
+  const miss = g20.seeds.filter(s => !s.is_best).map(s => s.visits_best);
+  const beta = DATA.settings.beta, nEp = DATA.settings.n_episodes;
+  const explorePicks = (1 - Math.exp(-beta * nEp)) / beta;  // sum over t of eps_t = e^(-beta t)
+  $("why-list").innerHTML = [
+    `One 20-day episode's reward for the best portfolio has a standard deviation of ${c.reward_sd_best_daily.toExponential(2)} per day, ${f(c.reward_sd_best_daily / c.u_best_daily, 1)} times its expected value of ${c.u_best_daily.toExponential(2)}.`,
+    `The best and second-best grid portfolios differ by ${f(c.gap_best_second_bps, 1)} bps/yr, which is ${c.gap_best_second_daily.toExponential(2)} per day.`,
+    `Rewards for different portfolios come from different episodes, so telling the two apart at two standard errors takes about ${Math.round(c.visits_each_to_separate_2se_unpaired / 1e5) / 10} million tries of each.`,
+    `Random exploration adds up to about ${f(explorePicks / 1e6, 2)} million picks over the whole run (the sum of ε over all 13 million episodes), so each of the 1,287 portfolios is explored at random about ${Math.round(explorePicks / 1287).toLocaleString()} times. In the ${miss.length} seeds that missed it, the best portfolio was tried ${Math.min(...miss).toLocaleString()} to ${Math.max(...miss).toLocaleString()} times: those random tries plus some greedy picks early on, 250 to 1,000 times fewer than needed.`,
+    `So which near-top portfolio wins is largely decided by luck in the first few million episodes, and the remaining budget goes to exploiting it.`,
+  ].map(x => `<li>${x}</li>`).join("");
+
+  // fixes table
+  table("tbl-fixes", ["#", "Issue", "Consequence if left", "Where to fix", "Owner", "Effort"], [
+    ["1", "Primary convergence rule mostly measures the timing of the last brief switch. Median 185M days on the 20% grid; 1 seed there and 3 at γ = 3 or 8 \"fail\" although their checkpointed greedy action never changed after the halfway point (only brief excursions).",
+      "Report would say convergence takes 150M to 193M days and fails in up to 20% of seeds, when every seed settled by 87M days.",
+      "Keep <code>greedy_stable_through_end</code> (<code>src/evaluate.py:178</code>) as is. Add a labelled post-hoc <code>settled_from</code> measure beside it in the per-seed record (<code>src/evaluate.py:296-327</code>), the per-seed CSV keys (<code>:476-480</code>) and INDEX (<code>src/run_experiments.py:154</code>, <code>:179</code>). Explain the switch mechanism in the report.", "Albert", "Small"],
+    ["2", "Near-optimal rule is checked every 10,000 episodes while the primary rule counts every episode; INDEX shows them side by side unlabelled.",
+      "\"Near-optimal at 26M days but converged at 185M\" compares two differently sampled numbers.",
+      "Label the column \"at 10,000-episode checkpoints\" in <code>_index_markdown</code> (<code>src/run_experiments.py:198</code>) and in <code>EVALUATION.md</code> line 95. Optionally add the every-episode version computed from the greedy change log.", "Albert", "Small"],
+    ["3", "No table shows the total gap to the continuous optimum, although each seed's value is already computed (<code>src/evaluate.py:306</code>).",
+      "Hides that the coarser grid wins on total gap (14.3 vs 19.8 bps/yr), the central action-space comparison for Parts V and VI.",
+      "Add <code>ce_loss_vs_continuous_bps</code> to the per-seed CSV keys (<code>src/evaluate.py:476</code>), a spread of it to the summary, <code>_index_entry</code> (<code>src/run_experiments.py:168-169</code>) and the comparison JSON.", "Albert", "Small"],
+    ["4", "Identical numbers across γ experiments (e.g. near-optimal median 25.8M at γ = 5 and 8).", "Could be mistaken for a bug or for independent confirmation.",
+      "Report text only. They come from shared random streams by design (<code>src/agent.py:76</code>, ties on a separate stream). Describe the γ runs as paired.", "Report", "None"],
+    ["5", "The 10,000-episode evaluation sample cannot resolve gaps this small (2 SE = 6 to 37 bps/yr).", "Realized shortfalls can come out negative, which reads as the agent beating the best portfolio.",
+      "Report exact values as primary (already done in <code>summary.json</code>); mention the sample only as a check. A larger sample is a settings change, so leave it.", "Report", "None"],
+    ["6", "Cumulative regret plot sums daily objective differences against simulated days (units hard to read).", "Readers cannot interpret the y-axis.",
+      "In <code>_plot_regret</code> (<code>src/evaluate.py:566</code>) plot average regret in bps/yr, as Figure 3.5 does here.", "Albert", "Small"],
+    ["7", "Reproducibility gaps: run log gitignored; manifest code hashes omit <code>evaluate.py</code>, <code>config.py</code>, <code>run_experiments.py</code>; summary.json has no commit; pandas and matplotlib versions not recorded; <code>EXPERIMENTS.md</code> line 3 says no full-scale run yet.",
+      "Harder to prove later which code produced a figure.",
+      "Record commit, hashes and versions in the summary written by <code>_evaluate</code> (<code>src/evaluate.py:257</code>). Update <code>EXPERIMENTS.md</code>. For the log, either add <code>!results/full_run_*.log</code> to <code>.gitignore</code> (shared file, ask William) or copy it into an evaluation folder.", "Albert (+ William for .gitignore)", "Small"],
+    ["8", "The median learning gap (14.1) is the average of two seeds (12.3 and 15.9), and the \"median seed\" in <code>results/*/evaluation/weights_grouped_bar.png</code> is the upper one (run 1).", "A caption that says \"median seed\" without saying which would be imprecise.", "Caption text in the report.", "Report", "None"],
+    ["9", "Primary-rule observation counts include the K window itself (last change + 1.3M episodes = +26M days).", "Readers may read the count as the moment of the last change.", "State it wherever the number appears; the table here does.", "Report", "None"],
+  ], { left: [1, 2, 3, 4], wrap: [1, 2, 3] });
+
+  // improvements table
+  table("tbl-improve", ["Idea", "What it targets", "Expected effect", "Where", "Cost"], [
+    ["Settle on a minimum number of tries per portfolio before ε decays (e.g. a burn-in that cycles through every portfolio a fixed number of times)", "Near-top portfolios starved of visits (Section 6)", "More seeds find the exact best; fewer late switches", "<code>src/agent.py</code> (William's: flag, not edit) and <code>src/config.py</code>", "Medium. A new labelled experiment"],
+    ["Slower ε decay or a longer budget (Part VI lists training budget as a robustness dimension)", "Same", "Higher exact-recovery rate at the price of more regret", "<code>src/config.py</code> (<code>beta_for</code>, <code>N_EPISODES</code>)", "Low code, high compute (hours per experiment)"],
+    ["Longer episodes (B = 60 or 120 days)", "Reward noise: SD shrinks roughly with 1/√B", "Fewer tries needed per portfolio, but fewer episodes per simulated day", "<code>src/config.py</code> (<code>EPISODE_LENGTH</code>)", "Low code; also a Part VI robustness check"],
+    ["Count-based exploration such as UCB, or optimistic Q₀", "Exploration that targets uncertain portfolios rather than random ones", "Directs tries to the contenders; standard bandit result", "<code>src/agent.py</code> (William's: flag, not edit)", "Medium. Must stay model-free and benchmark-free"],
+    ["More evaluation episodes (e.g. 200,000)", "Finding 5", "Realized shortfalls become informative at the 5 to 10 bps level", "<code>src/config.py</code> (<code>N_EVAL_EPISODES</code>)", "Low"],
+    ["Report the settled-from and total-gap measures in every experiment", "Findings 1 and 3", "Tables say what the agent did", "Section 7 rows 1 and 3", "Low"],
+    ["10% grid at γ = 5 with one of the exploration changes above", "Part V asks how convergence changes with action-set size", "A third resolution point; tests the curse of dimensionality directly", "<code>src/config.py</code> (<code>experiments()</code>)", "High compute; 43,758 portfolios"],
+  ], { left: [0, 1, 2, 3, 4], wrap: [0, 1, 2] });
+
+  // design table (Part III)
+  table("tbl-design", ["Item (assignment Part III)", "Choice", "Reason"], [
+    ["State", "None (stateless)", "Returns are i.i.d., so no observable state carries information"],
+    ["Action space", "Every long-only, fully invested portfolio on a 20% grid (1,287) and a 25% grid (495)", "Built from the increment alone, without μ, Σ or the optimum"],
+    ["Reward", "Realized mean − (γ/2) × realized variance (ddof = 1) of the portfolio over a 20-day episode", "Its expectation equals the benchmark objective U exactly, so learning and theory share one objective"],
+    ["Learning rate", "α = 1/N(a), decreasing with that portfolio's visit count", "Q(a) becomes the sample mean of a's rewards, the natural estimator for a stationary bandit"],
+    ["Exploration", `ε<sub>t</sub> = e<sup>−βt</sup>, ε₀ = 1, β = ${DATA.settings.beta.toExponential(4)}`, "ε = 1% halfway through training and 0.01% at the end"],
+    ["Discount factor", "ρ = 0", "No state transition and a bandit-like problem; with ρ = 0 the question of a continuation value does not arise"],
+    ["Training", "13,000,000 episodes × 20 days per seed", "B = 20 is about one month of trading, a team decision; 13M episodes was sized so a 1/N learner gets close to the best grid portfolio, within a 5-minute-per-seed budget"],
+    ["Q initialization", "0 for every portfolio", "Simple default. About 45% of single rewards are negative, so an untried portfolio at 0 outranks many tried ones early on, which makes it mildly optimistic"],
+    ["Tie-breaking", "Uniform at random among tied maxima, on its own random stream", "Avoids numpy's lowest-index bias"],
+    ["Seeds", `10 per experiment, master seed ${DATA.settings.master_seed}, PCG64 SeedSequence streams`, "Separate streams for training returns, agent draws and the shared evaluation sample"],
+  ], { left: [0, 1, 2], wrap: [1, 2] });
+
+  // convergence table (Part IV)
+  const conv2 = (k, fld) => { const v = G[k].seeds.map(s => s[fld]); const n = v.filter(x => x != null); return [`${n.length}/10`, md(median(v)), n.length ? f(median(v) / G[k].episode_length / 1e6, 2) + "M" : "n/a"]; };
+  const cRows = [];
+  [["Primary: final action held ≥ K through end", "primary_obs"], ["First time any action held ≥ K", "first_stable_obs"], ["|ΔQ| below 1e-5 for good", "dq_obs"], ["Within 25 bps/yr for good (10k checks)", "near_obs_ckpt"], ["Settled on final portfolio (post hoc)", null]].forEach(([lab, fld]) => {
+    cRows.push([lab, ...KEYS.flatMap(k => fld ? conv2(k, fld) : ["10/10", md(D[k].settle), f(D[k].settle / 20 / 1e6, 2) + "M"])]);
+  });
+  table("tbl-conv", ["Criterion", "20%: seeds", "20%: median days", "20%: episodes", "25%: seeds", "25%: median days", "25%: episodes"], cRows, { left: [0] });
+
+  // weights (Part V)
+  const g = G.g20, mean = T.map((_, i) => g.seeds.reduce((a, s) => a + s.weights[i], 0) / 10);
+  const wRows = T.map((t, i) => [t, pct(g.cont_weights[i], 1), pct(g.best_weights[i], 0), pct(mean[i], 0), pct(Math.abs(mean[i] - g.cont_weights[i]), 1), pct(Math.abs(mean[i] - g.best_weights[i]), 0), pct(G.g25.best_weights[i], 0)]);
+  const l1b = mean.reduce((a, v, i) => a + Math.abs(v - g.best_weights[i]), 0), l2b = Math.sqrt(mean.reduce((a, v, i) => a + (v - g.best_weights[i]) ** 2, 0));
+  const l2bSeed = median(g.seeds.map(s => Math.sqrt(s.weights.reduce((a, v, i) => a + (v - g.best_weights[i]) ** 2, 0))));
+  const l1m = mean.reduce((a, v, i) => a + Math.abs(v - g.cont_weights[i]), 0), l2m = Math.sqrt(mean.reduce((a, v, i) => a + (v - g.cont_weights[i]) ** 2, 0));
+  wRows.push(["L1 distance to w*", "", f(G.g20.seeds.find(s => s.is_best).l1_cont, 3), `${f(l1m, 3)} (seed median ${f(median(g.seeds.map(s => s.l1_cont)), 3)})`, "", "", ""]);
+  wRows.push(["Euclidean distance to w*", "", f(G.g20.seeds.find(s => s.is_best).l2_cont, 3), `${f(l2m, 3)} (seed median ${f(median(g.seeds.map(s => s.l2_cont)), 3)})`, "", "", ""]);
+  wRows.push(["L1 distance to best on 20% grid", "", "0", `${f(l1b, 3)} (seed median ${f(median(g.seeds.map(s => s.l1_best)), 3)})`, "", "", ""]);
+  wRows.push(["Euclidean distance to best on 20% grid", "", "0", `${f(l2b, 3)} (seed median ${f(l2bSeed, 3)})`, "", "", ""]);
+  table("tbl-weights", ["Asset", "Continuous w*", "Best on 20% grid w<sub>disc</sub>", "Learned w̄<sub>QL</sub> (mean of seeds)", "|w̄ − w*|", "|w̄ − w<sub>disc</sub>|", "Best on 25% grid"], wRows, { left: [0, 3] });
+
+  // performance (Part V)
+  const bm = (k, name) => G[k].benchmarks[name];
+  const uc = G.g20.u_cont;
+  const perfRow = (label, mean_, vol, u, ref) => [label, pct(mean_), pct(vol), pct(u * 252), f((uc - u) * BPS), ref];
+  const learnedRow = k => { const s = G[k].seeds;
+    const mr = (fn, fmt) => { const v = s.map(fn); return `${fmt(median(v))} (${fmt(Math.min(...v))}–${fmt(Math.max(...v))})`; };
+    return [`Learned, ${NAME[k]} (median across seeds)`, mr(x => x.mean_annual, v => pct(v)), mr(x => x.vol_annual, v => pct(v)), mr(x => x.u_daily * 252, v => pct(v)), mr(x => x.loss_cont, v => f(v)), mr(x => x.loss_best, v => f(v))]; };
+  table("tbl-perf", ["Portfolio", "Mean (excess, %/yr)", "Volatility (%/yr)", "Objective (CE, %/yr)", "Loss vs. continuous (bps/yr)", "Learning gap vs. best on its grid (bps/yr)"], [
+    perfRow("Continuous optimum w*", bm("g20", "continuous").mean_annual, bm("g20", "continuous").vol_annual, bm("g20", "continuous").u_daily, "n/a"),
+    perfRow("Best on 20% grid", bm("g20", "best_discrete").mean_annual, bm("g20", "best_discrete").vol_annual, bm("g20", "best_discrete").u_daily, "0.0"),
+    learnedRow("g20"),
+    perfRow("Best on 25% grid", bm("g25", "best_discrete").mean_annual, bm("g25", "best_discrete").vol_annual, bm("g25", "best_discrete").u_daily, "0.0"),
+    learnedRow("g25"),
+    perfRow("Equal weight", bm("g20", "equal_weight").mean_annual, bm("g20", "equal_weight").vol_annual, bm("g20", "equal_weight").u_daily, `${f(bm("g20", "equal_weight").loss_best)} (vs. 20% best)`),
+  ], { left: [0] });
+
+  // speed table
+  table("tbl-speed", ["Grid", "Seeds reaching it", "Median simulated days", "Median episodes", "Range (days)", "Median days, every-episode check"], KEYS.map(k => {
+    const v = G[k].seeds.map(s => s.near_obs_ckpt).filter(x => x != null); return [NAME[k], `${v.length}/10`, md(median(v)), f(median(v) / 20 / 1e6, 2) + "M", `${md(Math.min(...v))} to ${md(Math.max(...v))}`, md(median(G[k].seeds.map(s => s.near_obs_episode)))]; }), { left: [0] });
+
+  // robustness
+  const R = DATA.robust;
+  const rr = (k, label) => { const g = R[k], s = g.seeds; return [label, `<span class="port">${port(g.cont_weights.map(v => Math.round(v * 100) / 100))}</span>`, `<span class="port">${port(g.best_weights)}</span>`, f(g.disc_gap_bps, 1), g.n_within_near, f(median(s.map(x => x.loss_best))), f(median(s.map(x => x.loss_cont))), `${s.filter(x => x.is_best).length}/10`, `${Math.round(g.convergence.greedy_stable_through_end * 10)}/10`, `${Math.round(g.convergence.near_optimal_for_good * 10)}/10`, md(median(s.map(x => x.settled_from_ep * 20)))]; };
+  table("tbl-robust", ["Experiment", "Continuous w* (rounded)", "Best on grid", "Discretization gap", "Portfolios within 25 bps", "Learning gap, median", "Total gap, median", "Exact best", "Primary rule", "Near-optimal", "Settled, median days"], [
+    rr("g3", "γ = 3, 20% grid"), rr("g5", "γ = 5, 20% grid (baseline)"), rr("g8", "γ = 8, 20% grid"),
+    (() => { const g = G.g25, s = g.seeds; return ["γ = 5, 25% grid", `<span class="port">${port(g.cont_weights.map(v => Math.round(v * 100) / 100))}</span>`, `<span class="port">${port(g.best_weights)}</span>`, f(g.disc_gap_bps, 1), g.n_within_near, f(median(s.map(x => x.loss_best))), f(median(s.map(x => x.loss_cont))), `${s.filter(x => x.is_best).length}/10`, `${s.filter(x => x.primary_obs != null).length}/10`, `${s.filter(x => x.near_obs_ckpt != null).length}/10`, md(D.g25.settle)]; })(),
+  ], { left: [0, 1, 2] });
+
+  // challenges
+  const cal = DATA.calibration;
+  const seMin = Math.min(...cal.se_mean_annual_pct), seMax = Math.max(...cal.se_mean_annual_pct);
+  const chal = [
+    ["Estimation error in μ and Σ", `The calibration uses ${cal.n_obs.toLocaleString()} daily observations. The standard error of each asset's annualized mean excess return is ${f(seMin, 1)}% (TIP) to ${f(seMax, 1)}% (VNQ); for SPY it is ${f(cal.se_mean_annual_pct[0], 1)}% and for GLD ${f(cal.se_mean_annual_pct[6], 1)}%. The gaps the agent is asked to resolve are about 0.1%. So the identity of the "optimal" portfolio belongs to this calibration, and the conclusions are about learning inside a fixed environment.`],
+    ["Conditioning of Σ", `The daily covariance matrix has condition number ${f(cal.cond_number, 0)} (eigenvalues ${cal.eig_min.toExponential(2)} to ${cal.eig_max.toExponential(2)}). That is well-conditioned enough for the long-only optimizer and the simulator's Cholesky draws; the highly correlated, low-volatility bond sleeve (IEF, LQD, TIP) is the main source of the small eigenvalues and of the near-ties between grid portfolios that swap one bond fund for another.`],
+    ["Curse of dimensionality", `The grid grows from 495 to 1,287 portfolios between 25% and 20% steps, and to 43,758 and 3,108,105 at 10% and 5%. With 13 million episodes and the tries needed per contender in Section 6, even the 20% grid is under-sampled near the top. The 2.6× larger action set cost 11.5 more bps/yr of learning gap at the median (14.1 against 2.5), more than the 6.0 bps/yr it saved in discretization, so its median total gap is 5.5 bps/yr worse.`],
+    ["Discretization error and benchmark leakage", `The grid is built from the increment alone and the optimum is never inserted. Training uses no benchmark information: the agent receives only the action count, its settings and its random stream, rewards are computed in <code>src/train.py</code>, and training stops at a fixed budget. The near-optimal measure uses the benchmark but is computed after training, for evaluation only.`],
+    ["Consistency of reward and objective", `The episodic reward uses the realized mean and the unbiased (ddof = 1) realized variance, so its expectation is exactly w′μ − (γ/2)w′Σw, the benchmark objective. No adjustment for second moments is needed, unlike the one-period quadratic-utility reward.`],
+    ["Limits of a stationary simulated environment", `Returns are i.i.d. Gaussian with fixed moments, so the agent is solving a 1,287-armed bandit with a known noise structure. Real returns have fat tails, volatility clustering and drifting means; the learned portfolio would carry the calibration's estimation error, and the learning problem would be harder because the target moves.`],
+  ];
+  $("challenges").innerHTML = chal.map(([h, t]) => `<div class="prose stack" style="gap:6px"><h4>${h}</h4><p>${t}</p></div>`).join("");
+
+  $("footer").innerHTML = `Built from <code>results/</code> by <code>reports/full_run_2026-10-22/build_data.py</code> and <code>build_report.py</code>. Index written ${ix.written_utc} from commit <code>${ix.git_commit}</code>. All benchmark numbers were re-derived independently (stars-and-bars grid and a separate projected-gradient solver) and match to about 1e-11; the per-seed numbers in <code>results/</code> and the report's own derived measures (settling, excursions, tries, reward noise, exploration totals) were re-derived from the training logs by two independent reviews.`;
+}
+
+// ---------- charts ----------
+let lossRange = "early";
+function drawCharts() {
+  const muted = css("--muted"), ink2 = css("--ink-2"), bench = css("--bench"), seedC = css("--seed"), neutral = css("--axis");
+  // 3.1 decomposition
+  legend("lg-decomp", [{ label: "Discretization gap (forced by the grid)", color: neutral }, { label: "Learning gap, 20% grid", color: col("g20") }, { label: "Learning gap, 25% grid", color: col("g25") }]);
+  stackedH($("ch-decomp"), { xMax: 25, xLabel: "CE loss vs. continuous optimum (bps/yr)", aria: "Stacked bars of discretization and learning gap per grid",
+    rows: KEYS.map(k => ({ label: NAME[k], segs: [{ label: "Discretization gap", v: G[k].disc_gap_bps, color: neutral, textOn: css("--ink") }, { label: "Learning gap (median across seeds)", v: D[k].learn, color: col(k) }] })) });
+  // 3.2 total gap dots
+  dotPlot($("ch-totaldots"), { x: { min: 0, max: 60, label: "Total CE loss vs. continuous optimum (bps/yr)" }, labelW: 120, aria: "Total gap per seed",
+    rows: KEYS.map(k => ({ label: NAME[k], color: col(k), floor: G[k].disc_gap_bps, median: D[k].total, dots: G[k].seeds.map(s => ({ v: s.loss_cont, tip: `<b>${NAME[k]}, seed ${s.run}</b><div>${port(s.weights)}</div><div class="r"><span>Total gap</span><b>${f(s.loss_cont, 1)} bps/yr</b></div><div class="r"><span>Learning gap</span><b>${f(s.loss_best, 1)}</b></div>` })) })) });
+  // 3.3 loss over time
+  legend("lg-loss", [{ label: "20% grid, median", color: col("g20"), line: true }, { label: "25% grid, median", color: col("g25"), line: true }, { label: "Middle 50% of seeds", color: "color-mix(in srgb, " + muted + " 35%, transparent)" }]);
+  const xmax = lossRange === "early" ? 100 : 260;
+  lineChart($("ch-loss"), { height: 320, xs: D.g20.xs, x: { min: 0, max: xmax, label: "Simulated trading days (millions)", fmt: v => v + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 150, label: "CE loss vs. best on grid (bps/yr)", tipFmt: v => f(v, 1) + " bps" },
+    refs: [{ y: NEAR, label: "25 bps near-optimal line" }],
+    series: KEYS.map(k => ({ label: NAME[k], color: col(k), data: D[k].lossMed, band: [D[k].lossQ1, D[k].lossQ3], step: true })) });
+  // 3.4 learning curve
+  legend("lg-lc", [{ label: "20% grid", color: col("g20"), line: true }, { label: "25% grid", color: col("g25"), line: true }, { label: "Best on each grid", color: muted, line: true, dash: true }]);
+  lineChart($("ch-lc"), { height: 280, xs: D.g20.xs, x: { min: 0, max: 260, label: "Simulated days (millions)", fmt: v => v + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: -0.5, max: 6, ticks: [0, 2, 4, 6], label: "CE return (%/yr)", fmt: v => v + "%", tipFmt: v => f(v, 2) + "%" },
+    refs: [{ y: G.g20.u_best * 25200, label: "" , color: col("g20") }, { y: G.g25.u_best * 25200, label: "", color: col("g25") }],
+    series: KEYS.map(k => ({ label: NAME[k], color: col(k), data: D[k].lcMed })) });
+  // 3.5 regret
+  legend("lg-rg", [{ label: "20% grid", color: col("g20"), line: true }, { label: "25% grid", color: col("g25"), line: true }]);
+  lineChart($("ch-rg"), { height: 280, xs: D.g20.xs, x: { min: 0, max: 260, label: "Simulated days (millions)", fmt: v => v + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 600, label: "Average regret (bps/yr)", tipFmt: v => f(v, 1) + " bps" },
+    series: KEYS.map(k => ({ label: NAME[k], color: col(k), data: D[k].rgMed })) });
+  // 3.6 convergence dot plot
+  legend("lg-conv", [{ label: "20% grid", color: col("g20") }, { label: "25% grid", color: col("g25") }, { label: "Median (bar)", color: muted }]);
+  const measures = [["Settled (post hoc)", s => s.settled_from_ep * 20], ["Near-optimal, 10k checks", s => s.near_obs_ckpt], ["|ΔQ| < 1e-5", s => s.dq_obs], ["First hold ≥ K", s => s.first_stable_obs], ["Primary rule", s => s.primary_obs]];
+  const convRows = []; measures.forEach(([lab, fn], mi) => KEYS.forEach((k, ki) => { const v = G[k].seeds.map(fn);
+    convRows.push({ label: ki === 0 ? lab : "", sub: NAME[k], sep: ki === 0 && mi > 0, color: col(k), median: median(v) == null ? null : median(v) / 1e6, never: v.filter(x => x == null).length,
+      dots: G[k].seeds.map((s, i) => v[i] == null ? null : { v: v[i] / 1e6, tip: `<b>${NAME[k]}, seed ${s.run}</b><div class="r"><span>${lab}</span><b>${md(v[i])} days</b></div>` }).filter(Boolean), r: 4.5 }); }));
+  dotPlot($("ch-conv"), { x: { min: 0, max: 260, label: "Simulated trading days (millions)", fmt: v => v + "M" }, rows: convRows, rowH: 34, labelW: 170, neverCol: true, aria: "Convergence timing per seed" });
+  // 3.7 weights
+  const meanW = k => T.map((_, i) => G[k].seeds.reduce((a, s) => a + s.weights[i], 0) / G[k].seeds.length);
+  const wSeries = [{ label: "Continuous optimum w*", color: bench, values: G.g20.cont_weights }, { label: "Best on 20% grid", color: col("g20"), values: G.g20.best_weights }, { label: "Learned, 20% grid (mean of seeds)", color: soft("g20"), values: meanW("g20") }, { label: "Best on 25% grid", color: col("g25"), values: G.g25.best_weights }, { label: "Learned, 25% grid (mean of seeds)", color: soft("g25"), values: meanW("g25") }];
+  legend("lg-w", wSeries.map(s => ({ label: s.label, color: s.color })));
+  groupedBars($("ch-w"), { cats: T, series: wSeries, yMax: 0.6, height: 300, aria: "Grouped bar chart of weights" });
+  // 9.1 weights baseline only
+  const w9 = [wSeries[0], wSeries[1], { ...wSeries[2], label: "Learned w̄QL, 20% grid (mean of seeds)" }];
+  legend("lg-w9", w9.map(s => ({ label: s.label, color: s.color })));
+  groupedBars($("ch-w9"), { cats: T, series: w9, yMax: 0.6, height: 280, aria: "Baseline weights" });
+
+  // per-grid sections
+  KEYS.forEach((k, kk) => {
+    const g = G[k], xs = g.x_days_m, c = col(k);
+    const host = $("sm-" + k); host.innerHTML = "";
+    g.seeds.forEach(s => {
+      const p = document.createElement("div"); p.className = "sm-panel";
+      p.innerHTML = `<div class="sm-title"><b>Seed ${s.run}</b><span class="port">${port(s.weights)} · ${s.is_best ? "best" : f(s.loss_best, 1) + " bps"}</span></div><div class="chart"></div>`;
+      host.appendChild(p);
+      lineChart(p.querySelector(".chart"), { compact: true, height: 150, xs, x: { min: 0, max: 260, fmt: v => v + "M", ticks: [0, 50, 100, 150, 200, 250], tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 150, ticks: [0, 50, 100, 150], tipFmt: v => f(v, 1) + " bps" },
+        refs: [{ y: NEAR }], vmarks: [{ x: s.settled_from_ep * 20 / 1e6, color: ink2 }, { x: s.primary_obs == null ? null : s.primary_obs / 1e6, color: ink2, dash: true }],
+        series: [{ label: "Greedy loss", color: c, data: s.series.loss, step: true, width: 1.75 }] });
+    });
+    // spaghetti learning curve
+    lineChart($("sp-lc-" + k), { height: 260, xs, x: { min: 0, max: 260, label: "Simulated days (millions)", fmt: v => v + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 6.5, label: "CE return (%/yr)", fmt: v => v + "%", tipFmt: v => f(v, 2) + "%" },
+      refs: [{ y: g.u_best * 25200, label: "Best on grid" }],
+      series: [...g.seeds.map(s => ({ label: "Seed " + s.run, color: seedC, data: s.series.reward_pct, width: 1, background: true })), { label: "Median", color: c, data: D[k].lcMed }],
+      extraTip: i => { const v = g.seeds.map(s => s.series.reward_pct[i]); return `<div class="r"><span>Seed range</span><b>${f(Math.min(...v), 2)} to ${f(Math.max(...v), 2)}%</b></div>`; } });
+    // share on final
+    lineChart($("sp-share-" + k), { height: 260, xs, x: { min: 0, max: 260, label: "Simulated days (millions)", fmt: v => v + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 1, label: "Share of window", fmt: v => Math.round(v * 100) + "%", tipFmt: v => f(v * 100, 1) + "%" },
+      series: [...g.seeds.map(s => ({ label: "Seed " + s.run, color: seedC, data: s.series.share_final, width: 1, background: true })), { label: "1 − ε", color: muted, data: g.epsilon.map(e => 1 - e), dash: true, width: 1.5 }, { label: "Median seed", color: c, data: D[k].shareMed }] });
+    // switches dot plot
+    dotPlot($("sw-" + k), { x: { min: 0, max: 400, label: "Loss of temporary portfolio (bps/yr; 400+ at edge)" }, labelW: 120, rowH: 30, aria: "Brief switches per seed",
+      vlines: [{ x: NEAR, label: "25 bps", dash: true, color: muted }],
+      rows: g.seeds.map(s => { const counts = {}; s.late_switch_losses.forEach(v => { const key = Math.min(v, 400).toFixed(0); counts[key] = (counts[key] || 0) + 1; });
+        return { label: `Seed ${s.run}`, sub: `${s.switches_after_settle} excursions`, color: c, r: 3.5,
+          dots: Object.entries(counts).map(([v, n]) => ({ v: +v, tip: `<b>Seed ${s.run}</b><div class="r"><span>Temporary portfolio loss</span><b>${v}${+v >= 400 ? "+" : ""} bps/yr</b></div><div class="r"><span>Excursions</span><b>${n}</b></div><div class="caption">Settled portfolio: ${port(s.weights)}</div>` })) }; }) });
+  });
+
+  // 6.1 visits
+  const missRows = KEYS.map(k => ({ label: NAME[k], color: col(k), dots: G[k].seeds.filter(s => !s.is_best).map(s => ({ v: s.visits_best, tip: `<b>${NAME[k]}, seed ${s.run}</b><div class="r"><span>Tries of best portfolio</span><b>${s.visits_best.toLocaleString()}</b></div><div class="r"><span>Tries of chosen portfolio</span><b>${s.visits.toLocaleString()}</b></div><div>Ended on ${port(s.weights)}</div>` })) }));
+  legend("lg-visits", [{ label: "20% grid seed", color: col("g20") }, { label: "25% grid seed", color: col("g25") }]);
+  dotPlot($("ch-visits"), { x: { min: 500, max: 2e7, log: true, label: "Times the grid's best portfolio was played (log scale)", ticks: [1e3, 1e4, 1e5, 1e6, 1e7], fmt: v => v >= 1e6 ? v / 1e6 + "M" : v / 1e3 + "k" }, labelW: 100, rowH: 52,
+    vlines: [{ x: G.g20.visits_each_to_separate_2se, label: "20%: ≈1.1M needed", dash: true, color: col("g20"), anchor: "end" }, { x: G.g25.visits_each_to_separate_2se, label: "25%: ≈7.4M needed", dash: true, color: col("g25"), anchor: "end", dy: 16 }, { x: median(G.g20.seeds.map(s => s.visits)), label: "chosen ≈11.4M", color: ink2, anchor: "end", dy: 32 }],
+    rows: missRows, aria: "Visits to the best portfolio in seeds that missed it" });
+
+  // 9.2 gap distribution
+  const R = DATA.robust;
+  const gRow = (label, seeds, color, sub) => ({ label, sub, color, median: median(seeds.map(s => s.loss_best)), dots: seeds.map(s => ({ v: s.loss_best, tip: `<b>${label}${sub ? ", " + sub : ""}, seed ${s.run}</b><div>${port(s.weights)}</div><div class="r"><span>Learning gap</span><b>${f(s.loss_best, 1)} bps/yr</b></div>` })) });
+  dotPlot($("ch-gapdist"), { x: { min: 0, max: 90, label: "Learning gap vs. best on own grid (bps/yr)" }, labelW: 150, rowH: 56, vlines: [{ x: NEAR, label: "25 bps", dash: true, color: muted }],
+    rows: [gRow("γ = 5", G.g20.seeds, col("g20"), "20% grid"), gRow("γ = 5", G.g25.seeds, col("g25"), "25% grid"), gRow("γ = 3", R.g3.seeds, col("g20"), "20% grid"), gRow("γ = 8", R.g8.seeds, col("g20"), "20% grid")], aria: "Learning gap distribution" });
+}
+
+// ---------- boot ----------
+fillStatic();
+drawCharts();
+$("tg-loss").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; lossRange = b.dataset.r;
+  $("tg-loss").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")); drawCharts(); });
+let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(drawCharts, 150); });
+const redraw = () => { fillStatic(); drawCharts(); };
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+})();
+</script>
