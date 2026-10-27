@@ -81,7 +81,7 @@ def beta_for(n_episodes: int, epsilon_at_halfway: float = EPSILON_AT_HALFWAY) ->
 @dataclass(frozen=True)
 class Experiment:
     """One training run set: a name for its results folder, plus its settings.
-    The last two default to the baseline; only post-hoc variants change them."""
+    The last three default to the baseline; only post-hoc variants change them."""
 
     name: str
     gamma: float
@@ -89,6 +89,7 @@ class Experiment:
     purpose: str
     episode_length: int = EPISODE_LENGTH
     epsilon_at_halfway: float = EPSILON_AT_HALFWAY
+    n_episodes: int = N_EPISODES
 
 
 @dataclass(frozen=True)
@@ -97,7 +98,9 @@ class RunVariant:
 
     suffix goes on every experiment name (baseline_g5_grid20_<suffix>) so its
     folders can never be mistaken for the baseline's. expected is the
-    direction written down before the run, registered the date it was.
+    direction written down before the run, registered the date it was. It is
+    the one-line summary INDEX.md prints; EXPERIMENTS.md §7 holds the full
+    expectation.
     """
 
     run_id: str
@@ -135,7 +138,7 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
     ),
     "all-three": RunVariant(
         "all-three", "B60_N26M_eps3", "2026-10-27",
-        "the smallest learning gap of the five runs at every γ, mostly from B; training regret a little above b60's",
+        "the smallest learning gap of runs 1 to 4 at every γ, mostly from B; training regret a little above b60's",
         episode_length=60, n_episodes=26_000_000, epsilon_at_halfway=0.03,
     ),
     "grid10-robustness": RunVariant(
@@ -155,7 +158,7 @@ def experiments(run: RunVariant | None = None) -> list[Experiment]:
         purpose = f"post-hoc run {run.run_id}: {run.expected}"
         return [
             Experiment(f"{'baseline' if g == GAMMA_BASELINE else 'robust'}_g{int(g)}_{grid}_{run.suffix}",
-                       g, run.increment, purpose, run.episode_length, run.epsilon_at_halfway)
+                       g, run.increment, purpose, run.episode_length, run.epsilon_at_halfway, run.n_episodes)
             for g in (GAMMA_BASELINE, *GAMMA_ROBUSTNESS)
         ]
     return [
@@ -170,8 +173,10 @@ def experiments(run: RunVariant | None = None) -> list[Experiment]:
     ]
 
 
-def train_config(experiment: Experiment, n_episodes: int = N_EPISODES, n_runs: int = N_RUNS,
+def train_config(experiment: Experiment, n_episodes: int | None = None, n_runs: int = N_RUNS,
                  log_every: int = LOG_EVERY) -> TrainConfig:
+    """n_episodes defaults to the experiment's own training budget."""
+    n_episodes = experiment.n_episodes if n_episodes is None else n_episodes
     return TrainConfig(
         gamma=experiment.gamma,
         episode_length=experiment.episode_length,

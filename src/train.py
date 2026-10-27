@@ -32,7 +32,8 @@ own greedy_action (which may draw from the agent's random stream).
 
 If agent.update() returns the new Q(action), train.py keeps its own copy of the
 Q-table and changes that one entry, instead of copying the whole table every
-episode (REVIEW_HISTORY.md §5.3; 91 vs 51.6 µs per episode at the 10% grid).
+episode (REVIEW_HISTORY.md §5.3). At the 10% grid that copy is about 6 µs of
+the roughly 91 µs per episode; the per-episode argmax below is about 36 µs.
 The copy is checked against agent.q_values at every checkpoint. An update()
 that returns None, as TabularQAgent's does until William's half of the fix
 lands, gets the full copy as before.

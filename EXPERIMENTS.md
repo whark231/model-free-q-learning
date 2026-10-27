@@ -165,9 +165,12 @@ outcome afterwards.
 - Running without `--run` is unchanged and reproduces `baseline-v1`:
   `test_baseline_settings_still_match_the_committed_baseline_v1_run` checks the
   settings and every training config against the files that run wrote.
-- Each run lives on its own branch (`run/b60`, `run/n26m`, `run/eps-decay`,
-  `run/all-three`, `run/grid10-robustness`) holding only its own entry in
-  `src/config.py: POST_HOC_RUNS`, its tests and its section below.
+- The five runs are numbered in the order they were planned: run 1 `b60`
+  (§7.3), run 2 `n26m` (§7.4), run 3 `eps-decay` (§7.5), run 4 `all-three`
+  (§7.6) and run 5 `grid10-robustness` (§7.7). Each was built on its own
+  branch (`run/<run_id>`) and all five were merged into `dev` on 2026-10-27.
+- `RunVariant.expected` in `src/config.py` is the one-line summary printed in
+  `INDEX.md`; the section below is the full pre-registered expectation.
 
 ### 7.1 How a variant is defined and run
 
@@ -200,8 +203,8 @@ Assumptions that apply to every variant:
 
 ### 7.2 Run-time basis
 
-Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
-23.6 µs per episode) at B = 20 on the 20% grid with 13M episodes, so about
+Measured on Albert's Mac: the baseline took 281 to 323 s per seed (mean
+about 313 s, 24 µs per episode) at B = 20 on the 20% grid with 13M episodes, so about
 2.5 hours for 30 seeds (3 γ × 10). Scaling rules used below:
 
 - **Episode length.** B = 63 measured 43.8 µs vs 38.2 µs at B = 20 in
@@ -211,8 +214,10 @@ Measured on Albert's Mac: the baseline took 281 to 323 s per seed (about
 - **Training budget.** Time is proportional to the number of episodes.
 - **ε.** No effect on speed worth estimating.
 - **10% grid.** 91 µs per episode with the current runner and 51.6 µs for the
-  bare loop (`REVIEW_HISTORY.md` §4). The difference is the full Q-table copy
-  after every episode (§5.3).
+  bare loop (`REVIEW_HISTORY.md` §4). Timed on Albert's Mac on 2026-10-27,
+  the full Q-table copy after every episode (§5.3) is only about 6 µs of that
+  difference; `train.py`'s per-episode `np.argmax` over 43,758 entries is
+  about 36 µs, and the agent's own greedy scan about 42 µs.
 
 Evaluation adds a few minutes per run on the 20% grid. Estimates are ±20%.
 
@@ -337,8 +342,8 @@ more random episodes in total. Everything else is the baseline.
 
 - **The schedule.** ε_t = exp(−βt) with β = ln(1/0.03)/(N/2) ≈ 5.39e-7
   (baseline 7.08e-7). ε ends training at 0.09% instead of 0.01%.
-- **Random tries per portfolio.** 1,439 instead of 1,097. Both are about 800
-  times fewer than the 1.1 million visits needed to separate the top two
+- **Random tries per portfolio.** 1,439 instead of 1,097. These are about
+  760 and 1,000 times fewer than the 1.1 million visits needed to separate the top two
   portfolios (`REVIEW_HISTORY.md` §7.1).
 - **Regret is the price.** Every random episode is mostly spent on a poor
   portfolio, so more exploration raises the cumulative regret even if it
@@ -352,7 +357,7 @@ more random episodes in total. Everything else is the baseline.
   training regret of 77 vs 62 bps/yr. William's decision of 2026-10-26 was to
   drop slower decay. Albert chose to run 3% anyway on 2026-10-27 as the
   mildest tested change. Report it as a post-hoc check of that surrogate
-  result, not as a tuning attempt.
+  result.
 
 | Setting | Baseline (`baseline-v1`) | This run |
 |---|---|---|
@@ -482,12 +487,18 @@ the agent has 34 times as many portfolios to try with the same budget.
 
 **Key takeaways**
 
-- Report this against run `all-three`, not against the baseline. Against the
-  baseline it changes four things at once.
+- Report this against run `all-three`. Against the baseline it changes four
+  things at once.
+- Seed i of this run and seed i of `all-three` draw the same simulated
+  returns, because the returns stream does not depend on the actions taken.
+  The comparison is therefore paired seed by seed, and `evaluate.py` can
+  compare the two directly since their training configs differ only in the
+  grid:
+  `python -m src.evaluate --compare results/all-three/baseline_g5_grid20_B60_N26M_eps3 results/grid10-robustness/baseline_g5_grid10_B60_N26M_eps3 --labels 20% 10% --out results/grid10-robustness/comparison_g5_grid20_vs_grid10 --eval-episodes 10000 --converge-k 2600000 --dq-tol 1e-5 --near-optimal-bps 25`.
 - William proposed running the 10% grid at baseline settings (B = 20, 13M)
   so it changes one thing from `baseline-v1` (`REVIEW_NOTES_FOR_WILLIAM.md`).
   Albert chose `all-three`'s settings on 2026-10-27 so the comparison is with
-  the strongest configuration.
+  the configuration expected to learn best.
 
 | Setting | Baseline (`baseline-v1`) | Run `all-three` | This run |
 |---|---|---|---|
@@ -507,7 +518,7 @@ unchanged at γ = 3 and 8. The loss against the continuous optimum (the sum of
 the two gaps) has no confident direction: at γ = 5 the 4.4 bps/yr the grid
 gains may or may not outweigh the larger learning gap.
 
-**Code changes on this branch.**
+**Code changes for this run.**
 
 - `src/train.py`: `MAX_SNAPSHOT_VALUES` raised from 100M to 120M. This run
   logs 2,600 checkpoints × 43,758 portfolios = 113.8M values per array. The
@@ -529,15 +540,20 @@ python -m src.run_experiments --run grid10-robustness --results-dir results/grid
 ```
 
 **Estimated time and resources.** Per episode at the 10% grid: 91 µs with the
-current runner, 51.6 µs for the bare loop, plus about 5 µs for B = 60.
+current runner, plus about 5 µs for B = 60, so about 96 to 104 µs.
 
-- Without William's half of the copy fix: about 2,500 to 2,700 s per seed,
-  so 21 to 23 hours for 30 seeds.
-- With it: about 1,500 to 1,800 s per seed, so 12 to 15 hours. The 51.6 µs
-  bare loop is a lower bound; the runner's logging adds some time on top.
+- As the code stands: about 2,500 to 2,700 s per seed, so 21 to 23 hours for
+  30 seeds.
+- With William's half of the copy fix, about 6 µs per episode less: 20 to
+  22 hours. A first estimate of 12 to 15 hours assumed the copy was the whole
+  91 vs 51.6 µs gap; the independent review timed it and found it is not.
+- Replacing `train.py`'s per-episode `np.argmax` with exact incremental
+  tracking of the logged greedy action would save about 36 µs more (about
+  14 to 16 hours in total). Not done; it is a proposed follow-up.
 - Memory: about 910 MB per seed for the logged arrays, on a 16 GB machine.
-- Disk: the training logs are not committed. The Q snapshots compress poorly
-  at this grid size, so expect several GB for 30 seeds (very rough: 6 to 14 GB).
+- Disk: the training logs are not committed. Scaling the baseline's
+  compression gives about 160 MB per seed, so about 5 GB for 30 seeds; allow
+  up to about 14 GB in case the larger Q snapshots compress worse.
   Evaluation reads one seed at a time.
 
 Run it in three parts if an overnight run is not possible:

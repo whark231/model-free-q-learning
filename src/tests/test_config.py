@@ -358,3 +358,25 @@ def test_random_tries_per_portfolio_quoted_in_experiments_md():
     assert round(tries(26_000_000, 0.01, 43_758)) == 65
     assert round(tries(26_000_000, 0.03, 43_758)) == 85
     assert round(tries(26_000_000, 0.10, 43_758)) == 128
+
+
+def test_a_variant_experiment_carries_its_own_training_budget():
+    """cfg.train_config(e) without n_episodes must not fall back to the baseline's 13M."""
+    for run in cfg.POST_HOC_RUNS.values():
+        for experiment in cfg.experiments(run):
+            tc = cfg.train_config(experiment)
+            assert tc.n_episodes == run.n_episodes
+            assert tc.beta == cfg.beta_for(run.n_episodes, run.epsilon_at_halfway)
+    assert cfg.train_config(cfg.experiments()[0]).n_episodes == 13_000_000
+
+
+def test_grid10_near_ties_quoted_in_experiments_md():
+    """The §7.7 table, re-derived from μ and Σ (analysis only; the agent never sees them)."""
+    from src.environment import PROCESSED_DIR, load_calibration
+    from src.evaluate import objective
+    mu, sigma = load_calibration(PROCESSED_DIR)
+    expected = {3.0: (0.04, 5), 5.0: (4.45, 25), 8.0: (1.25, 36)}
+    for gamma, (second_gap, within25) in expected.items():
+        loss = 252e4 * (lambda v: v.max() - v)(objective(generate_weight_grid(9, 0.1), mu, sigma, gamma))
+        assert round(np.sort(loss)[1], 2) == second_gap
+        assert int((loss <= 25).sum()) == within25
