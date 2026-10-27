@@ -1,15 +1,13 @@
 # Notes for William
 
-**From:** Albert
-**Date:** 2026-10-16 (first written 2026-10-13)
-**Status:** `agent.py`, `train.py` and `evaluate.py` are built, tested and on
-`dev`. Every review issue across all rounds is closed, including a new one
-found 2026-10-19 (§1, item D) and a `.gitignore` gap fixed 2026-10-20 (§1,
-item E; details in §6.5). γ, B and the convergence threshold are decided
-and wired into `src/config.py`. The γ justification, the `requirements.txt`
-pinning, and the results-sharing agreement, all previously open, are closed
-as of 2026-10-19 (§6.3, §6.4). §5.3 (a per-action Q accessor for speed) is
-not fixed, but is now a confirmed deferral rather than an open question.
+**From:** Albert (§7 added by William)
+**Date:** 2026-10-26 (first written 2026-10-13)
+**Status:** the full-scale run finished cleanly on 2026-10-22 and its results
+are committed (`results/`, `RUN_ISSUES_2026-10-22.md`). Every review issue
+across all rounds is closed. None of the nine run findings is in William's
+files. **What is still William's is in §7**: two small `agent.py` additions,
+one `.gitignore` call, reviews, the extension decision, and a proposal on
+follow-up experiments. §5.3 stays deferred unless a 10% grid run is added.
 
 ---
 
@@ -17,7 +15,7 @@ not fixed, but is now a confirmed deferral rather than an open question.
 
 The split worked: I wrote `train.py`, you wrote `agent.py`, and the interface
 we agreed on first meant neither of us had to guess the other's method names.
-244 tests pass across the project.
+247 tests pass across the project.
 
 Update 2026-10-16: γ, B and the convergence rule are now decided, and the
 parked choices are set as adopted defaults (§6). §3 below is kept as the
@@ -38,7 +36,7 @@ record of how the decisions were framed.
 | B | `best_discrete_weights` returned a view | `0e2201d` |
 | C | `nit <= 1` guard replaced with a relative KKT check | `0e2201d` |
 | D | `run_experiments.py` wrote `INDEX.md` with no encoding; crashed on Windows (`UnicodeEncodeError` on γ under cp1252, never surfaced on Mac). Fixed on all six read/write calls in that file, not just the one that failed | William, 2026-10-19 |
-| E | `.gitignore` rule `results/*/*.npz` only matched logs one folder deep, so a run with `--results-dir results/smoke` left its 8 `.npz` logs and 58 reduced-settings outputs trackable; `results/settings.json` was also ignored despite the comment saying settings get committed. Fixed by Albert in your file, see §6.5 | Albert, 2026-10-20 |
+| E | `.gitignore` rule `results/*/*.npz` only matched logs one folder deep, so a run with `--results-dir results/smoke` left its 8 `.npz` logs and 58 reduced-settings outputs trackable; `results/settings.json` was also ignored despite the comment saying settings get committed. Fixed by Albert in your file, see §6.5. **Reviewed by William 2026-10-26: correct, kept.** The original rule had only been tested against the default `results/` layout, not the `--results-dir results/smoke` layout `EXPERIMENTS.md` itself recommends | Albert, 2026-10-20 |
 
 Re-checked against real calibration (γ 0.25–30), 200 random 9-asset problems,
 and deliberately bad solves. Nothing fires at realistic scales; everything
@@ -68,9 +66,12 @@ a reward. The leakage tests in `test_environment.py` guard `src/agent.py`.
 **Rules that are still worth keeping**, now that both sides exist:
 1. I touch `agent.py` only through its interface; you touch `train.py` only
    through its outputs (the `.npz` logs and `manifest.json`).
-2. Once both are stable, run an integration check: fixed seed, a few thousand
-   episodes on the 25% grid, rerun to confirm identical output.
+2. ~~Once both are stable, run an integration check: fixed seed, a few thousand
+   episodes on the 25% grid, rerun to confirm identical output.~~ Satisfied by
+   the 2026-10-22 review: 30,000 episodes of three seeds re-run bit-identical
+   to the saved logs (`RUN_ISSUES_2026-10-22.md` §2).
 3. Review swap: I review `agent.py` line by line, you review `train.py`.
+   **William's half is still open** (§7.2, item 1).
 
 **Prospectus:** §4's ownership row now reads "Agent (`agent.py`): William;
 training runner (`train.py`): Albert; each reviews the other's PR."
@@ -153,7 +154,7 @@ reads `self._visits[action] + 1`, so the first call is always `alpha_rule(1)`.
 Confirmed by `test_sample_average_first_update_overwrites_q_init_exactly`.
 Nothing to do.
 
-### 5.2 `greedy_action` and randomness: mostly already handled, two small adds left
+### ~~5.2 `greedy_action` and randomness: mostly already handled, two small adds left~~ Done 2026-10-26 on `feature/post-run-fixes`
 
 Your tie-break uses a separately spawned `_tie_rng`, not the main `rng`, so
 reading it for logging can't perturb explore/exploit decisions, confirmed by
@@ -163,6 +164,21 @@ calls it anyway; it computes its own `np.argmax(q_values)` for logging.
 Two cheap things still worth adding:
 - a docstring note on `greedy_action` that reading it can consume a draw from `_tie_rng` (only when an actual tie exists, which is free to check for but costs nothing to document)
 - a public `epsilon` property exposing `_epsilon()`, so `train.py` can stop recomputing `epsilon0 * exp(-beta * t)` independently. Harmless today since the two formulas agree, but would silently drift if the schedule ever changes shape.
+
+**Applied 2026-10-26.** Both adds are in `src/agent.py`, and `train.py` now
+logs `agent.epsilon` instead of recomputing the schedule. This touched three
+of Albert's files, so he should look at it: `src/train.py` (one line plus two
+docstrings), and the stand-in agents in `src/tests/test_train.py`,
+`test_evaluate.py` and `test_config.py`, which each gained an `epsilon`. Any
+future agent passed to `run_experiment` (the function-approximation extension
+included) must now expose `epsilon` too. Three new tests: two in
+`test_agent.py` (the property is the rate the next selection uses; reading it
+does not advance t) and one in `test_train.py` (with the real agent, the
+logged rate after e episodes is ε0·exp(−βe), recomputed from the formula).
+Checked against the pre-change code: two seeds × 30,000 episodes at the
+full-run settings give identical `.npz` arrays (13 of 13). The full run's
+manifests record the old `train.py` and `agent.py` hashes, so a hash check
+against current code will now differ even though the logs do not.
 
 ### 5.3 Full Q-table copy every episode: confirmed deferred, 2026-10-19
 
@@ -293,3 +309,101 @@ everything under `results/smoke/` and the staging folder ignored; `INDEX.md`,
 `index.json`, `settings.json`, manifests, `evaluation/` files (JSON and PNG),
 the comparison folder, `data/raw/` and `src/` all still trackable. `git
 status` now shows nothing under `results/`.
+
+---
+
+## 7. After the full-scale run (added by William, 2026-10-26)
+
+### TL;DR / In plain terms
+
+The run worked and every number was re-derived independently
+(`RUN_ISSUES_2026-10-22.md`). The agent lands near the best grid portfolio
+but finds the exact best in only 30% to 50% of seeds, and on total loss
+against the continuous optimum the coarser 25% grid beats the 20% grid. The
+reason is arithmetic, not a bug: the few portfolios that compete for first
+place each get about a thousand tries, and telling them apart needs hundreds
+of thousands. Albert's fix plan covers the reporting problems and touches
+only his files. My list is below.
+
+**Key concepts to understand**
+
+- **Contenders.** Only 4 of the 1,287 portfolios on the 20% grid are within
+  25 bps/yr of the best, and 9 within 50. Learning is a contest between
+  those few; the other 1,278 are clearly worse.
+- **Visits needed vs. visits received.** One episode's reward has a standard
+  deviation 7.5 times the best portfolio's true value. Telling apart two
+  portfolios 10 bps/yr apart (2 standard errors) takes about 617,000 visits
+  to each. The learned portfolio got about 11.4 million; the other 1,286
+  shared about 1.6 million, roughly 1,200 each. That is about 500 times short.
+- **Episode length and episode count trade off.** The visits needed scale
+  with 1/B, so what a portfolio needs is about 12 million simulated days
+  whatever B is. More days can come from more episodes or longer ones.
+
+**Key takeaways**
+
+- The binding constraint is exploration spread evenly over 1,287
+  portfolios, most of them hopeless, not the total budget.
+- That is the main Part V/VI finding, and it answers the assignment's "what
+  prevented exact recovery" directly. It belongs in the report as a result.
+
+### 7.1 Results with the total gap added
+
+From `results/INDEX.md`; the total column is `RUN_ISSUES` Finding 3. All in
+bps/yr of certainty-equivalent loss.
+
+| Experiment | Discretization | Learning gap (median) | Total vs. continuous (median) | Exactly best |
+|---|---|---|---|---|
+| γ = 5, 20% grid (baseline) | 5.7 | 14.1 | 19.8 | 30% |
+| γ = 5, 25% grid | 11.7 | 2.5 | 14.3 | 50% |
+| γ = 3, 20% grid | 2.5 | 10.0 | 12.5 | 50% |
+| γ = 8, 20% grid | 6.1 | 5.7 | 11.9 | 50% |
+
+### 7.2 William's list
+
+1. **Review swap.** Review `train.py` (outstanding since §2), and Albert's
+   `evaluate.py` / `run_experiments.py` change for Findings 1 to 3 when he
+   opens the PR.
+2. ~~**`.gitignore`: keep the run log**~~ Done 2026-10-26:
+   `!results/full_run_*.log` added. Albert still has to add the log itself,
+   since it only exists on his machine.
+3. ~~**`agent.py`, §5.2.**~~ Done 2026-10-26, see §5.2. Albert to review the
+   `train.py` and test changes.
+4. **Prospectus rows 8 to 10** still say "waiting on the full-scale run."
+   Update after Albert's evaluation fix lands, so the evidence cites the
+   corrected tables rather than the ones `RUN_ISSUES` says mislead.
+5. **Extension scope, before Week 7 starts on 2026-10-30.** The results point
+   at function approximation (already mine in prospectus §4): a Q-function
+   over portfolio weights lets one portfolio's rewards inform its neighbours',
+   which is exactly what the tabular agent lacks. One caution for the write-up:
+   a model quadratic in the weights can represent the mean-variance objective
+   exactly, so the report should say plainly that it estimates the reward
+   function from rewards only, which is still model-free in the assignment's
+   sense, and that it never sees μ or Σ.
+6. **Report sections that are mine** (prospectus §4): the Theory/Benchmark
+   derivation and the Q-learning section. §7's arithmetic is the core of the
+   second.
+7. **Agree the follow-up experiments in §7.3 with Albert before anything is
+   run.**
+
+### 7.3 Proposed follow-up experiments (none run, none agreed yet)
+
+The 2026-10-16 settings stay the headline, unchanged. Anything below is an
+additional Part VI check. The assignment's own list includes "different
+training budgets, episode lengths, and random seeds," so these fit, but the
+motivation came from seeing results, so each must be written into
+`src/config.py` and `EXPERIMENTS.md` with its expected direction before it
+runs, and labelled post-hoc in the report.
+
+| Idea | What the numbers say | Recommendation |
+|---|---|---|
+| Minimum number of tries per action | To matter, the floor has to approach ~600,000 for the contenders, but a floor applies to all 1,287 portfolios: about 800 million episodes. An affordable floor (a few thousand) matches what ε = 1 early in training already gives. It would also be the one change in my file | No |
+| Slower ε decay | Moves visits around inside the same 13M episodes. Even ε near 1 for the whole run gives about 5,000 visits per portfolio, still about 100 times short, and raises the cumulative regret Part V reports | No, as a baseline change |
+| Longer budget (more episodes) | Under even exploration, resolving 10 bps needs roughly 60 times the current budget | Only through higher B, which is cheaper |
+| Higher B | Measured on my machine: B = 63 costs 43.8 µs/episode vs 38.2 µs at B = 20 (+15%) for 3.15 times the simulated days, about 2.7 times cheaper per day, because the agent's per-episode overhead dominates. Reward noise falls from 7.5 to 4.2 times U*. Still about 160 times short of resolving 10 bps, so expect fewer brief switches and a smaller learning gap, not reliable exact recovery | Yes: B = 63 (a quarter, still "a short batch of returns") as the episode-length check, γ = 5, 20% grid, same seeds |
+| 10% grid | 43,758 portfolios, 25 within 25 bps. About 37 exploratory visits each at the current budget. Discretization gap falls from 5.7 to about 1.3 bps; the learning gap should grow. 13M episodes fits under `train.py`'s snapshot memory guard; a longer budget would not | Yes, later, as the curse-of-dimensionality check Part VI asks us to discuss, with "learning gap gets worse" stated in advance. Un-defer §5.3 first: copying a 43,758-entry Q-table every episode is the dominant cost |
+
+**Code cost, all in Albert's files.** `EPISODE_LENGTH`, the ε schedule and
+the grid list are global in `src/config.py` and part of the results folder's
+locked `batch_settings` (`run_experiments.py:39-50`), so a B = 63 or 10%
+experiment cannot share `results/` with the existing four. It needs a
+per-experiment B in `config.Experiment` and its own `--results-dir`.

@@ -59,6 +59,9 @@ results/*
 results/**/*.npz
 results/smoke*/
 results/.*.new/
+# Full-run console logs are small and are the only record of how a
+# multi-hour run went (RUN_ISSUES_2026-10-22.md Finding 7), so keep them.
+!results/full_run_*.log
 
 # --- R ---
 .Rhistory

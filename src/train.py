@@ -17,7 +17,8 @@ by evaluation code, using quantities the agent can see.
 
 Logs are compact, because a run can be tens of millions of episodes:
 
-- every `log_every` episodes: the exploration rate for the next episode, mean
+- every `log_every` episodes: the exploration rate for the next episode (read
+  from the agent's `epsilon` property, so any agent must expose one), mean
   reward over the window, the largest |change in Q| in the window, the logged
   greedy action, how often each action was chosen in the window, and a
   Q-table snapshot;
@@ -194,8 +195,8 @@ def train_one_run(config: TrainConfig, grid: np.ndarray, simulator: ReturnSimula
 
             if done % config.log_every == 0 or done == config.n_episodes:
                 checkpoint_episode[checkpoint] = done
-                # The agent's schedule after `done` selections: the rate the next episode uses.
-                checkpoint_next_epsilon[checkpoint] = config.epsilon0 * np.exp(-config.beta * done)
+                # Read from the agent, after `done` selections: the rate the next episode uses.
+                checkpoint_next_epsilon[checkpoint] = agent.epsilon
                 checkpoint_mean_reward[checkpoint] = window_rewards / window_counts.sum()
                 checkpoint_max_abs_dq[checkpoint] = window_max_dq
                 checkpoint_greedy[checkpoint] = logged_greedy
@@ -257,7 +258,8 @@ def run_experiment(
         "numpy": np.__version__,
         "log_schema": {
             "checkpoint_*": "one row per log_every episodes; the last row covers the final, possibly shorter, window",
-            "checkpoint_next_epsilon": "epsilon0 * exp(-beta * episodes done): the rate for the next episode",
+            "checkpoint_next_epsilon": "agent.epsilon after this many episodes, the rate for the next episode; "
+            "epsilon0 * exp(-beta * episodes done) for TabularQAgent",
             "greedy_change_*": "episode number and new logged greedy action at every change; first entry is episode 0",
             "logged_greedy": "lowest-index argmax of the Q-values; logging only",
             "observations": "episodes x episode_length simulated days",

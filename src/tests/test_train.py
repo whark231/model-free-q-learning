@@ -50,6 +50,10 @@ class EpsilonGreedyAverager:
     def visit_counts(self):
         return self._n.copy()
 
+    @property
+    def epsilon(self):
+        return self._epsilon
+
 
 class Recorder(EpsilonGreedyAverager):
     """Records every (action, reward) and the Q-table after every update."""
@@ -149,13 +153,24 @@ def test_logs_match_independent_recomputation(tmp_path):
         np.testing.assert_array_equal(logs["checkpoint_action_counts"][i], np.bincount(actions[s:e], minlength=495))
         assert logs["checkpoint_greedy"][i] == greedy[e - 1]
         np.testing.assert_array_equal(logs["checkpoint_q"][i], agent.q_history[e - 1].astype(np.float32))
-        assert logs["checkpoint_next_epsilon"][i] == pytest.approx(config.epsilon0 * np.exp(-config.beta * e))
+        assert logs["checkpoint_next_epsilon"][i] == agent.epsilon  # read from the agent, not the config
 
     changes = [(0, 0)] + [(t + 1, g) for t, g in enumerate(greedy) if g != (greedy[t - 1] if t else 0)]
     np.testing.assert_array_equal(logs["greedy_change_episode"], [c[0] for c in changes])
     np.testing.assert_array_equal(logs["greedy_change_action"], [c[1] for c in changes])
     np.testing.assert_array_equal(logs["final_q"], agent.q_history[-1])
     assert logs["final_greedy"] == greedy[-1]
+
+
+def test_logged_epsilon_is_the_real_agents_schedule_for_the_next_episode(tmp_path):
+    """With the real agent, the logged rate after e episodes must be
+    epsilon0 * exp(-beta * e), recomputed here from the formula. Reading the
+    agent one selection early or late would be off by a factor exp(beta)."""
+    config = small_config(n_runs=1, n_episodes=2_500, log_every=1_000)
+    run_experiment(config, tmp_path)
+    logs = load_run(tmp_path)
+    expected = [config.epsilon0 * np.exp(-config.beta * e) for e in (1_000, 2_000, 2_500)]
+    np.testing.assert_allclose(logs["checkpoint_next_epsilon"], expected, rtol=1e-12)
 
 
 def test_max_q_change_is_per_window_and_measures_the_change(tmp_path):

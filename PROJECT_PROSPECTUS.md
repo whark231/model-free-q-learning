@@ -38,7 +38,7 @@ Mapped to the assignment's required parts (Parts I–VI):
 | 9 | Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions | Part V | 🔶 Code done (learning curves, regret, 20% vs 25% comparison); waiting on the full-scale run |
 | 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | 🔶 Defined and coded (`src/config.py`): 25% vs 20% grid, and γ = 3 and 8 vs the γ = 5 baseline; waiting on the full-scale run |
 
-Full suite: 244 tests passing (`python -m pytest src/tests -q`).
+Full suite: 247 tests passing (`python -m pytest src/tests -q`).
 
 ### Extension (our chosen bonus angle)
 | # | Component | Notes | Status (2026-10-19) |
@@ -50,7 +50,7 @@ Full suite: 244 tests passing (`python -m pytest src/tests -q`).
 | # | Component | Notes | Status (2026-10-19) |
 |---|---|---|---|
 | 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started |
-| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 244 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
+| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 247 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
 | 15 | Class presentation | | ⬜ Not started |
 
 ## 4. Task Ownership (draft — adjust as we go)

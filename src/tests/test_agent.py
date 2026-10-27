@@ -67,6 +67,25 @@ def test_epsilon_decays_exactly_with_the_agreed_formula():
     assert agent._epsilon() == pytest.approx(epsilon0 * np.exp(-beta * n_calls))
 
 
+def test_public_epsilon_is_the_rate_the_next_selection_uses():
+    """train.py logs agent.epsilon, so it must equal the schedule at the
+    current t: epsilon0 at the start, and after n selections the rate the
+    (n+1)th selection will compare against."""
+    epsilon0, beta = 0.8, 0.02
+    agent = make_agent(epsilon0=epsilon0, beta=beta)
+    assert agent.epsilon == epsilon0
+    for n in range(1, 26):
+        agent.select_action()
+        assert agent.epsilon == pytest.approx(epsilon0 * np.exp(-beta * n), rel=1e-12)
+
+
+def test_reading_epsilon_does_not_advance_the_schedule():
+    agent = make_agent(epsilon0=0.8, beta=0.02)
+    agent.select_action()
+    first = agent.epsilon
+    assert [agent.epsilon for _ in range(5)] == [first] * 5
+
+
 # ---------------------------------------------------------------------------
 # select_action: epsilon-greedy
 # ---------------------------------------------------------------------------

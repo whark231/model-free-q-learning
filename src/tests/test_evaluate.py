@@ -29,6 +29,8 @@ class FixedAgent:
     actions sit at Q = -1, far below any reward, so the greedy action is the
     chosen one from episode 0 and the logs are known exactly."""
 
+    epsilon = 0.0  # never explores
+
     def __init__(self, n_actions, action):
         self.action = action
         self._q = np.full(n_actions, -1.0)
