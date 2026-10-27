@@ -336,3 +336,25 @@ def test_post_hoc_run_all_three_is_registered_as_written_in_experiments_md():
     assert run.changes() == {"episode_length": (20, 60), "n_episodes": (13_000_000, 26_000_000), "epsilon_at_halfway": (0.01, 0.03)}
     assert run.registered == "2026-10-27"
     assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B60_N26M_eps3", "robust_g3_grid20_B60_N26M_eps3", "robust_g8_grid20_B60_N26M_eps3"]
+
+
+def test_post_hoc_run_grid10_robustness_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["grid10-robustness"]
+    assert run.changes() == {"episode_length": (20, 60), "n_episodes": (13_000_000, 26_000_000),
+                             "epsilon_at_halfway": (0.01, 0.03), "increment": (0.2, 0.1)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == [
+        "baseline_g5_grid10_B60_N26M_eps3", "robust_g3_grid10_B60_N26M_eps3", "robust_g8_grid10_B60_N26M_eps3"]
+    assert generate_weight_grid(9, run.increment).shape[0] == 43_758  # the count the assignment states
+
+
+def test_random_tries_per_portfolio_quoted_in_experiments_md():
+    """(1 - exp(-beta N)) / beta / n_actions, re-derived by summing the schedule."""
+    def tries(n, eps_half, n_actions):
+        beta = cfg.beta_for(n, eps_half)
+        return np.exp(-beta * np.arange(n, dtype=float)).sum() / n_actions
+    assert round(tries(13_000_000, 0.01, 1_287)) == 1_097
+    assert round(tries(13_000_000, 0.01, 43_758)) == 32
+    assert round(tries(26_000_000, 0.01, 43_758)) == 65
+    assert round(tries(26_000_000, 0.03, 43_758)) == 85
+    assert round(tries(26_000_000, 0.10, 43_758)) == 128
