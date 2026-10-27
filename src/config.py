@@ -128,6 +128,11 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         "a slightly smaller learning gap and a slightly higher exactly-best share at every γ, likely within noise",
         n_episodes=26_000_000,
     ),
+    "eps-decay": RunVariant(
+        "eps-decay", "eps3", "2026-10-27",
+        "learning gap and exactly-best share unchanged within noise; training regret about 15 bps/yr higher at γ = 5",
+        epsilon_at_halfway=0.03,
+    ),
 }
 
 
