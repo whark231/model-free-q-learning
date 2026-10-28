@@ -4,6 +4,7 @@
     python -m src.run_experiments --only baseline_g5_grid20
     python -m src.run_experiments --episodes 200000 --runs 2 --results-dir results/smoke   # quick check
     python -m src.run_experiments --dry-run            # print the plan only
+    python -m src.run_experiments --run b63 --results-dir results/b63   # a post-hoc variant (config.POST_HOC_RUNS)
 
 Each experiment trains into <results-dir>/<name>/ (one .npz per seed plus
 manifest.json) and is evaluated into <results-dir>/<name>/evaluation/.
@@ -14,6 +15,11 @@ refused, so a smoke test can never overwrite or relabel a full-scale run.
 Within that, an experiment whose training finished with exactly the current
 settings is reused, so an interrupted batch restarts with the same command.
 A partly trained folder is refused with instructions.
+
+Without --run, every setting is the pre-registered baseline and the settings
+written are exactly those of tag baseline-v1. With --run, the variant's B,
+training budget, ε schedule and grid replace the baseline's, its id is added
+to settings.json, and its experiments carry its suffix.
 
 The grid-resolution comparison goes to <results-dir>/<comparison>/, and
 INDEX.md plus index.json summarize every evaluated experiment with links.
@@ -36,9 +42,12 @@ from src.train import _git_commit, run_experiment
 COMPARISON_NAME = "comparison_g5_grid20_vs_grid25"
 
 
-def batch_settings(n_episodes: int, n_runs: int, n_eval_episodes: int, log_every: int) -> dict:
-    """Everything that must be identical for experiments to share a results folder."""
-    return {
+def batch_settings(n_episodes: int, n_runs: int, n_eval_episodes: int, log_every: int,
+                   run: cfg.RunVariant | None = None) -> dict:
+    """Everything that must be identical for experiments to share a results folder.
+    Without a variant this is exactly the baseline-v1 settings.json, so the
+    committed baseline results still match it."""
+    settings = {
         "gammas": list(cfg.GAMMAS), "gamma_baseline": cfg.GAMMA_BASELINE,
         "episode_length": cfg.EPISODE_LENGTH, "n_episodes": n_episodes, "n_runs": n_runs,
         "master_seed": cfg.MASTER_SEED, "epsilon0": cfg.EPSILON0, "beta": cfg.beta_for(n_episodes),
@@ -48,6 +57,13 @@ def batch_settings(n_episodes: int, n_runs: int, n_eval_episodes: int, log_every
         "near_optimal_bps": cfg.NEAR_OPTIMAL_BPS, "n_eval_episodes": n_eval_episodes,
         "increments": [cfg.INCREMENT_BASELINE, cfg.INCREMENT_COMPARISON],
     }
+    if run is not None:
+        settings.update({
+            "episode_length": run.episode_length, "beta": cfg.beta_for(n_episodes, run.epsilon_at_halfway),
+            "increments": [run.increment], "post_hoc_run": run.run_id,
+            "epsilon_at_halfway": run.epsilon_at_halfway,
+        })
+    return settings
 
 
 def check_results_dir(results_dir: Path, settings: dict) -> None:
@@ -87,24 +103,31 @@ def training_status(run_dir: Path, train_cfg) -> str:
     return "finished"
 
 
-def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int = cfg.N_EPISODES,
+def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int | None = None,
             n_runs: int = cfg.N_RUNS, n_eval_episodes: int = cfg.N_EVAL_EPISODES,
-            log_every: int = cfg.LOG_EVERY, dry_run: bool = False, agent_factory=None) -> dict:
+            log_every: int = cfg.LOG_EVERY, dry_run: bool = False, agent_factory=None,
+            run: cfg.RunVariant | None = None) -> dict:
+    """run: a post-hoc variant from cfg.POST_HOC_RUNS, or None for the baseline.
+    n_episodes defaults to the variant's (or the baseline's) training budget."""
     results_dir = Path(results_dir)
-    names = [e.name for e in cfg.experiments()]
+    full_episodes = run.n_episodes if run else cfg.N_EPISODES
+    n_episodes = full_episodes if n_episodes is None else n_episodes
+    all_experiments = cfg.experiments(run)
+    names = [e.name for e in all_experiments]
     unknown = sorted(set(only or []) - set(names))
     if unknown:
         raise ValueError(f"unknown experiment(s) {unknown}; choose from {names}")
-    selected = [e for e in cfg.experiments() if not only or e.name in only]
+    selected = [e for e in all_experiments if not only or e.name in only]
     eval_cfg = cfg.eval_config(n_episodes, n_eval_episodes)
     plan = [(e, cfg.train_config(e, n_episodes, n_runs, log_every)) for e in selected]
     if dry_run:
         for e, tc in plan:
             print(f"{e.name}: gamma={tc.gamma}, grid={tc.increment}, {tc.n_runs} runs x {tc.n_episodes:,} "
-                  f"episodes x B={tc.episode_length}; K={eval_cfg.converge_k:,}; {e.purpose}")
+                  f"episodes x B={tc.episode_length}; epsilon {e.epsilon_at_halfway:g} at halfway "
+                  f"(beta={tc.beta:.4g}); K={eval_cfg.converge_k:,}; {e.purpose}")
         return {"planned": [e.name for e, _ in plan]}
 
-    settings = batch_settings(n_episodes, n_runs, n_eval_episodes, log_every)
+    settings = batch_settings(n_episodes, n_runs, n_eval_episodes, log_every, run)
     check_results_dir(results_dir, settings)
     for experiment, train_cfg in plan:
         run_dir = results_dir / experiment.name
@@ -118,7 +141,7 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int = cf
     # The index covers every experiment evaluated in this folder so far. The
     # settings check above guarantees they all share one set of settings.
     entries = []
-    for experiment in cfg.experiments():
+    for experiment in all_experiments:
         summary_path = results_dir / experiment.name / "evaluation" / "summary.json"
         if summary_path.exists():
             entries.append(_index_entry(experiment, json.loads(summary_path.read_text(encoding="utf-8"))))
@@ -142,7 +165,9 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int = cf
         "python": platform.python_version(),
         "numpy": np.__version__,
         "settings": settings,
-        "full_scale": settings == batch_settings(cfg.N_EPISODES, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY),
+        "full_scale": settings == batch_settings(full_episodes, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY, run),
+        "post_hoc_run": None if run is None else {"run_id": run.run_id, "registered": run.registered,
+                                                   "expected": run.expected},
         "experiments": entries,
         "comparison": {"folder": COMPARISON_NAME, "results": comparison} if comparison else None,
     }
@@ -185,6 +210,9 @@ def _index_markdown(index: dict) -> str:
         f"Written {index['written_utc']} from commit `{index['git_commit']}`. "
         f"{'Full-scale settings.' if index['full_scale'] else '**Reduced settings: a pipeline check, not report results.**'}",
         "",
+        *([f"**Post-hoc run `{index['post_hoc_run']['run_id']}`**, registered {index['post_hoc_run']['registered']} "
+           f"after the baseline results were seen (EXPERIMENTS.md §7). Expected beforehand: "
+           f"{index['post_hoc_run']['expected']}", ""] if index["post_hoc_run"] else []),
         f"γ ∈ {s['gammas']} (baseline {s['gamma_baseline']:g}), B = {s['episode_length']}, "
         f"{s['n_runs']} seeds × {s['n_episodes']:,} episodes, master seed {s['master_seed']}, "
         f"K = {s['convergence_k']:,} episodes (convergence rule: `{primary}`), ΔQ tolerance {s['dq_tol']:g}, "
@@ -222,15 +250,22 @@ def _index_markdown(index: dict) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--results-dir", type=Path, default=Path("results"))
-    parser.add_argument("--only", nargs="+", choices=[e.name for e in cfg.experiments()])
-    parser.add_argument("--episodes", type=int, default=cfg.N_EPISODES)
+    parser.add_argument("--results-dir", type=Path, default=None,
+                        help="default: results/ for the baseline, results/<run_id>/ with --run")
+    parser.add_argument("--run", choices=sorted(cfg.POST_HOC_RUNS),
+                        help="a post-hoc variant from config.POST_HOC_RUNS; omit for the baseline")
+    parser.add_argument("--only", nargs="+", help="experiment names; --dry-run lists them")
+    parser.add_argument("--episodes", type=int, default=None, help="default: the run's full training budget")
     parser.add_argument("--runs", type=int, default=cfg.N_RUNS)
     parser.add_argument("--eval-episodes", type=int, default=cfg.N_EVAL_EPISODES)
     parser.add_argument("--log-every", type=int, default=cfg.LOG_EVERY)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    run_all(args.results_dir, args.only, args.episodes, args.runs, args.eval_episodes, args.log_every, args.dry_run)
+    run = cfg.POST_HOC_RUNS[args.run] if args.run else None
+    if args.results_dir is None:
+        args.results_dir = Path("results") / run.run_id if run else Path("results")
+    run_all(args.results_dir, args.only, args.episodes, args.runs, args.eval_episodes, args.log_every, args.dry_run,
+            run=run)
 
 
 if __name__ == "__main__":

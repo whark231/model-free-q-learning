@@ -183,6 +183,7 @@ Existing docs:
 | `EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
 | `REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
 | `REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
+| `reports/README.md` | Adding a run, extracting it, and building reports that compare runs (Albert) |
 | `CLAUDE.md` | This working agreement |
 
 ## 5. Project-specific conventions

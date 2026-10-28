@@ -233,3 +233,150 @@ def test_full_scale_flag_reflects_every_setting():
     for args in ((cfg.N_EPISODES, cfg.N_RUNS, 500, cfg.LOG_EVERY), (cfg.N_EPISODES, cfg.N_RUNS, cfg.N_EVAL_EPISODES, 500),
                  (cfg.N_EPISODES, 2, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY)):
         assert batch_settings(*args) != full
+
+
+# ---------------------------------------------------------------------------
+# Post-hoc variants (EXPERIMENTS.md §7): the baseline stays exactly baseline-v1
+# ---------------------------------------------------------------------------
+
+REPO = train.REPO_ROOT
+VARIANT = cfg.RunVariant("test-variant", "T", "2026-10-27", "a smaller learning gap",
+                         episode_length=5, epsilon_at_halfway=0.1, increment=0.25)
+
+
+def test_baseline_settings_still_match_the_committed_baseline_v1_run():
+    """Re-derived from the files the 2026-10-22 run wrote, not from config.py."""
+    from src.run_experiments import batch_settings
+    committed = json.loads((REPO / "results" / "settings.json").read_text())
+    assert batch_settings(cfg.N_EPISODES, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY) == committed
+    for experiment in cfg.experiments():
+        manifest = json.loads((REPO / "results" / experiment.name / "manifest.json").read_text())
+        assert json.loads(json.dumps(cfg.train_config(experiment).__dict__)) == manifest["config"], experiment.name
+
+
+def test_a_variant_changes_only_its_own_settings():
+    assert set(VARIANT.changes()) == {"episode_length", "epsilon_at_halfway", "increment"}
+    experiments = cfg.experiments(VARIANT)
+    assert [e.name for e in experiments] == ["baseline_g5_grid25_T", "robust_g3_grid25_T", "robust_g8_grid25_T"]
+    assert [e.gamma for e in experiments] == [5.0, 3.0, 8.0]
+    baseline_names = {e.name for e in cfg.experiments()}
+    for experiment in experiments:
+        assert experiment.name not in baseline_names
+        tc = cfg.train_config(experiment, n_episodes=VARIANT.n_episodes)
+        base = cfg.train_config(cfg.Experiment("b", experiment.gamma, cfg.INCREMENT_BASELINE, ""))
+        differ = {k for k in tc.__dict__ if tc.__dict__[k] != base.__dict__[k]}
+        assert differ == {"episode_length", "beta", "increment"}
+        assert (tc.episode_length, tc.increment) == (5, 0.25)
+        assert math.exp(-tc.beta * tc.n_episodes / 2) == pytest.approx(0.1)
+
+
+def test_every_registered_variant_is_runnable_and_fits_the_memory_guard():
+    for run_id, run in cfg.POST_HOC_RUNS.items():
+        assert run.run_id == run_id and run.changes() and run.expected and run.registered
+        names = [e.name for e in cfg.experiments(run)]
+        assert len(set(names)) == 3 and all(n.endswith("_" + run.suffix) for n in names)
+        n_actions = generate_weight_grid(9, run.increment).shape[0]
+        n_checkpoints = -(-run.n_episodes // cfg.LOG_EVERY)
+        assert n_checkpoints * n_actions <= train.MAX_SNAPSHOT_VALUES, run_id
+
+
+def test_variant_batch_records_its_settings_and_is_labelled_post_hoc(tmp_path):
+    index = run_all(tmp_path, run=VARIANT, **SMALL)
+    assert [e["name"] for e in index["experiments"]] == [e.name for e in cfg.experiments(VARIANT)]
+    settings = json.loads((tmp_path / "settings.json").read_text())
+    assert settings["post_hoc_run"] == "test-variant" and settings["episode_length"] == 5
+    assert settings["increments"] == [0.25] and settings["beta"] == cfg.beta_for(1_000, 0.1)
+    for e in index["experiments"]:
+        config = json.loads((tmp_path / e["name"] / "manifest.json").read_text())["config"]
+        assert (config["episode_length"], config["increment"], config["n_episodes"]) == (5, 0.25, 1_000)
+        assert math.exp(-config["beta"] * 500) == pytest.approx(0.1)
+    assert index["comparison"] is None and index["post_hoc_run"]["run_id"] == "test-variant"
+    assert "Post-hoc run `test-variant`" in (tmp_path / "INDEX.md").read_text()
+
+
+def test_a_variant_is_refused_in_a_baseline_folder_and_vice_versa(tmp_path):
+    run_all(tmp_path / "base", only=["baseline_g5_grid20"], **SMALL)
+    with pytest.raises(ValueError, match="different settings"):
+        run_all(tmp_path / "base", run=VARIANT, **SMALL)
+    run_all(tmp_path / "variant", only=["baseline_g5_grid25_T"], run=VARIANT, **SMALL)
+    with pytest.raises(ValueError, match="different settings"):
+        run_all(tmp_path / "variant", only=["baseline_g5_grid20"], **SMALL)
+
+
+def test_variant_dry_run_defaults_to_its_own_training_budget(tmp_path, capsys):
+    run = cfg.RunVariant("budget", "N2", "2026-10-27", "x", n_episodes=26_000_000)
+    run_all(tmp_path, run=run, dry_run=True)
+    out = capsys.readouterr().out
+    assert "26,000,000 episodes" in out and "K=2,600,000" in out and not any(tmp_path.iterdir())
+
+
+def test_post_hoc_run_b63_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["b63"]
+    assert run.changes() == {"episode_length": (20, 63)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B63", "robust_g3_grid20_B63", "robust_g8_grid20_B63"]
+
+
+def test_post_hoc_run_n26m_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["n26m"]
+    assert run.changes() == {"n_episodes": (13_000_000, 26_000_000)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_N26M", "robust_g3_grid20_N26M", "robust_g8_grid20_N26M"]
+
+
+def test_post_hoc_run_eps_decay_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["eps-decay"]
+    assert run.changes() == {"epsilon_at_halfway": (0.01, 0.03)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_eps3", "robust_g3_grid20_eps3", "robust_g8_grid20_eps3"]
+
+
+def test_post_hoc_run_all_three_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["all-three"]
+    assert run.changes() == {"episode_length": (20, 63), "n_episodes": (13_000_000, 26_000_000), "epsilon_at_halfway": (0.01, 0.03)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == ["baseline_g5_grid20_B63_N26M_eps3", "robust_g3_grid20_B63_N26M_eps3", "robust_g8_grid20_B63_N26M_eps3"]
+
+
+def test_post_hoc_run_grid10_robustness_is_registered_as_written_in_experiments_md():
+    run = cfg.POST_HOC_RUNS["grid10-robustness"]
+    assert run.changes() == {"episode_length": (20, 63), "n_episodes": (13_000_000, 26_000_000),
+                             "epsilon_at_halfway": (0.01, 0.03), "increment": (0.2, 0.1)}
+    assert run.registered == "2026-10-27"
+    assert [e.name for e in cfg.experiments(run)] == [
+        "baseline_g5_grid10_B63_N26M_eps3", "robust_g3_grid10_B63_N26M_eps3", "robust_g8_grid10_B63_N26M_eps3"]
+    assert generate_weight_grid(9, run.increment).shape[0] == 43_758  # the count the assignment states
+
+
+def test_random_tries_per_portfolio_quoted_in_experiments_md():
+    """(1 - exp(-beta N)) / beta / n_actions, re-derived by summing the schedule."""
+    def tries(n, eps_half, n_actions):
+        beta = cfg.beta_for(n, eps_half)
+        return np.exp(-beta * np.arange(n, dtype=float)).sum() / n_actions
+    assert round(tries(13_000_000, 0.01, 1_287)) == 1_097
+    assert round(tries(13_000_000, 0.01, 43_758)) == 32
+    assert round(tries(26_000_000, 0.01, 43_758)) == 65
+    assert round(tries(26_000_000, 0.03, 43_758)) == 85
+    assert round(tries(26_000_000, 0.10, 43_758)) == 128
+
+
+def test_a_variant_experiment_carries_its_own_training_budget():
+    """cfg.train_config(e) without n_episodes must not fall back to the baseline's 13M."""
+    for run in cfg.POST_HOC_RUNS.values():
+        for experiment in cfg.experiments(run):
+            tc = cfg.train_config(experiment)
+            assert tc.n_episodes == run.n_episodes
+            assert tc.beta == cfg.beta_for(run.n_episodes, run.epsilon_at_halfway)
+    assert cfg.train_config(cfg.experiments()[0]).n_episodes == 13_000_000
+
+
+def test_grid10_near_ties_quoted_in_experiments_md():
+    """The §7.7 table, re-derived from μ and Σ (analysis only; the agent never sees them)."""
+    from src.environment import PROCESSED_DIR, load_calibration
+    from src.evaluate import objective
+    mu, sigma = load_calibration(PROCESSED_DIR)
+    expected = {3.0: (0.04, 5), 5.0: (4.45, 25), 8.0: (1.25, 36)}
+    for gamma, (second_gap, within25) in expected.items():
+        loss = 252e4 * (lambda v: v.max() - v)(objective(generate_weight_grid(9, 0.1), mu, sigma, gamma))
+        assert round(np.sort(loss)[1], 2) == second_gap
+        assert int((loss <= 25).sum()) == within25
