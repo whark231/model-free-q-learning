@@ -28,6 +28,31 @@
       }
     },
     {
+      "id": "b63",
+      "title": "Longer episodes (B = 63)",
+      "date": "2026-10-28",
+      "results_dir": "results/b63",
+      "git_ref": "b63",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Episode length B = 20 -> 63 for all three γ on the 20% grid; everything else as baseline-v1. Chosen after the baseline results were seen (EXPERIMENTS.md §7.3).",
+      "notes": {
+        "tldr": [
+          "All three experiments trained 10 seeds each at B = 63 with no crashes. Longer episodes cut the learning gap at γ = 5: median 14.1 to 0.0 bps/yr, mean 17.6 to 5.1, and 6 of 10 seeds found the exact best portfolio against 3 of 10.",
+          "At γ = 3 and 8 the median gap and exact-best share did not change (10.0 and 5.7 bps/yr, 5 of 10), but the worst seed improved at every γ: 47.3 to 15.9 at γ = 5, 81.1 to 20.0 at γ = 3, 53.1 to 29.5 at γ = 8."
+        ],
+        "takeaways": [
+          "This matches the expectation registered on 2026-10-27 (smaller learning gap at every γ) on the mean and the worst seed. The γ = 5 jump in exact-best share is larger than expected but rests on 10 seeds, so treat it as within noise of the surrogate's prediction.",
+          "Training regret per episode fell or held (γ = 5: 65.5 to 51.2 bps/yr), and the pre-registered rule was met earlier in episodes at every γ (γ = 5 median 9.25M to 6.90M episodes). Counted in simulated days it looks later (185M to 435M), because each episode now holds 63 days."
+        ],
+        "caveats": [
+          "Post hoc: B = 63 was chosen after the baseline results were seen. Report it as a sensitivity check, not as a replacement for baseline-v1.",
+          "Only B changed, so differences can be attributed to episode length. Seeds share the master seed with baseline-v1, so exploration draws match, but each episode draws 63 days instead of 20, so the return paths are not paired.",
+          "Medians on 10 seeds move in discrete steps between the top few portfolios (0, 10.5, 12.3, 15.9 bps/yr at γ = 5), so a median of 0.0 means at least half the seeds found the best portfolio, not that the gap is gone."
+          ]
+      }
+    },
+    {
       "id": "all-three",
       "title": "B = 63, 26M episodes and ε = 3% at halfway together",
       "date": "2026-10-28",
