@@ -26,6 +26,33 @@
           "The tag baseline-v1 points at commit f70296a, which includes later behaviour-equivalent edits to src/agent.py and src/train.py. Training ran at commit 80a6e9c, recorded in every manifest."
         ]
       }
+    },
+    {
+      "id": "n26m",
+      "title": "Double training budget (26M episodes)",
+      "date": "2026-10-28",
+      "results_dir": "results/n26m",
+      "git_ref": "81814e6",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Training episodes per seed 13M -> 26M for all γ on the 20% grid. ε still reaches 1% at halfway (β halves) and K stays 10% of the budget (2.6M). Every other setting as baseline-v1. src/train.py and src/agent.py changed in logging and speed only (behaviour-equivalent; see the diff 80a6e9c..81814e6). Settings and expected direction registered in EXPERIMENTS.md §7.4 on 2026-10-27, after the baseline results were seen.",
+      "notes": {
+        "tldr": [
+          "All 30 seeds (3 γ × 10) trained 26M episodes with no crashes, at 634 to 748 s per seed. Fewer seeds ended far from the best grid portfolio: 0, 1 and 1 seeds above 25 bps/yr at γ = 5, 3 and 8, against 3, 4 and 3 in baseline-v1. The largest learning gap fell from 47.3 to 15.9 bps/yr at γ = 5, 81.1 to 62.3 at γ = 3 and 53.1 to 27.2 at γ = 8.",
+          "Medians moved in both directions: 14.1 to 10.5 bps/yr at γ = 5, 5.7 to 0.0 at γ = 8, and 10.0 to 20.0 at γ = 3. Exactly-best shares were 30% at γ = 5 (unchanged), 40% at γ = 3 (was 50%) and 70% at γ = 8 (was 50%)."
+        ],
+        "takeaways": [
+          "Partly matches the direction written down before the run (EXPERIMENTS.md §7.4): the mean learning gap fell at every γ (17.6 to 8.3, 30.6 to 16.2, 13.0 to 5.0 bps/yr), but the median rose at γ = 3, and the exactly-best share rose only at γ = 8, against the expected small rise at every γ. These are 10 unpaired seeds per run, and no formal test is part of this report.",
+          "The extra budget does not separate the top few portfolios, which needs about 0.5M to 1.1M visits each depending on γ, against about 2,200 random tries per portfolio here.",
+          "Average training regret was lower than the expected 'about unchanged': means of 58.9, 64.3 and 72.4 bps/yr against 68.2, 77.8 and 80.8 at γ = 5, 3 and 8."
+        ],
+        "caveats": [
+          "Post hoc: the run was designed after the baseline results were seen. Report it as the Part VI training-budget robustness check.",
+          "Both runs use master seed 20261016, so seed r sees the same simulated returns for its first 13M episodes, but β differs and the agent's choices diverge within the first few thousand episodes. Seeds are compared as unpaired samples.",
+          "K doubles to 2.6M episodes, so the primary convergence rule is stricter in absolute terms than in baseline-v1. Its share (80%, 90%, 90%) is not directly comparable.",
+          "Code commit 81814e6 (run/n26m); no tag was created. The 30 training logs (run_*.npz, about 145 MB) stay on Albert's Mac."
+        ]
+      }
     }
   ]
 }
