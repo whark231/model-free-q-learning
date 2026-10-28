@@ -1,0 +1,229 @@
+{
+  "written_utc": "2026-10-28T11:34:44+00:00",
+  "git_commit": "81814e667c2c199d6337bb30bcf7cc9ea2e71f0c",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 20,
+    "n_episodes": 26000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 3.5424386046062245e-07,
+    "alpha_rule": "sample_average",
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 2600000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.2
+    ],
+    "post_hoc_run": "n26m",
+    "epsilon_at_halfway": 0.01
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "n26m",
+    "registered": "2026-10-27",
+    "expected": "a slightly smaller learning gap and a slightly higher exactly-best share at every \u03b3, likely within noise"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid20_N26M",
+      "purpose": "post-hoc run n26m: a slightly smaller learning gap and a slightly higher exactly-best share at every \u03b3, likely within noise",
+      "gamma": 5.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "baseline_g5_grid20_N26M",
+      "discretization_gap_bps": 5.739520916227216,
+      "learning_gap_bps": {
+        "mean": 8.26267641429536,
+        "median": 10.53141053805588,
+        "min": 0.0,
+        "max": 15.851651535878634,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.3,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 233335730.0,
+            "median": 208435380.0,
+            "min": 155016200.0,
+            "max": 369893200.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.8,
+          "observations": {
+            "mean": 345812072.5,
+            "median": 348943780.0,
+            "min": 169700840.0,
+            "max": 467536460.0,
+            "n": 8
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 55880000.0,
+            "median": 53200000.0,
+            "min": 46600000.0,
+            "max": 80400000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 65560000.0,
+            "median": 57300000.0,
+            "min": 24800000.0,
+            "max": 125600000.0,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g3_grid20_N26M",
+      "purpose": "post-hoc run n26m: a slightly smaller learning gap and a slightly higher exactly-best share at every \u03b3, likely within noise",
+      "gamma": 3.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g3_grid20_N26M",
+      "discretization_gap_bps": 2.4742144891934794,
+      "learning_gap_bps": {
+        "mean": 16.241656262378715,
+        "median": 20.01753318946271,
+        "min": 0.0,
+        "max": 62.3288966764736,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.4,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 219335638.0,
+            "median": 199224740.0,
+            "min": 109451760.0,
+            "max": 345515880.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 293436604.4444444,
+            "median": 302603320.0,
+            "min": 163921320.0,
+            "max": 464018160.0,
+            "n": 9
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 55580000.0,
+            "median": 53200000.0,
+            "min": 46600000.0,
+            "max": 80400000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 71200000.0,
+            "median": 57600000.0,
+            "min": 25200000.0,
+            "max": 185000000.0,
+            "n": 9
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g8_grid20_N26M",
+      "purpose": "post-hoc run n26m: a slightly smaller learning gap and a slightly higher exactly-best share at every \u03b3, likely within noise",
+      "gamma": 8.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g8_grid20_N26M",
+      "discretization_gap_bps": 6.133499610241306,
+      "learning_gap_bps": {
+        "mean": 5.013613090794008,
+        "median": 0.0,
+        "min": 0.0,
+        "max": 27.21132251871598,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.7,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 254979056.0,
+            "median": 248754260.0,
+            "min": 136825600.0,
+            "max": 431283140.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 320487820.0,
+            "median": 298219100.0,
+            "min": 217994700.0,
+            "max": 463822120.0,
+            "n": 9
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 53280000.0,
+            "median": 53000000.0,
+            "min": 46600000.0,
+            "max": 66200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 54155555.55555555,
+            "median": 57200000.0,
+            "min": 16000000.0,
+            "max": 91000000.0,
+            "n": 9
+          }
+        }
+      }
+    }
+  ],
+  "comparison": null
+}
