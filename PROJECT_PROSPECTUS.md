@@ -25,7 +25,7 @@ As skills develop, the split should shift — by the extension phase (weeks 7–
 Mapped to the assignment's required parts (Parts I–VI):
 
 ### Core (required for base grade)
-| # | Component | Assignment Part | Status (2026-10-26) |
+| # | Component | Assignment Part | Status (2026-10-29) |
 |---|---|---|---|
 | 1 | ~~Nine-ETF data pipeline: download, align, clean, adjust for distributions~~ | Part I | ✅ Done — `src/data/`, `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
 | 2 | ~~Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator~~ | Part I | ✅ Done — μ, Σ in `data/processed/`; generator in `src/environment.py`, `ENVIRONMENT.md`, 69 tests |
@@ -33,24 +33,24 @@ Mapped to the assignment's required parts (Parts I–VI):
 | 4 | ~~Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline)~~ | Part III | ✅ Done — `src/action_space/grid.py`, 22 tests |
 | 5 | ~~Reward function: episodic realized mean-variance reward~~ | Part III | ✅ Done — `src/rewards.py`, 9 tests |
 | 6 | ~~Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation)~~ | Part III | ✅ Done — `src/agent.py`, 24 tests |
-| 7 | ~~Training loop across multiple random seeds + convergence criterion~~ | Part IV | ✅ Done (2026-10-16) — runner `src/train.py`; settings fixed in `src/config.py`: γ ∈ {3, 5, 8} with 5 as baseline, B = 20, convergence = greedy action unchanged for 10% of training episodes; batch runner `src/run_experiments.py`; see `EXPERIMENTS.md`. Full-scale run done 2026-10-22: 4 experiments × 10 seeds × 13M episodes, `results/INDEX.md`, `RUN_ISSUES_2026-10-22.md` |
+| 7 | ~~Training loop across multiple random seeds + convergence criterion~~ | Part IV | ✅ Done (2026-10-16), post-hoc variants via `--run` (2026-10-27) — runner `src/train.py`; settings fixed in `src/config.py`: γ ∈ {3, 5, 8} with 5 as baseline, B = 20, convergence = greedy action unchanged for 10% of training episodes; batch runner `src/run_experiments.py`; see `EXPERIMENTS.md`. Full-scale run done 2026-10-22: 4 experiments × 10 seeds × 13M episodes, `results/INDEX.md`, `RUN_ISSUES_2026-10-22.md` |
 | 8 | ~~Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics~~ | Part V | ✅ Done (2026-10-22) — every experiment's `results/<name>/evaluation/` has the grouped weight bar chart, absolute weight differences, L1 and Euclidean distances, mean/vol/objective for learned, continuous, best discrete and equal weight, both gaps, and the per-seed gap distribution. Albert's `RUN_ISSUES` fix (total-gap column, Finding 3) adds to the tables; nothing needs retraining |
 | 9 | ~~Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions~~ | Part V | ✅ Done (2026-10-22) — learning curves, cumulative regret, observations to the 25 bps line, and the 20% vs 25% comparison (`results/comparison_g5_grid20_vs_grid25/`). Albert's `RUN_ISSUES` fix (Findings 1 and 2) relabels the convergence columns and adds a post-hoc measure; nothing needs retraining |
-| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | 🔶 Half done. Risk aversion: γ = 3 and 8 vs γ = 5, run 2026-10-22. Action space: the 10% grid (43,758 actions; decided 2026-10-26), not yet run; needs the Q-table-copy fix (`REVIEW_HISTORY.md` §5.3) and the experiment added to `src/config.py`. Proposed, not agreed: a higher-B episode-length check (`REVIEW_NOTES_FOR_WILLIAM.md`) |
+| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | 🔶 Mostly done. Risk aversion: γ = 3 and 8 vs γ = 5, run 2026-10-22 ✅. Training budget, episode length and exploration (post hoc, 2026-10-28): runs `b63`, `n26m`, `eps-decay`, `all-three` ✅, each lowered the mean learning gap and worst seed at every γ (`REVIEW_HISTORY.md` §8). Action space: the 10% grid, registered as post-hoc run `grid10-robustness` (`EXPERIMENTS.md` §7.7, compared with `all-three`), not yet run, about 21 hours |
 
-Full suite: 247 tests passing (`python -m pytest src/tests -q`).
+Full suite: 283 tests passing (`python -m pytest src/tests -q`).
 
 ### Extension (our chosen bonus angle)
-| # | Component | Notes | Status (2026-10-26) |
+| # | Component | Notes | Status (2026-10-29) |
 |---|---|---|---|
-| 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP | ⬜ Not started; in scope (confirmed 2026-10-26), Week 7 |
+| 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP | ⬜ Not started; in scope, Week 7 (Oct 30 to Nov 5). Decide the two open questions in §6 first |
 | 12 | Function approximation Q-learning: replaces the table once state × action space is too large | Compare directly against the tabular baseline at the same grid resolution | ⬜ Not started; in scope (confirmed 2026-10-26), Week 8 |
 
 ### Deliverables
-| # | Component | Notes | Status (2026-10-26) |
+| # | Component | Notes | Status (2026-10-29) |
 |---|---|---|---|
-| 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started |
-| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 247 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
+| 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started. Inputs ready: `reports/<run_id>/report.html` for every run, `REVIEW_HISTORY.md` §7 to §8 for the Q-learning results. Albert's `RUN_ISSUES` table fixes come first |
+| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 283 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
 | 15 | Class presentation | | ⬜ Not started |
 
 ## 4. Task Ownership (draft — adjust as we go)
@@ -96,7 +96,8 @@ Full suite: 247 tests passing (`python -m pytest src/tests -q`).
 - [x] Action library approach: fixed Cartesian grid, built in `src/action_space/grid.py` (also accepts a custom grid, so a sampled library stays possible without a code change)
 - [x] Robustness checks: the 10% grid (action space) and γ = 3 and 8 (risk aversion), decided 2026-10-26. The 25% grid stays as Part V's second resolution
 - [x] Extensions: both transaction costs and function approximation, confirmed 2026-10-26
-- [ ] Whether to add a higher-B episode-length check (B = 63 and 252 proposed in `REVIEW_NOTES_FOR_WILLIAM.md`; decide with Albert before it runs)
+- [x] Higher-B episode-length check: run as `b63` (2026-10-28), with `n26m`, `eps-decay` and `all-three` alongside. B = 252 not run
+- [ ] Which post-hoc runs the report covers in full and which in a sentence (decide with Albert before writing Part VI)
 - [ ] Fix the transaction-cost penalty: single fixed parameter, or swept across values as one of our two required robustness checks (extension-phase decision, not urgent yet)
 - [ ] Confirm state representation granularity for the transaction-cost extension (exact prior weights vs. coarsely bucketed) (extension-phase decision, not urgent yet)
 
