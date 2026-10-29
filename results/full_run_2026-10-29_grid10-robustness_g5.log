@@ -1,0 +1,11 @@
+run 0: 3048.7s, final greedy [0.4 0.  0.  0.1 0.1 0.  0.4 0.  0. ]
+run 1: 2815.8s, final greedy [0.4 0.  0.  0.2 0.  0.  0.4 0.  0. ]
+run 2: 2777.9s, final greedy [0.4 0.  0.  0.  0.2 0.  0.4 0.  0. ]
+run 3: 2712.3s, final greedy [0.4 0.  0.  0.  0.1 0.  0.5 0.  0. ]
+run 4: 2735.4s, final greedy [0.5 0.  0.  0.  0.  0.2 0.3 0.  0. ]
+run 5: 2677.5s, final greedy [0.4 0.  0.  0.2 0.  0.  0.4 0.  0. ]
+run 6: 2767.2s, final greedy [0.4 0.  0.  0.2 0.1 0.  0.3 0.  0. ]
+run 7: 2732.9s, final greedy [0.4 0.  0.  0.1 0.  0.  0.5 0.  0. ]
+run 8: 2737.6s, final greedy [0.4 0.  0.  0.1 0.  0.  0.5 0.  0. ]
+run 9: 2708.8s, final greedy [0.5 0.  0.  0.2 0.  0.  0.3 0.  0. ]
+exit=0

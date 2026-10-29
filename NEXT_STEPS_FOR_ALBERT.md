@@ -3,6 +3,7 @@
 **From:** William
 **Date:** 2026-10-29
 **Status:** the baseline and four post-hoc runs (`b63`, `n26m`, `eps-decay`, `all-three`) are done, reported and merged into `dev`. Next: the evaluation fixes from `RUN_ISSUES`, the 10% grid run, and the transaction-cost extension, which starts Oct 30.
+**Update 2026-10-29 (Albert):** item 2 is done. `grid10-robustness` ran without the `update()` fix and is in PR #22, with its outcome in `EXPERIMENTS.md` §7.7. Item 4 is done in the same PR. The note in `reports/README.md` about raising `--log-every` is updated too.
 
 ---
 

@@ -1,0 +1,106 @@
+{
+  "20%": {
+    "n_actions": 1287,
+    "discretization_gap_ce_bps": 2.4742144891934794,
+    "ce_loss_vs_best_discrete_bps": {
+      "mean": 4.003506637892542,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 20.01753318946271,
+      "n": 10
+    },
+    "share_exactly_best_discrete": 0.8,
+    "greedy_stable": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 404331694.2,
+        "median": 371011504.5,
+        "min": 226133523.0,
+        "max": 588760011.0,
+        "n": 10
+      }
+    },
+    "greedy_stable_through_end": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 475994389.5,
+        "median": 371011504.5,
+        "min": 226133523.0,
+        "max": 1280291481.0,
+        "n": 10
+      }
+    },
+    "dq_below_tol_for_good": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 69867000.0,
+        "median": 66150000.0,
+        "min": 56700000.0,
+        "max": 106470000.0,
+        "n": 10
+      }
+    },
+    "near_optimal_for_good": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 84420000.0,
+        "median": 56070000.0,
+        "min": 27720000.0,
+        "max": 277200000.0,
+        "n": 10
+      }
+    }
+  },
+  "10%": {
+    "n_actions": 43758,
+    "discretization_gap_ce_bps": 2.4742144891934794,
+    "ce_loss_vs_best_discrete_bps": {
+      "mean": 22.022454211795235,
+      "median": 25.555063076502464,
+      "min": 0.0,
+      "max": 62.3288966764736,
+      "n": 10
+    },
+    "share_exactly_best_discrete": 0.4,
+    "greedy_stable": {
+      "share_of_seeds": 0.0,
+      "observations": {
+        "mean": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "n": 0
+      }
+    },
+    "greedy_stable_through_end": {
+      "share_of_seeds": 0.0,
+      "observations": {
+        "mean": null,
+        "median": null,
+        "min": null,
+        "max": null,
+        "n": 0
+      }
+    },
+    "dq_below_tol_for_good": {
+      "share_of_seeds": 0.1,
+      "observations": {
+        "mean": 1638000000.0,
+        "median": 1638000000.0,
+        "min": 1638000000.0,
+        "max": 1638000000.0,
+        "n": 1
+      }
+    },
+    "near_optimal_for_good": {
+      "share_of_seeds": 0.5,
+      "observations": {
+        "mean": 942228000.0,
+        "median": 819630000.0,
+        "min": 585270000.0,
+        "max": 1407420000.0,
+        "n": 5
+      }
+    }
+  }
+}
