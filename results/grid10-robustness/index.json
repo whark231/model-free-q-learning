@@ -1,0 +1,229 @@
+{
+  "written_utc": "2026-10-29T14:03:24+00:00",
+  "git_commit": "e13a9a6d1f63788d80a8f0d93168d3f3142df38f",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 63,
+    "n_episodes": 26000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 2.6973522287076783e-07,
+    "alpha_rule": "sample_average",
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 2600000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.1
+    ],
+    "post_hoc_run": "grid10-robustness",
+    "epsilon_at_halfway": 0.03
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "grid10-robustness",
+    "registered": "2026-10-27",
+    "expected": "a larger learning gap against the best grid portfolio than run all-three's at every \u03b3, exactly-best share near zero, discretization gap 5.7 -> 1.3 bps/yr at \u03b3 = 5 and unchanged at \u03b3 = 3 and 8"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid10_B63_N26M_eps3",
+      "purpose": "post-hoc run grid10-robustness: a larger learning gap against the best grid portfolio than run all-three's at every \u03b3, exactly-best share near zero, discretization gap 5.7 -> 1.3 bps/yr at \u03b3 = 5 and unchanged at \u03b3 = 3 and 8",
+      "gamma": 5.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "baseline_g5_grid10_B63_N26M_eps3",
+      "discretization_gap_bps": 1.2902468012125807,
+      "learning_gap_bps": {
+        "mean": 11.69205874422371,
+        "median": 10.822914607670844,
+        "min": 4.449274115014634,
+        "max": 18.993172112814378,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 0.1,
+          "observations": {
+            "mean": 1638000000.0,
+            "median": 1638000000.0,
+            "min": 1638000000.0,
+            "max": 1638000000.0,
+            "n": 1
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 870156000.0,
+            "median": 796950000.0,
+            "min": 567630000.0,
+            "max": 1413090000.0,
+            "n": 10
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g3_grid10_B63_N26M_eps3",
+      "purpose": "post-hoc run grid10-robustness: a larger learning gap against the best grid portfolio than run all-three's at every \u03b3, exactly-best share near zero, discretization gap 5.7 -> 1.3 bps/yr at \u03b3 = 5 and unchanged at \u03b3 = 3 and 8",
+      "gamma": 3.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g3_grid10_B63_N26M_eps3",
+      "discretization_gap_bps": 2.4742144891934794,
+      "learning_gap_bps": {
+        "mean": 22.022454211795235,
+        "median": 25.555063076502464,
+        "min": 0.0,
+        "max": 62.3288966764736,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.4,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 0.1,
+          "observations": {
+            "mean": 1638000000.0,
+            "median": 1638000000.0,
+            "min": 1638000000.0,
+            "max": 1638000000.0,
+            "n": 1
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.5,
+          "observations": {
+            "mean": 942228000.0,
+            "median": 819630000.0,
+            "min": 585270000.0,
+            "max": 1407420000.0,
+            "n": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g8_grid10_B63_N26M_eps3",
+      "purpose": "post-hoc run grid10-robustness: a larger learning gap against the best grid portfolio than run all-three's at every \u03b3, exactly-best share near zero, discretization gap 5.7 -> 1.3 bps/yr at \u03b3 = 5 and unchanged at \u03b3 = 3 and 8",
+      "gamma": 8.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g8_grid10_B63_N26M_eps3",
+      "discretization_gap_bps": 6.133499610241306,
+      "learning_gap_bps": {
+        "mean": 5.788549802524942,
+        "median": 6.368227057926756,
+        "min": 0.0,
+        "max": 10.615257741939924,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.1,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 0.1,
+          "observations": {
+            "mean": 1638000000.0,
+            "median": 1638000000.0,
+            "min": 1638000000.0,
+            "max": 1638000000.0,
+            "n": 1
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 752283000.0,
+            "median": 643545000.0,
+            "min": 315000000.0,
+            "max": 1413090000.0,
+            "n": 10
+          }
+        }
+      }
+    }
+  ],
+  "comparison": null
+}

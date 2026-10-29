@@ -74,7 +74,7 @@
           "Post hoc: B = 63 was chosen after the baseline results were seen. Report it as a sensitivity check, not as a replacement for baseline-v1.",
           "Only B changed, so differences can be attributed to episode length. Seeds share the master seed with baseline-v1, so exploration draws match, but each episode draws 63 days instead of 20, so the return paths are not paired.",
           "Medians on 10 seeds move in discrete steps between the top few portfolios (0, 10.5, 12.3, 15.9 bps/yr at γ = 5), so a median of 0.0 means at least half the seeds found the best portfolio, not that the gap is gone."
-          ]
+        ]
       }
     },
     {
@@ -130,6 +130,36 @@
           "Both runs use master seed 20261016, so seed r sees the same simulated returns for its first 13M episodes, but β differs and the agent's choices diverge within the first few thousand episodes. Seeds are compared as unpaired samples.",
           "K doubles to 2.6M episodes, so the primary convergence rule is stricter in absolute terms than in baseline-v1. Its share (80%, 90%, 90%) is not directly comparable.",
           "Code commit 81814e6 (run/n26m); no tag was created. The 30 training logs (run_*.npz, about 145 MB) stay on Albert's Mac."
+        ]
+      }
+    },
+    {
+      "id": "grid10-robustness",
+      "title": "10% grid at run all-three's settings",
+      "date": "2026-10-29",
+      "results_dir": "results/grid10-robustness",
+      "git_ref": "e13a9a6",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc run 5 (EXPERIMENTS.md §7.7), the Part VI action-space check. Grid 20% (1,287 portfolios) -> 10% (43,758) at run all-three's settings: B = 63, 26M episodes per seed (K = 2.6M), ε 3% at halfway, γ = 3, 5, 8, 10 seeds, master seed 20261016. Against all-three only the grid changes; against baseline-v1 four settings change. Trained at commit e13a9a6 (tag grid10-robustness), whose src/ is identical to 81814e6, the commit all-three trained at.",
+      "notes": {
+        "tldr": [
+          "All 30 seeds (3 γ × 10) trained 26M episodes on the 10% grid (43,758 portfolios) with no crashes, at 2,677 to 3,075 s per seed, with the three γ run in parallel. The finer grid lowered the discretization gap only at γ = 5 (5.7 to 1.3 bps/yr); at γ = 3 and 8 the best portfolio is the same as on the 20% grid (2.5 and 6.1 bps/yr).",
+          "Against run all-three, which differs only in the grid, the mean learning gap rose at every γ: 7.9 to 11.7 bps/yr at γ = 5, 4.0 to 22.0 at γ = 3 and 1.1 to 5.8 at γ = 8. Seeds that found the exactly-best portfolio fell from 5, 8 and 9 of 10 to 0, 4 and 1. No seed met the pre-registered convergence rule, against 10 of 10 in all-three."
+        ],
+        "takeaways": [
+          "Total loss against the continuous optimum (discretization plus learning gap), seed by seed against all-three: at γ = 5 no detectable net change (mean 13.6 to 13.0 bps/yr, paired mean difference −0.6, SE 3.7; lower in 5 seeds, equal in 1, higher in 4). Worse at γ = 3 (mean 6.5 to 24.5, paired difference +18.0, SE 7.5; lower 1, equal 3, higher 6) and at γ = 8 (mean 7.3 to 11.9, paired difference +4.6, SE 1.6; lower 1, equal 1, higher 8). At this budget the 4.4 bps/yr the finer grid offers at γ = 5 does not show up in what the agent learns.",
+          "Matches the direction written down before the run (EXPERIMENTS.md §7.7) on the learning gap (larger at every γ), the discretization gap (exactly as computed) and convergence (fewer seeds meet the primary rule; here none). The expected exactly-best share near zero held at γ = 5 (0 of 10) and γ = 8 (1 of 10) but not at γ = 3 (4 of 10). γ = 3 has only 4 rivals within 25 bps/yr of the best, and its seeds split: four ended on the best portfolio and five ended more than 25 bps/yr away (final ranks 3, 8, 9, 12, 15 and 34 for the other six).",
+          "The grid's best portfolio was tried 81 to 4,114 times per seed at γ = 5 (median 116), close to the 85 random tries each portfolio gets from ε, while each seed's final portfolio was tried 19M to 22M times. Telling the top two apart at γ = 5 would take about 2.5M tries of each. Under greedy play with sample-average Q, a portfolio whose estimate starts low is rarely chosen again. This run did not test a larger budget on the 10% grid, so it cannot say how much more training would close the gap.",
+          "Every seed still ended within 25 bps/yr of the grid's best at γ = 5 and 8 (10 of 10), against 9 and 10 of 10 in all-three. At γ = 3, 5 of 10 ended above 25 bps/yr (worst 62.3), against none in all-three.",
+          "Training regret, median across seeds: 78.5, 93.7 and 88.6 bps/yr at γ = 5, 3 and 8, against 72.1, 64.2 and 88.5 in all-three. The median per-seed ratio is 1.05, 1.39 and 0.97, so regret rose at γ = 3, a little at γ = 5, and not at γ = 8."
+        ],
+        "caveats": [
+          "Post hoc: designed after the baseline-v1 results were seen; settings and expected direction registered 2026-10-27 (EXPERIMENTS.md §7.7), before this run. Report it as the Part VI action-space robustness check, against all-three.",
+          "This report's comparison section matches families on γ and grid, so it has no earlier entry for the 10% grid and does not line this run up against all-three. The paired grid comparisons are in results/grid10-robustness/comparison_g{3,5,8}_grid20_vs_grid10/, made with the command in EXPERIMENTS.md §7.7 (extended to γ = 3 and 8) from all-three's training logs.",
+          "Seed i here and seed i in all-three draw the same simulated returns (the returns stream does not depend on the actions), so the differences above are paired. They are 10 pairs per γ; the SEs are of the paired mean, and no formal test is part of this report.",
+          "The pre-registered rule needs the final greedy portfolio held for K = 2.6M episodes; 0 of 30 seeds met it. The greedy portfolio changed a median of 188k, 185k and 155k times per seed at γ = 5, 3 and 8, against about 2,500 to 3,000 in all-three. After settling, 99% or more of the excursions went to a portfolio more than 25 bps/yr from the best (median worst loss 281, 335 and 247 bps/yr): with about 85 tries each, some of the 43,758 noisy Q estimates sit above the leader by chance until a few hundred greedy plays pull them down. The post-hoc settled point (median 797M, 834M and 644M simulated days, about half the budget) always exists by construction.",
+          "The three γ trained in parallel as three processes into one results folder (seeds are deterministic, so results equal a sequential run); a final sequential pass reused all three and wrote the index. William's update() speed fix (REVIEW_NOTES_FOR_WILLIAM.md item 3) was not in; it changes speed only. Trained at commit e13a9a6 (local tag grid10-robustness, not pushed); its src/ is identical to 81814e6. Training logs (run_*.npz, about 12 GB) stay on Albert's Mac."
         ]
       }
     }
