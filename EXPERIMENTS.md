@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, not yet run (§7); later runs follow `reports/README.md`
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---
@@ -137,7 +137,7 @@ put every reduced-settings run there. Commit results with
   best grid portfolio's value at γ = 3, 5 and 8, so it is a tighter bar at
   γ = 3 than at γ = 8 (`EVALUATION.md` §7).
 
-## 7. Post-hoc runs (registered 2026-10-27, not yet run)
+## 7. Post-hoc runs (registered 2026-10-27, run 2026-10-28 to 2026-10-29)
 
 **TL;DR / In plain terms:** after the baseline run we planned five more runs
 that change the episode length, the training budget, the exploration schedule
@@ -169,6 +169,9 @@ outcome afterwards.
   (§7.3), run 2 `n26m` (§7.4), run 3 `eps-decay` (§7.5), run 4 `all-three`
   (§7.6) and run 5 `grid10-robustness` (§7.7). Each was built on its own
   branch (`run/<run_id>`) and all five were merged into `dev` on 2026-10-27.
+- All five have run. Results are in `results/<run_id>/` and reports in
+  `reports/<run_id>/report.html`. Runs 1 to 4 are checked against their
+  expectations in `REVIEW_HISTORY.md` §8; run 5 in §7.7 below.
 - `RunVariant.expected` in `src/config.py` is the one-line summary printed in
   `INDEX.md`; the section below is the full pre-registered expectation.
 
@@ -560,3 +563,62 @@ current runner, plus 15% or 5.6 µs for B = 63, so about 97 to 105 µs.
 Run it in three parts if an overnight run is not possible:
 `--only baseline_g5_grid10_B63_N26M_eps3` and so on, into the same results
 folder. Finished experiments are reused.
+
+**How it actually ran (2026-10-29).** The three γ trained at the same time,
+as three `--only` processes into `results/grid10-robustness`, followed by one
+plain `--run grid10-robustness` pass that reused all three and wrote the
+index. Seeds are deterministic, so this gives the same results as running
+them one after another. Training took 2,677 to 3,075 s per seed and about
+7.7 hours in all, at commit `e13a9a6` (same `src/` as `all-three`'s `81814e6`).
+William's `update()` fix was not in. The training logs take 12 GB.
+
+#### Outcome, written after the run (2026-10-29)
+
+**TL;DR / In plain terms:** on the finer grid the agent misses the grid's
+best portfolio by more at every γ. At γ = 5 that roughly cancels the better
+portfolio the finer grid offers, so the total loss is about unchanged. At
+γ = 3 and 8 the finer grid has no better portfolio, so the total loss rises.
+The full numbers and caveats are in the `grid10-robustness` entry of
+`reports/registry.json` and in `reports/grid10-robustness/report.html`.
+
+| γ | Discretization gap, 20% → 10% (bps/yr) | Mean learning gap, `all-three` → this run | Exactly best (of 10) | Total loss vs continuous, mean (paired difference, SE) | Primary rule met |
+|---|---|---|---|---|---|
+| 5 | 5.7 → 1.3 | 7.9 → 11.7 | 5 → 0 | 13.6 → 13.0 (−0.6, 3.7) | 10 → 0 |
+| 3 | 2.5 → 2.5 | 4.0 → 22.0 | 8 → 4 | 6.5 → 24.5 (+18.0, 7.5) | 10 → 0 |
+| 8 | 6.1 → 6.1 | 1.1 → 5.8 | 9 → 1 | 7.3 → 11.9 (+4.6, 1.6) | 10 → 0 |
+
+The paired comparisons are in
+`results/grid10-robustness/comparison_g{3,5,8}_grid20_vs_grid10/`, made with
+the command above, extended to γ = 3 and 8.
+
+**Key concepts to understand**
+
+- **Too few tries per portfolio.** Each portfolio gets about 85 random tries.
+  At γ = 5 the grid's best portfolio was tried a median of 116 times per seed,
+  and each seed's final pick 19M to 22M times. A portfolio whose early
+  estimate comes out low is rarely chosen again.
+- **Why no seed met the convergence rule.** The greedy portfolio changed a
+  median of 155k to 188k times per seed, against about 2,500 to 3,000 in
+  `all-three`. With 43,758 noisy estimates, a poor portfolio regularly looks
+  best by chance for a few hundred episodes. Over 99% of these detours went
+  to a portfolio more than 25 bps/yr from the best.
+
+**Against the expectation written before the run**
+
+- Larger learning gap than `all-three` at every γ: held.
+- Discretization gap 1.3 at γ = 5 and unchanged at γ = 3 and 8: held exactly.
+- Fewer seeds meeting the primary rule: held (none at any γ).
+- Exactly-best share near zero: held at γ = 5 (0 of 10) and γ = 8 (1 of 10),
+  failed at γ = 3 (4 of 10). At γ = 3 only 4 rivals lie within 25 bps/yr of
+  the best, and the seeds split: four on the best, five more than 25 bps/yr
+  away.
+- Total loss: no direction was predicted. It is about unchanged at γ = 5 and
+  worse at γ = 3 and 8.
+
+**Key takeaways**
+
+- This is the Part VI action-space check. Report it against `all-three`,
+  labelled post hoc.
+- With this budget a finer grid costs tabular Q-learning more in learning
+  than it gains in discretization. The run did not test a larger budget on
+  the 10% grid, so it cannot say how much more training would close the gap.

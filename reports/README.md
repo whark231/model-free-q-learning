@@ -157,11 +157,12 @@ Do these in order. Steps 1 and 2 happen **before** training starts.
   runs in the same family to attribute.
 - **10% grid.** A new family (γ, 10% grid), so its first appearance has no
   earlier entry to compare with; the family matrix still places it beside the
-  coarser grids. It needs the Q-table-copy speed fix first
-  (`REVIEW_HISTORY.md` §5.3). At 26M episodes, raise `--log-every` to at least
-  11,377 (for example 20,000): 2,600 checkpoints × 43,758 Q-values exceeds the
-  runner's 100M snapshot guard (`MAX_SNAPSHOT_VALUES` in `src/train.py`). The
-  report handles a different log interval and lists it as a changed setting.
+  coarser grids, but the comparison section does not line it up against the
+  20% grid. Run `grid10-robustness` (2026-10-29) used the default log
+  interval: 2,600 checkpoints × 43,758 Q-values is 113.8M, under the 120M
+  snapshot guard (`MAX_SNAPSHOT_VALUES` in `src/train.py`). Its paired
+  comparison with `all-three` is in
+  `results/grid10-robustness/comparison_g{3,5,8}_grid20_vs_grid10/`.
 - **Fat-tailed returns (Part VI option).** The extractor's reward SD assumes
   Gaussian draws, and nothing in the manifest records the shock distribution.
   Before such a run, record the distribution in the manifest and gate
