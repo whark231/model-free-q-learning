@@ -1,16 +1,24 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-10-26
-**Status:** the full-scale run is done and committed. Your fix plan in `RUN_ISSUES_2026-10-22.md` §4 is the next piece of work, and I agree with it.
+**Date:** 2026-10-29
+**Status:** the baseline and four post-hoc runs (`b63`, `n26m`, `eps-decay`, `all-three`) are done, reported and merged into `dev`. Next: the evaluation fixes from `RUN_ISSUES`, the 10% grid run, and the transaction-cost extension, which starts Oct 30.
 
 ---
 
 ## TL;DR / In plain terms
 
-Thanks for running it. All four experiments trained 10 seeds each with no crash, and your reviewer re-derived every number. The results are usable, but three tables need fixing before anyone writes Parts IV to VI from them, and your plan already covers that. It only touches your files and needs no retraining.
+Thanks for setting up and running the post-hoc runs and the reporting system. Every variant lowered the mean learning gap and the worst seed at every γ. Longer episodes (`b63`) gave the most for the least regret. The required parts are nearly complete: what's left for Part VI is the 10% grid. After that, the remaining work is the two extensions and the report.
 
-Scope is now set. The robustness checks are the 10% grid (action space) and γ = 3 and 8 (already run). The extensions are transaction costs and function approximation. Two things to decide together: a higher-B episode-length check, and how the report gets rebuilt if we run again.
+**Key concepts to understand**
+
+- **Better on average, not always better.** Every variant beat the baseline's mean gap and worst seed in all 12 comparisons (4 runs × 3 γ). Medians and exact-best shares did not all improve: `n26m` at γ = 3 got worse on both. With 10 seeds, part of the mean improvement is the baseline's single bad seeds not recurring.
+- **Days vs. episodes.** Every variant takes more simulated days to converge, because it sees more data. Counted in episodes, `b63` is faster than the baseline, and `n26m` and `eps-decay` are slower, because ε stays high for longer.
+
+**Key takeaways**
+
+- `baseline-v1` stays the headline for Parts IV and V. The post-hoc runs go in Part VI, labelled post hoc. The full table and the check against each run's registered expectation are in `REVIEW_HISTORY.md` §8.
+- The `RUN_ISSUES` fixes are still not in the code, so the tables still lack the total-gap column. That needs fixing before anyone writes Parts IV to VI.
 
 ---
 
@@ -21,26 +29,24 @@ Scope is now set. The robustness checks are the 10% grid (action space) and γ =
 | Data pipeline, μ and Σ | `src/data/`, `data/processed/` | `DATA_CLEANING.md`, 20 tests |
 | Simulator | `src/environment.py` | `ENVIRONMENT.md`, 69 tests |
 | Benchmarks, grid, reward | `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | 60 tests |
-| Agent, runner, evaluation, batch runner | `src/agent.py`, `src/train.py`, `src/evaluate.py`, `src/config.py`, `src/run_experiments.py` | 98 tests, `EVALUATION.md`, `EXPERIMENTS.md` |
-| **Full-scale run, 2026-10-22** | `results/`, `reports/full_run_2026-10-22/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived independently |
+| Agent, runner, evaluation, batch runner, post-hoc variants | `src/agent.py`, `src/train.py`, `src/evaluate.py`, `src/config.py`, `src/run_experiments.py` | `EVALUATION.md`, `EXPERIMENTS.md` |
+| Multi-run reports | `src/reporting/`, `reports/` | `reports/README.md`, 18 tests |
+| Baseline run, 2026-10-22, with run log kept | `results/`, `reports/baseline-v1/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived |
+| Post-hoc runs `b63`, `n26m`, `eps-decay`, `all-three` | `results/<run_id>/`, `reports/<run_id>/` | `REVIEW_HISTORY.md` §8 |
+| Your half of the Q-table-copy fix | `src/train.py` | Bit-identical logs test |
 
-247 tests pass.
-
----
+283 tests pass.
 
 ## Your next steps
 
-1. **`RUN_ISSUES` §4 steps 1 to 6.** Total-gap column, the post-hoc "settled from checkpoint" measure, checkpoint-resolution labels, provenance in `summary.json`, then the evaluation-only re-run and re-verification. Go ahead from my side. I'll review the PR (review swap).
-2. **Step 7, the run log.** Keep it. I've added `!results/full_run_*.log` to `.gitignore` on `feature/post-run-fixes`; you add the log from your machine, since it only exists there.
-3. **Review one change I made in your files.** `src/train.py` now logs `agent.epsilon` (a new property on my agent) instead of recomputing ε0·exp(−βt) itself, so the log always matches what the agent did. The stand-in agents in `test_train.py`, `test_evaluate.py` and `test_config.py` each gained an `epsilon`. Logs are bit-identical to before (checked on two seeds × 30,000 episodes), but the full run's manifests now record older `train.py` / `agent.py` hashes than the current code. Details in `REVIEW_HISTORY.md` §5.2.
-4. **`EXPERIMENTS.md` line 3** still says "no full-scale run yet" (part of your step 3).
-5. **10% grid, the Part VI action-space check** (decided 2026-10-26). The assignment's action-space table lists 10% as the "finer robustness check if computationally feasible". The 25% grid stays as the Part V second resolution. Needs from you: the experiment in `src/config.py` (its purpose text currently calls the 25% grid the action-space robustness check), and your half of the Q-table-copy fix in `train.py` (`REVIEW_HISTORY.md` §5.3). I'll do the `update()` half. Write "learning gap grows" into `EXPERIMENTS.md` as the expected direction before it runs.
-6. **Report sections that are yours** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Findings 4, 5, 8 and 9 become sentences in Parts IV to VI.
+1. **`RUN_ISSUES` §4 steps 1 to 6, still open.** `per_seed.csv` and `INDEX.md` still have no total-gap column, and there is no post-hoc "settled" measure or checkpoint label yet. Since the post-hoc runs are in, the re-run in step 4 should regenerate their evaluations too. I'll review the PR.
+2. **Run `grid10-robustness`** (`EXPERIMENTS.md` §7.7), the Part VI action-space check, about 21 hours. Before it starts, I'll add the `update()` return value on my side, which saves about 6 µs per episode. The default log interval now fits: 2,600 checkpoints × 43,758 Q-values is 113.8M, under the raised 120M guard in `src/train.py`, so the "raise `--log-every`" note under "10% grid" in `reports/README.md` is out of date. It needs about 910 MB of memory per seed and up to 14 GB of disk for the logs (`EXPERIMENTS.md` §7.7). Then extract and build its report.
+3. **Windows crash, still on `dev`.** `python -m src.run_experiments --run <id> --dry-run` stops with `UnicodeEncodeError` on "γ" in the status print (same cause as `REVIEW_HISTORY.md` §1 item D, but in `print`, not a file write). Today every Windows run needs `$env:PYTHONIOENCODING = "utf-8"`. Fix: call `sys.stdout.reconfigure(encoding="utf-8")` at the start of `main()`.
+4. **`EXPERIMENTS.md` status.** Line 3 and the §7 heading still say the post-hoc runs are "not yet run". Four have run.
+5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. `RUN_ISSUES` Findings 4, 5, 8 and 9 become sentences in Parts IV to VI.
 
 ## To decide together
 
-**Increase B as an extra episode-length check.** I'd like to add B = 63 and B = 252 runs (γ = 5, 20% grid, same seeds, 13M episodes), with B = 20 kept as the headline. Longer episodes make every reward less noisy and cost little: B = 63 measured +15% per episode for 3.15 times the simulated days. Simulator estimates over 100 seeds: B = 20 finds the exact best in 44% of seeds with a mean learning gap of 9.3 bps; B = 63 gives 44% and 7.6; B = 252 gives 68% and 3.7. The numbers and method are in `REVIEW_HISTORY.md` §7.2. That section also records why slower ε decay and a minimum-tries floor were tested and dropped. The assignment lists episode lengths as a robustness check, but we chose this after seeing results, so it goes into `src/config.py` and `EXPERIMENTS.md` with its expected direction first and is labelled post-hoc. Needs code in your files: B is global in `src/config.py` and locked in `batch_settings`, so each experiment needs its own B and `--results-dir`. The 10% grid would stay at B = 20 so it changes one thing from the baseline.
+**Transaction costs, Week 7 (Oct 30 to Nov 5), paired.** Two open prospectus decisions first: a fixed cost or a sweep, and whether holdings are the exact prior weights or bucketed.
 
-**Extension timing.** Transaction costs (paired) start Week 7 on Oct 30, and function approximation (mine) starts Week 8 on Nov 6.
-
-**Rebuilding the report.** `run_experiments.py` regenerates `results/INDEX.md` and every `evaluation/` folder on each run, but nothing regenerates `reports/full_run_2026-10-22/report.html`. That is a one-off: `build_data.py` hardcodes `results/` and the four experiment names, and it needs the `.npz` logs, which only exist on your machine. No run is scheduled either. If we do follow-up runs, `build_data.py` needs a results-folder and output-folder argument so each run gets its own dated report.
+**Which post-hoc runs go in the report.** The assignment needs one action-space check (the 10% grid) and one economic or statistical check (γ = 3 and 8, done). `b63` and `n26m` cover its listed "different training budgets, episode lengths". My suggestion: `eps-decay` short, as mostly a negative result (no gain at γ = 5 and 8, higher regret), and `all-three` as the combined check the 10% grid is compared against.

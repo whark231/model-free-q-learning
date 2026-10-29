@@ -377,3 +377,59 @@ The surrogate script is not committed; it lived in William's session
 scratchpad. If the report cites this table, commit the script first
 (CLAUDE.md §6).
 
+
+---
+
+## 8. Post-hoc runs b63, n26m, eps-decay and all-three, 2026-10-28
+
+All four ran at full scale (3 γ × 10 seeds each, 20% grid), were extracted
+and reported under `reports/<run_id>/`, and are merged into `dev`. Each was
+registered with its expected direction on 2026-10-27, before it ran
+(`EXPERIMENTS.md` §7). Numbers below are from each experiment's
+`evaluation/summary.json`; learning gap in bps/yr against the best 20%-grid
+portfolio, 10 seeds.
+
+| Run | What changed | Mean gap γ = 5 / 3 / 8 | Worst seed γ = 5 / 3 / 8 | Exactly best γ = 5 / 3 / 8 | Regret per episode γ = 5 (bps/yr) |
+|---|---|---|---|---|---|
+| `baseline-v1` | (pre-registered) | 17.6 / 30.6 / 13.0 | 47.3 / 81.1 / 53.1 | 3 / 5 / 5 | 65.5 |
+| `b63` | B 20 → 63 | 5.1 / 10.0 / 9.1 | 15.9 / 20.0 / 29.5 | 6 / 5 / 5 | 51.2 |
+| `n26m` | 13M → 26M episodes | 8.3 / 16.2 / 5.0 | 15.9 / 62.3 / 27.2 | 3 / 4 / 7 | 60.9 |
+| `eps-decay` | ε at halfway 1% → 3% | 16.1 / 4.0 / 11.6 | 37.2 / 20.0 / 51.6 | 4 / 8 / 5 | 77.3 |
+| `all-three` | all three together | 7.9 / 4.0 / 1.1 | 29.4 / 20.0 / 11.5 | 5 / 8 / 9 | 72.1 |
+
+What closed with these runs:
+
+- **The B proposal** (`REVIEW_NOTES_FOR_WILLIAM.md`, 2026-10-26) became run
+  `b63`. B = 252 was not run. The 10% grid runs at `all-three`'s settings
+  (Albert's choice, 2026-10-27, `EXPERIMENTS.md` §7.7) rather than at B = 20
+  as William proposed; agreed, since it is compared with `all-three`.
+- **The slower-decay idea** was dropped by William on 2026-10-26 (§7.2) and run
+  anyway by Albert as `eps-decay`. The run agrees with the surrogate at γ = 5
+  and 8 (gap unchanged within noise, regret up) and did better than expected
+  at γ = 3.
+- **Rebuilding reports** (`NEXT_STEPS_FOR_ALBERT.md`, 2026-10-26) is solved by
+  `src/reporting/` (`reports/README.md`): each run is extracted once and every
+  report compares with the runs registered before it.
+
+What the runs show, for the report:
+
+- Every variant lowered the mean learning gap and the worst seed at every γ
+  (12 of 12 comparisons each). Medians and exact-best shares did not all
+  improve: `n26m` at γ = 3 went from a median of 10.0 to 20.0 and from 5 to 4
+  exactly best. With 10 seeds, part of the mean improvement is the baseline's
+  single bad seeds (81.1 bps at γ = 3, 53.1 at γ = 8) not recurring.
+- Longer episodes were the cheapest gain: `b63` cut the γ = 5 mean gap from
+  17.6 to 5.1 with lower regret. More exploration (`eps-decay`, `all-three`)
+  raised regret at γ = 5 and 8.
+- Measured in simulated days every variant takes longer to meet the
+  convergence rules, because each sees more data. Measured in episodes,
+  `b63` is faster than the baseline (γ = 5 primary rule 9.25M → 6.90M
+  episodes; near-optimal for good 1.29M → 0.70M), while `n26m` and
+  `eps-decay` are slower (near-optimal about 2.9M episodes), since a longer
+  budget or slower decay keeps ε high for longer.
+- Against the registered expectations: `b63` matched (smaller gap at every
+  γ). `n26m` expected a slight improvement likely within noise; the mean gap
+  fell at every γ, but the median and exact-best share got worse at γ = 3.
+  `eps-decay` matched at γ = 5 and 8. `all-three` expected the smallest gap of
+  runs 1 to 4 at every γ; it was smallest at γ = 8, tied at γ = 3 and behind
+  `b63` at γ = 5.

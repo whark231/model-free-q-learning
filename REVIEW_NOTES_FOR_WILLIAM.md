@@ -1,14 +1,24 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-10-26
-**Status:** the Q-learning core is done and the full-scale run is committed. What's left on your side is the list below. Everything closed so far (review issues, decisions, rejected ideas) is in `REVIEW_HISTORY.md`.
+**Date:** 2026-10-29
+**Status:** the baseline and four post-hoc runs are done, reported and merged into `dev`. Left on your side: one small `agent.py` change, the two extensions, and your report sections. Everything closed is in `REVIEW_HISTORY.md` (post-hoc runs in §8).
 
 ---
 
 ## TL;DR / In plain terms
 
-Your files are done and every review issue in them is closed. Next come four things: finish the review swap, make one speed fix the 10% grid needs, build the two extensions, and write your report sections. One proposal needs Albert's agreement before anything runs: longer episodes (a higher B).
+The tabular agent is finished and tested, and the runs answer the main question: it reliably reaches the right neighbourhood of portfolios, and more data per decision (longer episodes) is what helps it pick the exact best. What's left for you is building the two extensions, starting with transaction costs this week, and writing your report sections.
+
+**Key concepts to understand**
+
+- **Mean gap vs. exact recovery.** Every post-hoc run lowered the mean learning gap and the worst seed at every γ, but exact recovery of the best portfolio still depends on luck among the top few portfolios, because their rewards are too noisy to tell apart at these budgets.
+- **Slower in days, not always in episodes.** Every variant takes more simulated days to converge because each episode or run holds more data. Counted in episodes, `b63` converges faster than the baseline.
+
+**Key takeaways**
+
+- `baseline-v1` stays the headline for Parts IV and V. The post-hoc runs are Part VI sensitivity checks, labelled post hoc.
+- B = 63 was the cheapest improvement: γ = 5 mean gap 17.6 → 5.1 bps/yr with lower regret. That is a concrete point for the Q-learning section.
 
 ---
 
@@ -16,32 +26,23 @@ Your files are done and every review issue in them is closed. Next come four thi
 
 | Component | Where | Evidence |
 |---|---|---|
-| Benchmarks, grid, reward | `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | 60 tests; review issues 1 to 5 and A to C closed (`REVIEW_HISTORY.md` §1) |
-| Agent, including the `epsilon` property and `greedy_action` note | `src/agent.py` | 24 tests; `train.py` now logs `agent.epsilon`, bit-identical logs checked on 2 seeds × 30,000 episodes |
+| Benchmarks, grid, reward | `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | 60 tests; review issues closed (`REVIEW_HISTORY.md` §1) |
+| Agent, with `epsilon` property | `src/agent.py` | 24 tests |
 | γ justification | `DATA_CLEANING.md` §8.4 | Sources listed there |
-| `.gitignore` for results sharing, keeping the run log | `.gitignore` | Checked with `git check-ignore` |
-| Full-scale run, 2026-10-22 | `results/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived |
+| Baseline run, 2026-10-22 | `results/`, `reports/baseline-v1/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived |
+| Post-hoc runs `b63`, `n26m`, `eps-decay`, `all-three` | `results/<run_id>/`, `reports/<run_id>/` | `REVIEW_HISTORY.md` §8; each expected direction registered before running |
+| Higher-B proposal | run `b63` | Closed; `REVIEW_HISTORY.md` §8 |
 
-247 tests pass.
+283 tests pass.
 
 ## Your next steps
 
-1. **Review swap.** Review `train.py`, still open from the split. Then review Albert's evaluation PR for `RUN_ISSUES` Findings 1 to 3 when he opens it. He reviews the `train.py` change from the `epsilon` property.
-2. **Q-table copy fix, now needed** (`REVIEW_HISTORY.md` §5.3). The 10% grid is the Part VI action-space check, and the runner costs 91 µs per episode there vs. 51.6 µs for the bare loop (3.3 hours for 10 seeds of 13M). *Correction 2026-10-27:* the full Q-table copy is only about 6 µs of that gap; `train.py`'s own per-episode `np.argmax` over 43,758 entries is about 36 µs (timed on Albert's Mac). Your half: `update()` returns the new Q(action). Albert's half: `train.py` keeps its own copy and updates one entry.
-   *Update 2026-10-27 (Albert):* Albert's half is in `src/train.py` (merged from `run/grid10-robustness`). It uses the returned value when there is one, falls back to the full copy when `update()` returns `None` (today's behaviour), and checks its copy against `agent.q_values` at every checkpoint. A test shows bit-identical logs from `TabularQAgent` and from a subclass whose `update()` returns the value. Your half, proposed and not applied (`src/agent.py` is yours): end `update()` with `return float(self._q[action])`, change its return annotation to `float`, and add a test that the returned value equals `q_values[action]`. It saves about 6 µs of roughly 96 µs per episode, so post-hoc run `grid10-robustness` takes about 20 to 22 hours with it and 21 to 23 without (`EXPERIMENTS.md` §7.7). Low priority; the larger saving is in `train.py`'s greedy logging, Albert's side.
-3. **Extensions: transaction costs and function approximation.** Transaction costs are paired with Albert, Week 7 (starts Oct 30). Function approximation is yours, Week 8 (starts Nov 6). For the write-up: a Q-function quadratic in the weights can represent the mean-variance objective exactly, so say plainly that it learns from rewards only and never sees μ or Σ.
-4. **Your report sections** (prospectus §4): Theory/Benchmark and Q-learning. `REVIEW_HISTORY.md` §7.1 explains why exact recovery fails, which is the core of the Q-learning results.
+1. **Transaction-cost extension, with Albert, Week 7 (Oct 30 to Nov 5).** It adds a state (current holdings) and a turnover penalty, which turns the bandit into a sequential problem. Settle the two open prospectus decisions first: a fixed cost or a sweep, and how finely to represent holdings.
+2. **Function-approximation extension, yours, Week 8 (from Nov 6).** For the write-up: a Q-function quadratic in the weights can represent the mean-variance objective exactly, so say plainly that it learns from rewards only and never sees μ or Σ. Compare it with the tabular agent at the same grid and budget, as the prospectus says.
+3. **`update()` return value** (`REVIEW_HISTORY.md` §5.3). Albert's half is in `train.py`. Yours: end `update()` with `return float(self._q[action])`, change the return annotation to `float`, and add a test that it equals `q_values[action]`. It saves about 6 µs of roughly 96 µs per episode on the 10% grid, so it's worth doing before `grid10-robustness` runs (about 21 hours).
+4. **Review Albert's evaluation PR** for `RUN_ISSUES` Findings 1 to 3 when he opens it (total-gap column, post-hoc settled measure, checkpoint labels). Not opened yet.
+5. **Your report sections** (prospectus §4): Theory/Benchmark and Q-learning. `REVIEW_HISTORY.md` §7.1 (why exact recovery fails) and §8 (what the post-hoc runs changed) are the core of the Q-learning results.
 
 ## To decide with Albert
 
-**Increase B as an extra episode-length check.** The assignment lists "different training budgets, episode lengths, and random seeds" as a Part VI robustness check. Longer episodes make each reward less noisy for every portfolio at once, and they cost little: B = 63 was 43.8 µs per episode vs. 38.2 µs at B = 20 (+15%) for 3.15 times the simulated days. Simulator estimates on the baseline, 100 seeds each (`REVIEW_HISTORY.md` §7.2):
-
-| B | Exactly best | Mean learning gap (bps/yr) |
-|---|---|---|
-| 20 (current) | 44% | 9.3 |
-| 63 (a quarter) | 44% | 7.6 |
-| 252 (a year) | 68% | 3.7 |
-
-Proposal: run B = 63 and B = 252 at γ = 5 on the 20% grid with the same seeds and 13M episodes, and keep B = 20 as the headline. Because this comes after seeing results, write each run and its expected direction (smaller learning gap) into `src/config.py` and `EXPERIMENTS.md` before running, and label it post-hoc in the report. Note in the report that a 252-day batch stretches the assignment's "short batch of returns". Run the 10% grid at B = 20 so it changes one thing from the baseline.
-
-Both runs need Albert's code first. B is global in `src/config.py` and locked in the results folder's `batch_settings`, so each experiment needs its own B and its own `--results-dir`.
+**Which post-hoc runs go in the report.** The assignment needs one action-space check (the 10% grid, still to run) and one economic or statistical check (γ = 3 and 8, done). `b63` and `n26m` cover its listed "different training budgets, episode lengths". I'd keep `eps-decay` and `all-three` short: the first as mostly a negative result (no gain at γ = 5 and 8, higher regret), the second as a combined check, so the report doesn't read as a search over settings.
