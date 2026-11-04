@@ -17,6 +17,7 @@ import src.config as cfg
 import src.train as train
 from src.action_space.grid import generate_weight_grid
 from src.run_experiments import COMPARISON_NAME, run_all
+from src.train import config_record
 
 # ---------------------------------------------------------------------------
 # Decisions of 2026-10-16, pinned
@@ -244,6 +245,23 @@ VARIANT = cfg.RunVariant("test-variant", "T", "2026-10-27", "a smaller learning 
                          episode_length=5, epsilon_at_halfway=0.1, increment=0.25)
 
 
+def test_a_tabular_config_does_not_match_a_function_approximation_folder(tmp_path):
+    """training_status compares every key on either side, so an FA folder
+    (extra keys) is never taken as a finished tabular run, even with the same
+    constant alpha."""
+    from src.run_experiments import training_status
+    from src.train import TrainConfig
+    common = dict(gamma=5.0, episode_length=20, n_episodes=1_000, master_seed=1, n_runs=1, beta=0.0,
+                  increment=0.25, alpha_rule=0.1)
+    fa = TrainConfig(**common, agent="linear", feature_map="quadratic", greedy_refresh_every=10, log_every=500)
+    run_dir = tmp_path / "fa"
+    run_dir.mkdir()
+    (run_dir / "manifest.json").write_text(json.dumps({"config": config_record(fa), "runs": [{}]}))
+    with pytest.raises(ValueError, match="different settings"):
+        training_status(run_dir, TrainConfig(**common, log_every=500))
+    assert training_status(run_dir, fa) == "finished"
+
+
 def test_baseline_settings_still_match_the_committed_baseline_v1_run():
     """Re-derived from the files the 2026-10-22 run wrote, not from config.py."""
     from src.run_experiments import batch_settings
@@ -251,7 +269,7 @@ def test_baseline_settings_still_match_the_committed_baseline_v1_run():
     assert batch_settings(cfg.N_EPISODES, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY) == committed
     for experiment in cfg.experiments():
         manifest = json.loads((REPO / "results" / experiment.name / "manifest.json").read_text())
-        assert json.loads(json.dumps(cfg.train_config(experiment).__dict__)) == manifest["config"], experiment.name
+        assert json.loads(json.dumps(config_record(cfg.train_config(experiment)))) == manifest["config"], experiment.name
 
 
 def test_a_variant_changes_only_its_own_settings():

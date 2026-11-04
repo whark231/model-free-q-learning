@@ -29,7 +29,6 @@ import argparse
 import json
 import platform
 import shutil
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,7 +36,7 @@ import numpy as np
 
 from src import config as cfg
 from src.evaluate import compare_experiments, evaluate_experiment
-from src.train import _git_commit, run_experiment
+from src.train import FA_FIELD_DEFAULTS, _git_commit, config_record, run_experiment
 
 COMPARISON_NAME = "comparison_g5_grid20_vs_grid25"
 
@@ -90,8 +89,12 @@ def training_status(run_dir: Path, train_cfg) -> str:
             raise ValueError(f"{run_dir} has files but no manifest; delete that folder and run again")
         return "new"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    wanted = json.loads(json.dumps(asdict(train_cfg)))
-    diff = sorted(k for k in wanted if manifest["config"].get(k) != wanted[k])
+    wanted = json.loads(json.dumps(config_record(train_cfg)))  # tabular: same keys as baseline-v1's manifests
+    have = manifest["config"]
+    # Compare every key on either side; a missing function-approximation key
+    # means its tabular default, so a tabular config never matches an FA folder.
+    diff = sorted(k for k in set(wanted) | set(have)
+                  if have.get(k, FA_FIELD_DEFAULTS.get(k)) != wanted.get(k, FA_FIELD_DEFAULTS.get(k)))
     if diff:
         raise ValueError(f"{run_dir} was trained with different settings ({', '.join(diff)}); nothing was changed")
     done, expected = len(manifest["runs"]), manifest["config"]["n_runs"]
