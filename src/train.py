@@ -172,9 +172,8 @@ class TrainConfig:
             if isinstance(refresh, bool) or not isinstance(refresh, (int, np.integer)) or refresh < 1:
                 raise ValueError("greedy_refresh_every must be a positive integer")
             # The run must end, and each checkpoint fall, right after a refresh.
-            # Otherwise the last logged greedy is stale, evaluate.py's learned
-            # portfolio (argmax of final_q) can differ from it, and the report
-            # extractor's settled measure breaks.
+            # Otherwise the last cached greedy can be stale rather than just
+            # differing from the final policy because of ties or rounding.
             if self.n_episodes % refresh or self.log_every % refresh:
                 raise ValueError("n_episodes and log_every must be multiples of greedy_refresh_every")
 
@@ -344,9 +343,10 @@ def train_one_run_fa(config: TrainConfig, grid: np.ndarray, simulator: ReturnSim
       agent (last_abs_dq), the same definition as the tabular path. Other
       portfolios' Q-values also move and are not in this number;
     - the full Q-values (float64) are read only at checkpoints and at the end.
-      final_q is therefore exact and current, and evaluate.py's learned
-      portfolio (the lowest-index argmax of final_q) can differ from the last
-      logged greedy if a refresh was pending or two portfolios nearly tie.
+      final_q is therefore exact and current. final_greedy, the manifest and
+      evaluation use its lowest-index argmax. The cached training history is
+      preserved even when a tie or float32 rounding makes its last choice
+      differ from this final policy.
     """
     n_actions = grid.shape[0]
     n_checkpoints = -(-config.n_episodes // config.log_every)
@@ -419,7 +419,7 @@ def train_one_run_fa(config: TrainConfig, grid: np.ndarray, simulator: ReturnSim
         "greedy_change_action": np.array(greedy_change_action, dtype=np.int64),
         "final_q": final_q,
         "final_visit_counts": agent.visit_counts,
-        "final_greedy": np.int64(logged_greedy),
+        "final_greedy": np.int64(np.argmax(final_q)),
         "final_theta": agent.theta,
     }
 
@@ -481,6 +481,8 @@ def run_experiment(
             "greedy_refresh_every updates; logging only",
             "checkpoint_max_abs_dq": "largest |change in Q(chosen action)| in the window; other actions' Q also move",
             "final_theta": "the learned parameters, one per feature column",
+            "final_greedy": "lowest-index argmax of final_q (float64), also used by evaluation; "
+            "may differ from the cached training greedy on ties or float32 rounding",
         })
     _write_manifest(out_dir, manifest)
 

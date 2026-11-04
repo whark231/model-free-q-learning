@@ -5,6 +5,17 @@
 
 ---
 
+## Albert's review fix (2026-11-04)
+
+- **Fixed the merge blocker:** exact ties and float32 near-ties could leave training and evaluation reporting different final portfolios, then crash report extraction. Refresh alignment alone did not prevent this.
+- **One final-policy convention:** FA `final_greedy`, manifest weights, evaluation and reports now use the lowest-index argmax of the final float64 Q-values. Cached training choices and random streams are preserved; the manifest explains the distinction.
+- **Honest convergence reporting:** `settled_from()` returns `None` when the final policy did not settle in the checkpoints. Evaluation and reports do not claim final-policy convergence when the cached history ends on another portfolio. The report omits the missing settlement marker and has no post-settlement excursions to count.
+- **Regression coverage:** a real-calibration seed reproduces the original crash end to end; controlled exact ties and float32 near-ties check the final policy and preserved history; settlement tests cover missing and empty histories.
+- **Validation:** all 366 tests pass. An independent two-seed tabular comparison against `dev` produced identical saved arrays and configurations.
+- **Scope:** changes are in `train.py`, `evaluate.py`, reporting extraction/template and tests. No tuning, full-scale FA runs or changes to the agent update rule are included. The integration work in §2 is still outstanding.
+
+---
+
 ## TL;DR / In plain terms
 
 The function-approximation (FA) agent learns a short parameter vector θ instead of one Q-value per portfolio, so a reward from one portfolio also informs similar portfolios. To run it, I changed four of your files (listed in §1) so that tabular runs behave and record exactly as before. Before any FA run, `config.py`, `run_experiments.py` and the report extractor need small additions (§2), and α must be tuned on separate seeds (§5). A rough calculation (§4) says a constant α may be too noisy or too slow at a 13M-episode budget; the tuning sweep is designed to find out rather than assume.
@@ -37,7 +48,7 @@ All on `feature/function-approximation`. Please review the PR before it merges i
 | `src/tests/test_config.py` | The `baseline-v1` match test uses `config_record` | Same reason |
 | `src/train.py` | Linear runs need `n_episodes` and `log_every` to be multiples of `greedy_refresh_every`; an end-of-run check raises if the last logged greedy is not the best final Q-value (beyond float32 rounding); `run_experiment` refuses a factory whose agent does not match `config.agent` | Found by the independent review: without them, 6 of 16 small runs ended on a stale greedy, which makes `evaluate.py`'s learned portfolio disagree with the logged one and crashes `reporting/extract.py`'s `settled_from` |
 | `src/run_experiments.py` | `training_status` compares every key on either side, a missing FA key meaning its tabular default | A tabular config could otherwise match an FA folder with the same constant α |
-| `src/tests/test_train.py`, `src/tests/test_config.py` | 21 FA tests in `test_train.py` (rewards rebuilt independently; logged Q and θ consistent with each other; greedy changes only at refresh multiples and matches the learned portfolio in every run; seed reproducibility; tabular record unchanged; wrong agent type and inconsistent settings rejected) and one in `test_config.py` (a tabular config never matches an FA folder) | |
+| `src/tests/test_train.py`, `src/tests/test_config.py` | FA tests in `test_train.py` (rewards rebuilt independently; logged Q and θ consistent with each other; greedy changes only at refresh multiples; final policy matches the float64 argmax while cached tie choices are preserved; seed reproducibility; tabular record unchanged; wrong agent type and inconsistent settings rejected) and one in `test_config.py` (a tabular config never matches an FA folder) | |
 
 ### 1.1 What `train_one_run_fa` logs differently
 
@@ -45,8 +56,8 @@ Same episodes, same random streams, same log arrays, so `evaluate.py` reads FA r
 
 - **Logged greedy** is the agent's cached greedy (float32 scores, random tie-break), refreshed every `greedy_refresh_every` updates. "Greedy unchanged for K episodes" is exact to that resolution.
 - **|ΔQ|** is the change in the chosen portfolio's Q̂, the same definition as tabular. Other portfolios' Q̂ also move and are not in it.
-- **Full Q-values** are read only at checkpoints and at the end (exact float64). Because every run and checkpoint now ends on a refresh, the last logged greedy is `evaluate.py`'s learned portfolio (the lowest-index argmax of `final_q`), except when two portfolios tie to float32 rounding; the run raises if they differ by more.
-- **For you, `src/reporting/extract.py:75-79`:** `settled_from` indexes one past the end of the checkpoints when the final checkpoint's greedy is not the learned portfolio, and raises `IndexError`. The `train.py` guards above prevent that for FA runs, but returning `n_episodes` (or None) in that case would make the function safe on its own. Not changed, since it is your file.
+- **Full Q-values** are read only at checkpoints and at the end (exact float64). Every run and checkpoint ends on a refresh; the run raises if the cached greedy's score falls below the maximum beyond float32 tolerance. Exact ties and near-ties can still produce a different cached choice. The final reported policy (`final_greedy`, manifest, evaluation and reports) always uses the lowest-index argmax of `final_q`; checkpoint and change histories retain the actual cached choices.
+- **Fixed by Albert, 2026-11-04:** `settled_from()` now returns `None` if the final checkpoint does not select the reported final policy, including on older FA logs. Reports handle missing settlement without crashing or drawing a marker at zero; evaluation and reports withhold final-policy convergence when the cached history ends on another action.
 
 Two more deliberate differences from tabular, for the report: FA uses a constant α where the baseline used α = 1/N(a) (with one-hot features and constant α both give the same Q-values, `src/tests/test_fa_agent.py`), and FA exploits a greedy up to `greedy_refresh_every − 1` updates old.
 

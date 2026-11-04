@@ -46,6 +46,35 @@ def test_settled_from_is_first_checkpoint_after_the_last_disagreement():
     assert extract.settled_from(ckpt, np.array([7, 7, 7, 7, 7]), final=7) == 10
 
 
+@pytest.mark.parametrize("greedy", [[1, 7, 2], [1, 2, 3], []])
+def test_settled_from_is_missing_when_the_final_policy_did_not_settle(greedy):
+    assert extract.settled_from(np.arange(len(greedy)), np.array(greedy), final=7) is None
+
+
+def test_fa_tied_final_policy_agrees_across_training_evaluation_and_reporting(tmp_path):
+    from src.train import TrainConfig
+    from src.evaluate import EvalConfig
+    tc = TrainConfig(gamma=5, episode_length=20, n_episodes=1, master_seed=2, n_runs=1,
+                     beta=0.001, log_every=1, agent="linear", feature_map="quadratic", alpha_rule=0.1)
+    manifest = run_experiment(tc, tmp_path)
+    with np.load(tmp_path / "run_000.npz") as logs:
+        final = int(np.argmax(logs["final_q"]))
+        cached = int(logs["checkpoint_greedy"][-1])
+        assert cached != final  # real calibration and seed reproduce the review finding
+        assert logs["final_q"][cached] == logs["final_q"][final]
+        assert int(logs["final_greedy"]) == final
+    assert manifest["runs"][0]["final_greedy_action"] == final
+    summary = evaluate_experiment(tmp_path, EvalConfig(100, 1, 1e-5, 25))
+    mu, sigma = load_calibration()
+    report = extract.extract_experiment(tmp_path, {"near_optimal_bps": 25, "dq_tol": 1e-5},
+                                        mu, sigma, extract.PROCESSED_DIR)
+    assert summary["per_seed"][0]["learned_action"] == report["seeds"][0]["action"] == final
+    assert report["seeds"][0]["settled_obs"] is None
+    assert report["summary"]["settled"]["n"] == 0
+    assert report["seeds"][0]["primary_obs"] is None
+    assert summary["per_seed"][0]["greedy_stable_through_end_episode"] is None
+
+
 def test_excursions_count_a_hop_between_two_wrong_actions_once():
     loss = np.array([0.0, 50.0, 300.0, 20.0])
     ch_ep = np.array([0, 100, 200, 205, 210, 400, 403])

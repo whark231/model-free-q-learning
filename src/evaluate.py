@@ -286,7 +286,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
     seeds, curves = [], {"obs": None, "reward": [], "loss_bps": [], "regret": []}
     for entry in manifest["runs"]:
         logs = load_run(run_dir, entry)
-        action = int(np.argmax(logs["final_q"]))  # lowest index on ties, as train.py logs it
+        action = int(np.argmax(logs["final_q"]))  # final policy: float64 scores, lowest index on ties
         w = grid[action]
         u = float(action_values[action])
         greedy_loss = ce_loss_bps(u_disc, action_values[logs["checkpoint_greedy"]])
@@ -294,6 +294,9 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             logs["greedy_change_episode"], logs["greedy_change_action"], train["n_episodes"], config.converge_k
         )
         mask = full_windows(logs["checkpoint_episode"], log_every)
+        through_end = greedy_stable_through_end(
+            logs["greedy_change_episode"], train["n_episodes"], config.converge_k
+        ) if logs["greedy_change_action"][-1] == action else None
         record = {
             "run": entry["run"],
             "learned_action": action,
@@ -314,9 +317,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "final_cumulative_regret": None,
             "greedy_stable_episode": stable_at,
             "greedy_stable_action_is_final": None if stable_at is None else stable_action == action,
-            "greedy_stable_through_end_episode": greedy_stable_through_end(
-                logs["greedy_change_episode"], train["n_episodes"], config.converge_k
-            ),
+            "greedy_stable_through_end_episode": through_end,
             "dq_below_tol_for_good_episode": first_for_good(
                 logs["checkpoint_episode"], logs["checkpoint_max_abs_dq"] < config.dq_tol, mask
             ),

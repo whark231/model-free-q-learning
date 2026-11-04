@@ -447,6 +447,23 @@ def test_logged_greedy_matches_the_learned_portfolio_in_every_run(tmp_path):
         assert int(logs["final_greedy"]) == int(np.argmax(logs["final_q"]))
 
 
+@pytest.mark.parametrize("gap", [0.0, 5e-8])
+def test_fa_final_policy_uses_exact_scores_without_rewriting_cached_history(gap):
+    """A float32 tie can conceal a unique float64 winner. Keep the real
+    cached choice in the history while reporting the canonical final policy."""
+    config = fa_config(n_episodes=1, log_every=1, greedy_refresh_every=1, n_runs=1)
+    grid = np.eye(9)[:2]
+    agent = LinearQAgent(np.eye(2, dtype=np.float32), alpha=1e-20, epsilon0=0, beta=0,
+                         rng=np.random.default_rng(0))
+    agent._theta[:] = [1.0 + gap, 1.0]  # controlled tie / near-tie, unchanged by tiny update
+    mu, sigma = load_calibration()
+    logs = train.train_one_run(config, grid, ReturnSimulator(mu, sigma, np.random.default_rng(0)), agent)
+    assert agent.greedy_action == 1
+    assert logs["checkpoint_greedy"][-1] == logs["greedy_change_action"][-1] == 1
+    assert int(logs["final_greedy"]) == int(np.argmax(logs["final_q"])) == 0
+    assert logs["final_q"][0] - logs["final_q"][1] == pytest.approx(gap)
+
+
 def test_a_factory_that_builds_the_wrong_agent_type_is_refused(tmp_path):
     F = quadratic_features(generate_weight_grid(9, 0.25))
 
