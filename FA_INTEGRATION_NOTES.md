@@ -109,16 +109,53 @@ The gaps that separate the tabular agent's candidates are about 5 to 18 bps/yr (
 
 If no α in the sweep beats the noise within the budget, that is a finding to report, and the standard remedy is a decaying step (α_t = α₀/(1 + t/t₀)), which would be a change from the constant α the course suggested. Decide that with the professor rather than in tuning.
 
-## 5. Tuning script design (not written, not run)
+## 5. Tuning script (`src/tune_fa.py`, written 2026-11-04, not yet run at full scale)
 
-`src/tune_fa.py`, run once per model before the FA runs are registered.
+**In plain terms:** each model's constant α is chosen on three separate tuning seeds by training in full and keeping the α whose final portfolio earns the most realized reward on fresh draws. The tabular agent is tuned the same way, for a post-hoc constant-α tabular run (`tabular-const`) that differs from the FA runs only in its features.
 
-- **Seeds.** Tuning master seed **20261103**, 3 seeds, never 20261016 (the 10 reported seeds). `SeedPlan(20261103, 3)` gives separate returns, agent and evaluation streams, so no reported draw is used for tuning.
-- **Settings.** γ = 5, 20% grid, B = 20, 13M episodes, baseline ε schedule, `greedy_refresh_every = 100`. A shorter budget would bias tuning toward large α, since learning time is the binding side of the trade-off. The chosen α and l2 are then used unchanged at γ = 3 and 8 and stated as tuned at γ = 5 only.
-- **Grid.** Pass 1: the 8 α values at l2 = 0, both models. Pass 2, splines only: the 5 l2 values at the best two α from pass 1.
-- **Criterion, agent-observable.** For each candidate and seed, the mean realized reward of the final greedy portfolio over 200,000 fresh evaluation episodes from the tuning plan's evaluation stream, with the same draws for every candidate (common random numbers: differences between candidates are paired, which cuts their noise by orders of magnitude for close portfolios). Pick the α (and l2) with the highest mean over the 3 seeds. No μ, Σ or benchmark enters the choice.
-- **Output.** `results/tuning/fa_tuning.json` with every candidate, seed, criterion value and the code commit; the chosen values copied into `config.py` with a comment pointing to it.
-- **Cost estimate.** Pass 1: 8 × 3 × (12 + 17) min ≈ 11.6 hours; pass 2: 10 × 3 × 17 min ≈ 8.5 hours, on your machine's scale. Runs are independent, so two or three processes in parallel shorten this.
+- **Seeds.** Tuning master seed **20261103**, 3 seeds, never 20261016 (the 10 reported seeds). Each tuning seed is trained exactly as `run_experiment` would train run *i* of the same config (tested), so tuning uses the real training path.
+- **Settings.** γ = 5, 20% grid, B = 20, 13M episodes, baseline ε schedule, `greedy_refresh_every = 100` for FA. A shorter budget would bias tuning toward large α, since learning time is the binding side of the trade-off. The chosen values are then used unchanged at γ = 3 and 8 and stated as tuned at γ = 5 only.
+- **Candidates.** α as fractions 0.5, 0.1, 0.02, 0.004, 8e-4, 1.6e-4, 3.2e-5, 6.4e-6 of each model's stability bound 2 / max‖φ‖², computed from the grid's features: 2 for tabular and quadratic, 2/45 for splines.
+  - **Pass 1:** all three models at l2 = 0, plus the tabular α = 1/N(a) agent as a reference row that is never chosen. That makes 25 candidates × 3 seeds.
+  - **Pass 2:** splines only, l2 ∈ {1e-5, 1e-4, 1e-3, 1e-2} at the two best pass-1 fractions. That makes 8 candidates × 3 seeds; l2 = 0 is reused from pass 1.
+- **Criterion: held-out validation by simulation.** For each candidate, the realized reward of each seed's final greedy portfolio, averaged over the seeds. It is measured on 200,000 evaluation episodes from the tuning plan's evaluation stream, the same draws for every candidate, so differences are paired.
+  - Returns are simulated from μ and Σ, as in training. No closed-form objective, benchmark or optimal weight is computed, and the reported seeds and their evaluation draws are never touched.
+  - The criterion is an unbiased estimate of each final portfolio's objective, which is what a validation score should be. The agent could not compute it itself: it scores every portfolio on the same full return draws, and the agent sees only one reward per episode.
+  - A test checks that the script's own imports exclude the benchmark and evaluation modules. Those modules are still loaded, because `src/config.py` imports `evaluate.py` for `EvalConfig`, but nothing from them is called.
+- **Choosing (rule fixed by William on 2026-11-04, before any full-scale result).** Each model takes its highest-criterion candidate over seeds 0–2, unless that is a close call: the runner-up's shortfall is at most one seed-paired standard error.
+  - In a close call, the model's top 3 are trained on 3 more seeds (3–5), and the winner is the best of those 3 over all 6 seeds. `SeedPlan` streams do not depend on the number of runs, so seeds 0–2 are the same either way (tested).
+  - An exact tie (the same set of final portfolios across the seeds) counts as a close call. If it is still a tie after 6 seeds, the smaller l2 wins, then the larger α, and the ties are recorded. Pass 2 breaks ties the same way.
+- **Judging close calls.** All candidates share the same training streams for a given seed index, so the table pairs every candidate with its model's best seed by seed. It shows:
+  - each seed's reward;
+  - the shortfall's standard error over the 3 training seeds ("seed SE");
+  - on how many seeds the candidate did at least as well ("seeds >=").
+
+  The evaluation-episode SE ("eval SE") is much smaller. It shows only that the final portfolios were scored precisely, not that the choice is right. The independent review estimated that one seed landing on the second-best grid portfolio moves the criterion by about 3.5 bps/yr, against an eval SE near 0.25.
+- **Resume and safety.**
+  - One JSON record per (candidate, seed) goes to `results/tuning/records/` the moment it finishes, so a rerun skips finished work.
+  - A record written with other settings (for example a smoke test left in the same folder) is refused rather than reused, and the summary refuses records from mixed budgets.
+  - A failed run is reported while the others continue, and it has no record, so a rerun retries it. Ctrl+C cancels the queued runs.
+  - Commit the code before the full run, so each record's `git_commit` contains the code that wrote it.
+- **Output.** `results/tuning/fa_tuning.json` holds the scored table, the budget, the git commits, the diverged and incomplete candidates, and the choice. The chosen values go into `config.py` with a pointer to it (§2).
+- **Commands.**
+  ```
+  python -m src.tune_fa --all --jobs 4      # pass 1, pass 2, extra seeds, summary
+  python -m src.tune_fa --summarize         # reprint the table from the records
+  ```
+  The steps can also be run one at a time with `--pass 1`, `--pass 2` and `--extend`.
+- **Cost estimate (not measured at full scale).** These are the §3 per-run times on William's machine: tabular about 5 min, quadratic 12 and splines 17 per 13M episodes. Pass 1 is 3 × (9 × 5 + 8 × 12 + 8 × 17) ≈ 830 min ≈ 14 hours in one process. Pass 2 is 24 × 17 ≈ 6.8 hours. Extra seeds, if all three models are close calls, add 3 × 3 × (5 + 12 + 17) ≈ 300 min. `--jobs 4` on an 8-thread machine should cut the wall time to roughly a quarter if the runs don't slow each other down. I have not checked that.
+- **Smoke test, 2026-11-04.** Both passes and the summary ran end to end through the CLI at 20,000 episodes, with 3 and with 4 workers; pass 1 took 52 s with 3. Reusing that folder at another budget was refused. The numbers from those runs say nothing about the right α at 13M and are not reported.
+- **Review, 2026-11-04.** The independent review confirmed the seeding (each tuning seed matches `run_experiment`), the criterion and standard-error math, and the absence of leakage. It found eight issues, all fixed before commit:
+  - seed noise was not reported;
+  - records were reused across budgets;
+  - pass 2 broke ties by file order;
+  - a diverged spline seed blocked pass 2;
+  - the leakage wording overclaimed;
+  - pool failures stalled silently;
+  - temp-file names could collide;
+  - evaluation chunks used too much memory.
+
+  Six of its planted bugs had slipped past the tests; tests now catch them. The smoke test then showed the budget guard could be bypassed through the run queue, which is also fixed and tested.
 
 ## 6. Suggested new metrics (evaluation only)
 
