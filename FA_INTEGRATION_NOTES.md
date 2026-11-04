@@ -48,6 +48,9 @@ All on `feature/function-approximation`. Please review the PR before it merges i
 | `src/tests/test_config.py` | The `baseline-v1` match test uses `config_record` | Same reason |
 | `src/train.py` | Linear runs need `n_episodes` and `log_every` to be multiples of `greedy_refresh_every`; an end-of-run check raises if the last logged greedy is not the best final Q-value (beyond float32 rounding); `run_experiment` refuses a factory whose agent does not match `config.agent` | Found by the independent review: without them, 6 of 16 small runs ended on a stale greedy, which makes `evaluate.py`'s learned portfolio disagree with the logged one and crashes `reporting/extract.py`'s `settled_from` |
 | `src/run_experiments.py` | `training_status` compares every key on either side, a missing FA key meaning its tabular default | A tabular config could otherwise match an FA folder with the same constant α |
+| `src/evaluate.py` (2026-11-04) | New `q_fit()` and `TOP_K = 10`; each seed gains `q_fit_all`, `q_fit_visited` and `optimism_of_learned_bps`; the summary gains a `q_fit` block and a note; `per_seed.csv` gains nine columns at the end; `comparison.json` carries each resolution's `q_fit` block. Nothing existing changed | The §6 metrics, requested by William. Re-evaluating `b63` and `eps-decay` left every earlier number and both other CSVs identical |
+| `src/tests/test_evaluate.py` (2026-11-04) | Six new tests (hand examples, scipy cross-check with ties, edge cases, an oracle agent, a shifted oracle, optimism rebuilt from logged rewards) and the new CSV columns checked in the existing CSV test | |
+| `EVALUATION.md` (2026-11-04) | Q-value fit definitions in §2, two decisions in §3, two verification rows in §4 | |
 | `src/tests/test_train.py`, `src/tests/test_config.py` | FA tests in `test_train.py` (rewards rebuilt independently; logged Q and θ consistent with each other; greedy changes only at refresh multiples; final policy matches the float64 argmax while cached tie choices are preserved; seed reproducibility; tabular record unchanged; wrong agent type and inconsistent settings rejected) and one in `test_config.py` (a tabular config never matches an FA folder) | |
 
 ### 1.1 What `train_one_run_fa` logs differently
@@ -126,4 +129,4 @@ Computed after training from μ and Σ, like the near-optimal measure, and never
 - **Calibration of the winner**: Q̂ of the learned portfolio minus its true objective (optimism from picking the maximum of noisy estimates).
 - For the tabular baseline the same metrics can be computed from `final_q`, which gives a like-for-like comparison.
 
-These belong in `src/evaluate.py` (your file); not implemented yet.
+Implemented in `src/evaluate.py` on 2026-11-04 (see §1 and `EVALUATION.md` §2). Top-k uses k = 10, and both "all portfolios" and "visited portfolios" are reported, because a tabular agent's untried portfolios keep Q̂ = 0.

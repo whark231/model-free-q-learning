@@ -33,6 +33,12 @@ What it computes, mapped to the assignment:
 - Part IV convergence. When each agent-observable rule is met, and how often
   across seeds. K, the |change in Q| tolerance and the near-optimal line are
   inputs here; the team's fixed values are in src/config.py.
+- Q-value fit (added 2026-11-04 for the function-approximation comparison,
+  post hoc). Did the agent learn the whole reward landscape, or only its top
+  pick? The learned Q-values are compared with each portfolio's true expected
+  reward, which is U(w) exactly because the reward's variance uses ddof = 1:
+  Pearson and Spearman correlation, top-10 recall, and how far the learned
+  portfolio's Q-value overstates its true value.
 
 Usage, from the repo root:
 
@@ -53,6 +59,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+from scipy.stats import rankdata  # noqa: E402
 
 from src.action_space.grid import generate_weight_grid  # noqa: E402
 from src.benchmarks.mean_variance import (  # noqa: E402
@@ -69,6 +76,7 @@ BPS = 1e4
 BENCHMARKS = ("continuous", "best_discrete", "equal_weight")
 # Below this |U_best| (daily), a relative gap divides by almost nothing.
 RELATIVE_GAP_FLOOR = 1e-5
+TOP_K = 10  # portfolios compared by the top-k recall
 RUN_KEYS = (
     "checkpoint_episode", "checkpoint_mean_reward", "checkpoint_max_abs_dq", "checkpoint_greedy",
     "checkpoint_action_counts", "checkpoint_next_epsilon", "greedy_change_episode",
@@ -163,6 +171,32 @@ def expected_regret(action_counts: np.ndarray, action_values: np.ndarray, best_v
     """Cumulative expected regret after each checkpoint window, in daily
     objective units summed over episodes: sum of U(best) - U(chosen)."""
     return np.cumsum(action_counts @ (best_value - action_values))
+
+
+def q_fit(q_hat, true_q, k: int = TOP_K) -> dict:
+    """How well learned Q-values track the true expected rewards, across the
+    portfolios passed in. Correlations are None when either side is constant
+    or there are fewer than two portfolios. Top-k recall is the share of the
+    true top k that are also in the learned top k; ties in q_hat go to the
+    lowest index, as for the learned portfolio."""
+    q_hat, true_q = np.asarray(q_hat, dtype=float), np.asarray(true_q, dtype=float)
+    n = q_hat.size
+
+    def corr(a, b):
+        if n < 2 or np.ptp(a) == 0 or np.ptp(b) == 0:
+            return None
+        return float(np.corrcoef(a, b)[0, 1])
+
+    k = min(k, n)
+    top_hat = np.argsort(-q_hat, kind="stable")[:k]
+    top_true = np.argsort(-true_q, kind="stable")[:k]
+    return {
+        "n_portfolios": int(n),
+        "pearson": corr(q_hat, true_q),
+        "spearman": corr(rankdata(q_hat), rankdata(true_q)),
+        "top_k": int(k),
+        "top_k_recall": len(set(top_hat.tolist()) & set(top_true.tolist())) / k if k else None,
+    }
 
 
 def first_greedy_stable(change_episode, change_action, n_episodes: int, k: int):
@@ -294,6 +328,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             logs["greedy_change_episode"], logs["greedy_change_action"], train["n_episodes"], config.converge_k
         )
         mask = full_windows(logs["checkpoint_episode"], log_every)
+        visited = logs["final_visit_counts"] > 0
         through_end = greedy_stable_through_end(
             logs["greedy_change_episode"], train["n_episodes"], config.converge_k
         ) if logs["greedy_change_action"][-1] == action else None
@@ -324,6 +359,11 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "near_optimal_for_good_episode": first_for_good(
                 logs["checkpoint_episode"], greedy_loss <= config.near_optimal_bps
             ),
+            # Never-visited portfolios keep their initial Q in the tabular
+            # agent, so the fit is also reported over visited portfolios only.
+            "q_fit_all": q_fit(logs["final_q"], action_values),
+            "q_fit_visited": q_fit(logs["final_q"][visited], action_values[visited]),
+            "optimism_of_learned_bps": float(TRADING_DAYS * BPS * (logs["final_q"][action] - u)),
         }
         regret = expected_regret(logs["checkpoint_action_counts"], action_values, u_disc)
         record["final_cumulative_regret"] = float(regret[-1])
@@ -378,6 +418,16 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "median_seed_run": median_seed["run"],
             "mean_of_seed_weights_descriptive_only": np.mean([s["learned_weights"] for s in seeds], axis=0).tolist(),
         },
+        "q_fit": {
+            **{
+                population: {
+                    stat: _spread([s[f"q_fit_{population}"][stat] for s in seeds])
+                    for stat in ("pearson", "spearman", "top_k_recall", "top_k", "n_portfolios")
+                }
+                for population in ("all", "visited")
+            },
+            "optimism_of_learned_bps": _spread([s["optimism_of_learned_bps"] for s in seeds]),
+        },
         "convergence": {
             "rules": convergence_rules,
             **{
@@ -395,6 +445,9 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "evaluation_sample": f"{config.n_eval_episodes} episodes x {episode_length} days from SeedPlan's evaluation stream; exact values are primary, realized values a check",
             "mean_of_seed_weights": "average of the seeds' weights; not a portfolio any seed holds, so never compared with the benchmarks",
             "regret_units": "daily objective units summed over episodes",
+            "q_fit": f"final Q-values vs the true expected reward U(w) of every portfolio (all) or of those the "
+            f"agent tried (visited); top-{TOP_K} recall is the share of the true top {TOP_K} in the learned top "
+            f"{TOP_K}; optimism is 252 * (Qhat - U) of the learned portfolio in bps/yr. Evaluation only",
         },
     }
     (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -432,6 +485,7 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
             "discretization_gap_ce_bps": summary["discretization_gap"]["ce_loss_bps"],
             "ce_loss_vs_best_discrete_bps": summary["learned"]["ce_loss_vs_best_discrete_bps"],
             "share_exactly_best_discrete": summary["learned"]["share_exactly_best_discrete"],
+            "q_fit": summary["q_fit"],
             **{rule: conv[rule] for rule in conv["rules"]},
         }
     (out_dir / "comparison.json").write_text(json.dumps(results, indent=2) + "\n")
@@ -479,11 +533,14 @@ def _write_tables(out_dir: Path, summary: dict) -> None:
             "l1_to_best_discrete", "final_cumulative_regret", "greedy_stable_observations",
             "greedy_stable_through_end_observations", "dq_below_tol_for_good_observations",
             "near_optimal_for_good_observations"]
+    fit_keys = [(population, stat) for population in ("all", "visited")
+                for stat in ("pearson", "spearman", "top_k_recall", "n_portfolios")]
     with open(out_dir / "per_seed.csv", "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(keys)
+        writer.writerow(keys + [f"q_{stat}_{population}" for population, stat in fit_keys] + ["optimism_of_learned_bps"])
         for s in seeds:
-            writer.writerow([s[k] for k in keys])
+            writer.writerow([s[k] for k in keys] + [s[f"q_fit_{population}"][stat] for population, stat in fit_keys]
+                            + [s["optimism_of_learned_bps"]])
 
 
 def _style(ax, title, xlabel, ylabel):
