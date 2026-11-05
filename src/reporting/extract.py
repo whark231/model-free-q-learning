@@ -269,6 +269,9 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         "epsilon_final": float(cfg["epsilon0"] * np.exp(-cfg["beta"] * n_ep)),
         "random_tries_per_portfolio": float(cfg["epsilon0"] * (1 - np.exp(-cfg["beta"] * n_ep)) / cfg["beta"] / grid.shape[0]),
         "alpha_rule": cfg["alpha_rule"], "q_init": cfg["q_init"], "discount": cfg["discount"],
+        # Agent fields: tabular manifests leave them out (train.config_record).
+        "agent": cfg.get("agent", "tabular"), "feature_map": cfg.get("feature_map"),
+        "l2": cfg.get("l2", 0.0), "greedy_refresh_every": cfg.get("greedy_refresh_every", 1),
         "log_every": cfg["log_every"], "convergence_k": k, "near_optimal_bps": near, "dq_tol": dq_tol,
         "n_eval_episodes": settings.get("n_eval_episodes"),
     }

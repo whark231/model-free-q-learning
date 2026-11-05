@@ -37,6 +37,10 @@ COMPARED_PARAMS = [
     ("epsilon_final", "ε at the end"),
     ("random_tries_per_portfolio", "Random exploration tries per portfolio"),
     ("alpha_rule", "Learning rate rule"),
+    ("agent", "Agent"),
+    ("feature_map", "Feature map (function approximation)"),
+    ("l2", "l2 penalty"),
+    ("greedy_refresh_every", "Greedy refresh (updates)"),
     ("q_init", "Q initialization"),
     ("discount", "Discount ρ"),
     ("log_every", "Checkpoint interval (episodes)"),
@@ -79,12 +83,22 @@ def comparison_runs(entry: dict, registry: dict) -> list[str]:
     return ids[: ids.index(entry["id"])]
 
 
+# Runs extracted before the agent fields existed (2026-11-05) were all tabular.
+AGENT_PARAM_DEFAULTS = {"agent": "tabular", "feature_map": None, "l2": 0.0, "greedy_refresh_every": 1}
+
+
 def load_run_data(run_id: str, reports_dir: Path = REPORTS) -> dict:
+    """A run's data.json. Older files lack the agent fields; they get the
+    tabular defaults, so comparisons do not show changes that never happened."""
     path = reports_dir / run_id / "data.json"
     if not path.exists():
         raise FileNotFoundError(f"{path} is missing; run `python -m src.reporting.extract {run_id}` on the machine "
                                 "that holds that run's training logs")
-    return json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for exp in data.get("experiments", []):
+        for key, value in AGENT_PARAM_DEFAULTS.items():
+            exp.get("params", {}).setdefault(key, value)
+    return data
 
 
 def strip_seed_series(run: dict) -> dict:

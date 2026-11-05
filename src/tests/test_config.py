@@ -398,3 +398,85 @@ def test_grid10_near_ties_quoted_in_experiments_md():
         loss = 252e4 * (lambda v: v.max() - v)(objective(generate_weight_grid(9, 0.1), mu, sigma, gamma))
         assert round(np.sort(loss)[1], 2) == second_gap
         assert int((loss <= 25).sum()) == within25
+
+
+# ---------------------------------------------------------------------------
+# Constant-learning-rate runs (EXPERIMENTS.md §8, registered 2026-11-05)
+# ---------------------------------------------------------------------------
+
+TUNING = json.loads((REPO / "results" / "tuning" / "fa_tuning.json").read_text())
+
+
+def test_every_committed_post_hoc_settings_file_still_matches_its_variant():
+    """Adding agent fields must not make finished post-hoc folders look different."""
+    from src.run_experiments import batch_settings
+    for run_id in ("b63", "n26m", "eps-decay", "all-three", "grid10-robustness"):
+        run = cfg.POST_HOC_RUNS[run_id]
+        committed = json.loads((REPO / "results" / run_id / "settings.json").read_text())
+        assert batch_settings(run.n_episodes, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY, run) == committed, run_id
+
+
+def test_tabular_const_changes_only_the_learning_rate_to_the_tuned_value():
+    run = cfg.POST_HOC_RUNS["tabular-const"]
+    assert run.changes() == {"alpha_rule": ("sample_average", TUNING["chosen"]["tabular"]["alpha"])}
+    assert run.registered == "2026-11-05"
+    assert [e.name for e in cfg.experiments(run)] == [
+        "baseline_g5_grid20_TABconst", "robust_g3_grid20_TABconst", "robust_g8_grid20_TABconst"]
+    for experiment in cfg.experiments(run):
+        record = config_record(cfg.train_config(experiment))
+        assert record["alpha_rule"] == 0.00032 and "agent" not in record  # a tabular manifest
+        assert record["master_seed"] == 20261016 and record["n_runs"] == 10  # the reported seeds, not tuning's
+
+
+def test_fa_quadratic_uses_the_tuned_alpha_and_the_reported_settings():
+    run = cfg.POST_HOC_RUNS["fa-quadratic"]
+    chosen = TUNING["chosen"]["quadratic"]
+    assert run.changes() == {"alpha_rule": ("sample_average", chosen["alpha"]), "agent": ("tabular", "linear"),
+                             "feature_map": (None, "quadratic"), "greedy_refresh_every": (1, 100)}
+    assert run.l2 == chosen["l2"] == 0.0
+    for experiment, gamma in zip(cfg.experiments(run), (5.0, 3.0, 8.0)):
+        tc = cfg.train_config(experiment)
+        assert (tc.agent, tc.feature_map, tc.alpha_rule, tc.greedy_refresh_every) == ("linear", "quadratic", 0.00032, 100)
+        assert (tc.gamma, tc.episode_length, tc.n_episodes, tc.increment) == (gamma, 20, 13_000_000, 0.2)
+        assert tc.master_seed == 20261016 and tc.beta == cfg.beta_for(13_000_000)
+        assert tc.n_episodes % tc.greedy_refresh_every == 0 and cfg.LOG_EVERY % tc.greedy_refresh_every == 0
+
+
+def test_fa_spline_uses_the_alpha_and_l2_chosen_on_six_seeds():
+    run = cfg.POST_HOC_RUNS["fa-spline"]
+    chosen = TUNING["chosen"]["spline"]
+    assert chosen["decided_on_seeds"] == 6 and chosen["close_call"]
+    assert (run.alpha_rule, run.l2) == (chosen["alpha"], chosen["l2"]) == (cfg.TUNED_ALPHA_SPLINE, 0.0)
+    assert run.alpha_rule == pytest.approx(1.6e-4 * 2 / 45)  # the fraction of the spline bound
+    for experiment in cfg.experiments(run):
+        tc = cfg.train_config(experiment)
+        assert (tc.agent, tc.feature_map, tc.greedy_refresh_every) == ("linear", "spline", 100)
+        assert tc.master_seed == 20261016 and tc.n_runs == 10 and tc.episode_length == 20
+
+
+def test_an_fa_variant_runs_end_to_end_and_records_its_agent(tmp_path):
+    run = cfg.POST_HOC_RUNS["fa-quadratic"]
+    index = run_all(tmp_path, run=run, n_episodes=1_000, n_runs=2, n_eval_episodes=200, log_every=500)
+    settings = json.loads((tmp_path / "settings.json").read_text())
+    assert (settings["agent"], settings["feature_map"], settings["alpha_rule"]) == ("linear", "quadratic", 0.00032)
+    assert settings["greedy_refresh_every"] == 100 and settings["l2"] == 0.0
+    for e in index["experiments"]:
+        manifest = json.loads((tmp_path / e["name"] / "manifest.json").read_text())
+        assert manifest["config"]["agent"] == "linear" and manifest["n_features"] == 45
+    # The tabular-const folder refuses FA settings and the other way round.
+    with pytest.raises(ValueError, match="different settings"):
+        run_all(tmp_path, run=cfg.POST_HOC_RUNS["tabular-const"], n_episodes=1_000, n_runs=2,
+                n_eval_episodes=200, log_every=500)
+
+
+def test_a_variant_passes_every_agent_setting_through_to_training(capsys, tmp_path):
+    """Every registered l2 is 0, so a made-up variant checks l2 (and the rest) reach TrainConfig."""
+    run = cfg.RunVariant("x", "X", "2026-11-05", "x", alpha_rule=1e-5, agent="linear", feature_map="spline",
+                         l2=1e-3, greedy_refresh_every=50)
+    for experiment in cfg.experiments(run):
+        tc = cfg.train_config(experiment)
+        assert (tc.alpha_rule, tc.agent, tc.feature_map, tc.l2, tc.greedy_refresh_every) == \
+            (1e-5, "linear", "spline", 1e-3, 50)
+    run_all(tmp_path, run=cfg.POST_HOC_RUNS["fa-spline"], dry_run=True)
+    out = capsys.readouterr().out
+    assert out.count("agent linear spline (l2=0), alpha 7.111111111111112e-06") == 3

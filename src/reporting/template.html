@@ -236,6 +236,7 @@ const fmtParam = (k, v) => {
   if (k === "master_seed") return String(v);
   if (["epsilon_at_half", "epsilon_final", "dq_tol"].includes(k)) return Number(v) < 0.001 ? Number(v).toExponential(1) : f(v, 3);
   if (k === "random_tries_per_portfolio") return f(v, 0);
+  if (["alpha_rule", "l2"].includes(k) && typeof v === "number") return v === 0 ? "0" : Number(v).toExponential(2);
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString("en-US") : f(v, 3);
   return esc(v);
 };
