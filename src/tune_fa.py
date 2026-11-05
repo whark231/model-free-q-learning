@@ -343,8 +343,13 @@ def summarize(out_dir: Path, n_eval: int) -> dict:
         shown = ids + ([REFERENCE] if model == "tabular" and REFERENCE in rows else [])
         for i, stats in compare(best, shown, base_seeds).items():
             rows[i].update(stats)
-        close = len(ranked) > 1 and (rows[ranked[1]]["shortfall_to_model_best_bps"]
-                                     <= rows[ranked[1]]["shortfall_seed_se_bps"])
+        # The shortfall and its seed SE come from different routes (c' mean and
+        # the per-seed vector), so rounding can split a mathematical equality:
+        # differing on exactly one of three seeds gives shortfall == SE. The
+        # tolerance keeps "at most one SE" true to the rule (bug found 2026-11-05).
+        runner_up = rows[ranked[1]] if len(ranked) > 1 else None
+        close = runner_up is not None and (runner_up["shortfall_to_model_best_bps"]
+                                           <= runner_up["shortfall_seed_se_bps"] * (1 + 1e-9) + 1e-12)
         top = ranked[:TOP_EXTENDED]
         decision = {"close_call": bool(close), "base_best": best}
         if close and not all(i in extended for i in top):

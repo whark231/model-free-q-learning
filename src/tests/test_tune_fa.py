@@ -210,6 +210,19 @@ def _ranked_actions(n_eval, candidates=(3, 500, 700, 1000, 1286)):
     return [a for _, a in sorted(zip(-r, candidates))]
 
 
+def test_differing_on_one_seed_of_three_is_a_close_call(tmp_path):
+    """Then shortfall equals the seed SE exactly in theory; rounding in the
+    two routes must not decide the rule (the 2026-11-05 spline case)."""
+    good, poor = _ranked_actions(200)[:2]
+    for seed, (a, b) in enumerate([(good, good), (good, good), (good, poor)]):
+        _write(tmp_path, "spline_f0.00016_l20.0001", "spline", 1.6e-4, seed, a, l2=1e-4)
+        _write(tmp_path, "spline_f0.00016", "spline", 1.6e-4, seed, b)
+    summary = tune.summarize(tmp_path, 200)
+    row = summary["candidates"]["spline_f0.00016"]
+    assert row["shortfall_to_model_best_bps"] == pytest.approx(row["shortfall_seed_se_bps"], rel=1e-9)
+    assert summary["chosen"]["spline"]["close_call"] and summary["chosen"]["spline"]["pending"]
+
+
 def test_a_clear_winner_is_decided_on_three_seeds(tmp_path):
     good, poor = _ranked_actions(200)[:2]
     for seed in range(3):
