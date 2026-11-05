@@ -1,7 +1,14 @@
 # Function Approximation: Integration Notes for Albert
 
-**From:** William (with Claude) · **Date:** 2026-11-03 · **Branch:** `feature/function-approximation`
-**Status:** agent, features and the `train.py` path are built, tested and independently reviewed; nothing has been trained at full scale, and no FA result exists yet. Everything here is post hoc relative to `baseline-v1`.
+**From:** William (with Claude) · **Date:** 2026-11-03, updated 2026-11-05 · **Branch:** `feature/function-approximation`
+**Status:**
+- **Built:** agent, features, the `train.py` path and the Q-value fit metrics, all tested and independently reviewed.
+- **Tuned:** the step size, on tuning seeds (§5).
+- **Registered, not run:** three constant-learning-rate runs, `tabular-const`, `fa-quadratic` and `fa-spline` (`EXPERIMENTS.md` §8). The professor agreed to a constant α for FA and a separately tuned constant α for the tabular comparison.
+
+No FA result exists yet. Everything here is post hoc relative to `baseline-v1`.
+
+**What I need from you before the runs:** review the edits to your files (§1), and agree to the expected directions in `EXPERIMENTS.md` §8.3 to §8.5.
 
 ---
 
@@ -51,6 +58,11 @@ All on `feature/function-approximation`. Please review the PR before it merges i
 | `src/evaluate.py` (2026-11-04) | New `q_fit()` and `TOP_K = 10`; each seed gains `q_fit_all`, `q_fit_visited` and `optimism_of_learned_bps`; the summary gains a `q_fit` block and a note; `per_seed.csv` gains nine columns at the end; `comparison.json` carries each resolution's `q_fit` block. Nothing existing changed | The §6 metrics, requested by William. Re-evaluating `b63` and `eps-decay` left every earlier number and both other CSVs identical |
 | `src/tests/test_evaluate.py` (2026-11-04) | Six new tests (hand examples, scipy cross-check with ties, edge cases, an oracle agent, a shifted oracle, optimism rebuilt from logged rewards) and the new CSV columns checked in the existing CSV test | |
 | `EVALUATION.md` (2026-11-04) | Q-value fit definitions in §2, two decisions in §3, two verification rows in §4 | |
+| `src/config.py` (2026-11-05) | `Experiment` and `RunVariant` gain `alpha_rule`, `agent`, `feature_map`, `l2` and `greedy_refresh_every`, defaulting to the baseline's. `changes()` reads them from the new `BASELINE_RUN_SETTINGS`. `train_config()` passes them on. New constants `TUNED_ALPHA_TABULAR`, `TUNED_ALPHA_QUADRATIC`, `TUNED_ALPHA_SPLINE` and `FA_GREEDY_REFRESH`. Three new `POST_HOC_RUNS` entries | Registering the runs (§2). `baseline-v1` and the five earlier variants produce exactly the configs they did before (tested) |
+| `src/run_experiments.py` (2026-11-05) | `batch_settings` records `alpha_rule` for every variant, and the four agent fields only for FA variants. The dry run and `INDEX.md` show the agent and α; `INDEX.md` points to `EXPERIMENTS.md` §7 and §8 | The earlier variants' committed `settings.json` files still match (new test); FA and tabular folders cannot mix |
+| `src/reporting/extract.py`, `build.py`, `template.html` (2026-11-05) | `params` gains `agent`, `feature_map`, `l2` and `greedy_refresh_every`; tabular manifests read as tabular. `COMPARED_PARAMS` lists them. `load_run_data` gives older `data.json` files, which lack these fields, the tabular defaults, so a comparison does not report agent changes that never happened (found in review). The template shows a numeric α or l2 in scientific notation, where it showed 3.2e-4 as "0.000" | The settings table and run comparisons show what changed |
+| `src/tests/test_config.py`, `src/tests/test_reporting.py` (2026-11-05) | Each new run's values checked against `results/tuning/fa_tuning.json`; earlier variants' settings still match; an FA variant runs end to end through `run_all`; the extractor records the agent | |
+| `EXPERIMENTS.md` (2026-11-05) | New §8: tuning summary, shared settings, one subsection per run with its expected direction, commands and run time; status line updated | Registration before running, as in §7 |
 | `src/tests/test_train.py`, `src/tests/test_config.py` | FA tests in `test_train.py` (rewards rebuilt independently; logged Q and θ consistent with each other; greedy changes only at refresh multiples; final policy matches the float64 argmax while cached tie choices are preserved; seed reproducibility; tabular record unchanged; wrong agent type and inconsistent settings rejected) and one in `test_config.py` (a tabular config never matches an FA folder) | |
 
 ### 1.1 What `train_one_run_fa` logs differently
@@ -64,16 +76,20 @@ Same episodes, same random streams, same log arrays, so `evaluate.py` reads FA r
 
 Two more deliberate differences from tabular, for the report: FA uses a constant α where the baseline used α = 1/N(a) (with one-hot features and constant α both give the same Q-values, `src/tests/test_fa_agent.py`), and FA exploits a greedy up to `greedy_refresh_every − 1` updates old.
 
-## 2. Changes still needed before an FA run
+## 2. Integration for the runs (done 2026-11-05)
 
-Not made yet, because they depend on α and l2, which come from tuning (§5).
+The list that stood here before tuning is now done, as described in §1:
+- the `RunVariant` fields;
+- the names `fa-quadratic` and `fa-spline` (suffixes `FAquad` and `FAspline`), plus `tabular-const` (suffix `TABconst`) for the tabular comparison;
+- `batch_settings`;
+- the extractor's `params`;
+- `EXPERIMENTS.md` §8.
 
-1. **`src/config.py`.** Add to `RunVariant`: `agent="tabular"`, `feature_map=None`, `alpha=None`, `l2=0.0`, `greedy_refresh_every=1`; include them in `changes()`; pass them through `experiments()` and `train_config()` (`alpha_rule=run.alpha` for linear runs). Register the FA runs in `POST_HOC_RUNS` with their expected direction before running, as for the other post-hoc runs.
-2. **Names.** Run ids `fa-spline` and `fa-quadratic` (20% grid), later `fa-spline-grid10`. Experiment suffixes `FAspline` and `FAquad`, for example `baseline_g5_grid20_FAspline`, folders `results/<run_id>/`.
-3. **`src/run_experiments.py`.** `batch_settings` should add `agent`, `feature_map`, `alpha_rule`, `l2` and `greedy_refresh_every` for FA runs, so a results folder cannot mix agents. Also the Windows `γ` print crash is still open (`NEXT_STEPS_FOR_ALBERT.md`).
-4. **`src/reporting/extract.py`.** Add the agent fields to the settings table (`params`). `random_tries_per_portfolio` stays valid; `alpha_rule` will be a number for FA runs.
-5. **`src/train.py` CLI** (`main`) has no FA flags. Not needed if FA runs go through `run_experiments`.
-6. **`EXPERIMENTS.md`.** A §8 for the FA runs: settings, expected direction, command, run time.
+The `train.py` CLI still has no FA flags. None are needed, since the runs go through `run_experiments`.
+
+Still open, and not blocking:
+- **A 10% grid FA run** (`fa-spline-grid10`). Not registered; decide after the 20% grid results.
+- **The Windows print crash** in `run_experiments`. Set `$env:PYTHONIOENCODING = "utf-8"` until it is fixed (`NEXT_STEPS_FOR_ALBERT.md`).
 
 ## 3. Speed and the greedy refresh interval
 
@@ -109,7 +125,17 @@ The gaps that separate the tabular agent's candidates are about 5 to 18 bps/yr (
 
 If no α in the sweep beats the noise within the budget, that is a finding to report, and the standard remedy is a decaying step (α_t = α₀/(1 + t/t₀)), which would be a change from the constant α the course suggested. Decide that with the professor rather than in tuning.
 
-## 5. Tuning script (`src/tune_fa.py`, written 2026-11-04, not yet run at full scale)
+## 5. Tuning script (`src/tune_fa.py`, run 2026-11-04 to 2026-11-05)
+
+**Outcome:**
+- **Chosen values:**
+  - tabular α = 3.2e-4;
+  - quadratic α = 3.2e-4;
+  - spline α = 7.11e-6 with l2 = 0.
+
+  Each is fraction 1.6e-4 of its model's bound, and in each model it beats both neighbouring fractions.
+- **Spline close call.** The spline choice was a close call. l2 = 1e-4 led on seeds 0 to 2, and l2 = 0 won over seeds 0 to 5. A rounding bug first hid the close call; it was fixed in `945a55e` before the extra seeds ran.
+- **Where it is recorded:** `results/tuning/fa_tuning.json`, `run.log` and `extend.log`, and `EXPERIMENTS.md` §8.1. These are tuning-seed scores, not results.
 
 **In plain terms:** each model's constant α is chosen on three separate tuning seeds by training in full and keeping the α whose final portfolio earns the most realized reward on fresh draws. The tabular agent is tuned the same way, for a post-hoc constant-α tabular run (`tabular-const`) that differs from the FA runs only in its features.
 
