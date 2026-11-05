@@ -1,25 +1,25 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-10-29
-**Status:** the baseline and four post-hoc runs (`b63`, `n26m`, `eps-decay`, `all-three`) are done, reported and merged into `dev`. Next: the evaluation fixes from `RUN_ISSUES`, the 10% grid run, and the transaction-cost extension, which starts Oct 30.
-**Update 2026-10-29 (Albert):** item 2 is done. `grid10-robustness` ran without the `update()` fix and is in PR #22, with its outcome in `EXPERIMENTS.md` §7.7. Item 4 is done in the same PR. The note in `reports/README.md` about raising `--log-every` is updated too.
+**Date:** 2026-11-05
+**Status:** the baseline and all five post-hoc runs are done and merged into `dev`. The function-approximation (FA) extension is built, its step size is tuned, and three constant-learning-rate runs are registered: `tabular-const`, `fa-quadratic` and `fa-spline`. They wait on your review. The professor agreed to a constant α for FA and a separately tuned constant α for the tabular comparison.
 
 ---
 
 ## TL;DR / In plain terms
 
-Thanks for setting up and running the post-hoc runs and the reporting system. Every variant lowered the mean learning gap and the worst seed at every γ. Longer episodes (`b63`) gave the most for the least regret. The required parts are nearly complete: what's left for Part VI is the 10% grid. After that, the remaining work is the two extensions and the report.
+The FA work changed several of your files, with my permission and Claude's documentation. Every edit is listed in `FA_INTEGRATION_NOTES.md` §1. Before the three new runs start, I need two things from you: a review of those edits, and your agreement to the expected results written in `EXPERIMENTS.md` §8. Those must be fixed before anything runs. The rest of your list affects the report tables, not the runs.
 
 **Key concepts to understand**
 
-- **Better on average, not always better.** Every variant beat the baseline's mean gap and worst seed in all 12 comparisons (4 runs × 3 γ). Medians and exact-best shares did not all improve: `n26m` at γ = 3 got worse on both. With 10 seeds, part of the mean improvement is the baseline's single bad seeds not recurring.
-- **Days vs. episodes.** Every variant takes more simulated days to converge, because it sees more data. Counted in episodes, `b63` is faster than the baseline, and `n26m` and `eps-decay` are slower, because ε stays high for longer.
+- **Constant α.** `baseline-v1` uses α = 1/N, a running average whose noise shrinks with every visit. A constant α keeps a noise floor: about 49 bps/yr per Q-value for tabular at α = 3.2e-4. The new runs test what that costs, with and without shared features.
+- **Why `tabular-const`.** It has the same α, seeds and settings as `fa-quadratic`, so the pair differs only in the features.
+- **Q-value fit.** New evaluation metrics ask whether the agent learned the whole reward landscape, not just a good top pick: correlation of Q̂ with the true value, top-10 recall, and optimism of the pick (`EVALUATION.md` §2).
 
 **Key takeaways**
 
-- `baseline-v1` stays the headline for Parts IV and V. The post-hoc runs go in Part VI, labelled post hoc. The full table and the check against each run's registered expectation are in `REVIEW_HISTORY.md` §8.
-- The `RUN_ISSUES` fixes are still not in the code, so the tables still lack the total-gap column. That needs fixing before anyone writes Parts IV to VI.
+- `baseline-v1` stays the headline. Everything FA and constant-α is labelled post hoc.
+- The α values were chosen on separate tuning seeds (master seed 20261103), never the reported ones (`EXPERIMENTS.md` §8.1).
 
 ---
 
@@ -27,27 +27,44 @@ Thanks for setting up and running the post-hoc runs and the reporting system. Ev
 
 | Component | Where | Evidence |
 |---|---|---|
-| Data pipeline, μ and Σ | `src/data/`, `data/processed/` | `DATA_CLEANING.md`, 20 tests |
-| Simulator | `src/environment.py` | `ENVIRONMENT.md`, 69 tests |
-| Benchmarks, grid, reward | `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | 60 tests |
-| Agent, runner, evaluation, batch runner, post-hoc variants | `src/agent.py`, `src/train.py`, `src/evaluate.py`, `src/config.py`, `src/run_experiments.py` | `EVALUATION.md`, `EXPERIMENTS.md` |
-| Multi-run reports | `src/reporting/`, `reports/` | `reports/README.md`, 18 tests |
-| Baseline run, 2026-10-22, with run log kept | `results/`, `reports/baseline-v1/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived |
-| Post-hoc runs `b63`, `n26m`, `eps-decay`, `all-three` | `results/<run_id>/`, `reports/<run_id>/` | `REVIEW_HISTORY.md` §8 |
-| Your half of the Q-table-copy fix | `src/train.py` | Bit-identical logs test |
+| Data pipeline, simulator, benchmarks, grid, reward | `src/data/`, `src/environment.py`, `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | `DATA_CLEANING.md`, `ENVIRONMENT.md` |
+| Agent, runner, evaluation, batch runner, reports | `src/agent.py`, `src/train.py`, `src/evaluate.py`, `src/run_experiments.py`, `src/reporting/` | `EVALUATION.md`, `EXPERIMENTS.md`, `reports/README.md` |
+| Baseline and post-hoc runs, including `grid10-robustness` | `results/`, `reports/` | `REVIEW_HISTORY.md` §8, `EXPERIMENTS.md` §7.7 |
+| FA agent, features, FA training path | `src/fa_agent.py`, `src/features.py`, `src/train.py` | `FA_INTEGRATION_NOTES.md` |
+| Your fix for FA final-policy ties and missing settlement | `train.py`, `evaluate.py`, `src/reporting/` | Commit `1cbab3a` |
+| Q-value fit metrics; `b63` and `eps-decay` re-evaluated | `src/evaluate.py` | `EVALUATION.md` §2 |
+| Step-size tuning, and the three runs registered | `src/tune_fa.py`, `results/tuning/`, `src/config.py` | `EXPERIMENTS.md` §8 |
 
-283 tests pass.
+405 tests pass.
 
 ## Your next steps
 
-1. **`RUN_ISSUES` §4 steps 1 to 6, still open.** `per_seed.csv` and `INDEX.md` still have no total-gap column, and there is no post-hoc "settled" measure or checkpoint label yet. Since the post-hoc runs are in, the re-run in step 4 should regenerate their evaluations too. I'll review the PR.
-2. **Run `grid10-robustness`** (`EXPERIMENTS.md` §7.7), the Part VI action-space check, about 21 hours. Before it starts, I'll add the `update()` return value on my side, which saves about 6 µs per episode. The default log interval now fits: 2,600 checkpoints × 43,758 Q-values is 113.8M, under the raised 120M guard in `src/train.py`, so the "raise `--log-every`" note under "10% grid" in `reports/README.md` is out of date. It needs about 910 MB of memory per seed and up to 14 GB of disk for the logs (`EXPERIMENTS.md` §7.7). Then extract and build its report.
-3. **Windows crash, still on `dev`.** `python -m src.run_experiments --run <id> --dry-run` stops with `UnicodeEncodeError` on "γ" in the status print (same cause as `REVIEW_HISTORY.md` §1 item D, but in `print`, not a file write). Today every Windows run needs `$env:PYTHONIOENCODING = "utf-8"`. Fix: call `sys.stdout.reconfigure(encoding="utf-8")` at the start of `main()`.
-4. **`EXPERIMENTS.md` status.** Line 3 and the §7 heading still say the post-hoc runs are "not yet run". Four have run.
-5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. `RUN_ISSUES` Findings 4, 5, 8 and 9 become sentences in Parts IV to VI.
+1. **Review the FA PR** (`feature/function-approximation` → `dev`). `FA_INTEGRATION_NOTES.md` §1 lists every edit to your files:
+   - `train.py`, `run_experiments.py` and `evaluate.py`;
+   - `config.py`: the new run fields and the three registrations;
+   - the reporting code: agent fields in the settings table, and α formatting.
+
+   This blocks the runs.
+2. **Agree to the expected directions** in `EXPERIMENTS.md` §8.3 to §8.5 (one line each in `config.py`). Change them now if you disagree; they can't change once a run starts. This blocks the runs.
+3. **Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`** with the new metrics, from your run logs (`.npz`, not on my machine):
+   ```
+   python -m src.run_experiments --results-dir results
+   python -m src.run_experiments --run n26m --results-dir results/n26m      # likewise all-three, grid10-robustness
+   ```
+   This skips training for finished folders and re-evaluates them with the committed settings. Every earlier number stays identical; only the new fields are added (checked on `b63` and `eps-decay`). The FA vs tabular comparison needs these.
+4. **`RUN_ISSUES` §4 steps 1 to 6, still open.** The total-gap column and the post-hoc "settled" label are still missing from `per_seed.csv` and `INDEX.md`. I'll review the PR.
+5. **Windows print crash, still open.** `run_experiments` stops on "γ" in a status print unless `$env:PYTHONIOENCODING = "utf-8"` is set. Fix: `sys.stdout.reconfigure(encoding="utf-8")` at the start of `main()`.
+6. **The Q-value fit metrics are not in the HTML reports.** `src/reporting` reads none of them, so two of the new runs' expectations can only be checked in `evaluation/summary.json`. Adding them to `extract.py` and the template would put them in the comparison. Not blocking.
+7. **A false "calibration changed" flag on Windows**, from before this work. Every report built on William's machine flags the calibration as changed against `baseline-v1`. The independent review found the processed CSVs hash to `baseline-v1`'s values once CRLF line endings become LF, so the hash should be taken over normalized line endings (or the files pinned to LF in `.gitattributes`).
+8. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations.
 
 ## To decide together
 
-**Transaction costs, Week 7 (Oct 30 to Nov 5), paired.** Two open prospectus decisions first: a fixed cost or a sweep, and whether holdings are the exact prior weights or bucketed.
+**Transaction costs.** First settle the two open prospectus decisions: a fixed cost or a sweep, and whether holdings are the exact prior weights or bucketed.
 
-**Which post-hoc runs go in the report.** The assignment needs one action-space check (the 10% grid) and one economic or statistical check (γ = 3 and 8, done). `b63` and `n26m` cover its listed "different training budgets, episode lengths". My suggestion: `eps-decay` short, as mostly a negative result (no gain at γ = 5 and 8, higher regret), and `all-three` as the combined check the 10% grid is compared against.
+**Which post-hoc runs go in the report.** My suggestion:
+- `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;
+- `b63` and `n26m` for training budgets and episode lengths;
+- `eps-decay` short, as mostly a negative result;
+- `all-three` as the combined check the 10% grid is compared against;
+- the three new runs in the FA extension.

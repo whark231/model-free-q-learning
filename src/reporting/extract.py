@@ -72,9 +72,12 @@ def tries_to_separate(sd_best: float, gap_daily: float) -> float:
     return float(8 * sd_best ** 2 / gap_daily ** 2)
 
 
-def settled_from(ckpt_episode: np.ndarray, ckpt_greedy: np.ndarray, final: int) -> int:
+def settled_from(ckpt_episode: np.ndarray, ckpt_greedy: np.ndarray, final: int) -> int | None:
     """First checkpoint from which the final action is greedy at every later
-    checkpoint. Post-hoc and descriptive (RUN_ISSUES_2026-10-22.md Finding 1)."""
+    checkpoint, or None if it is not greedy at the final checkpoint.
+    Post-hoc and descriptive (RUN_ISSUES_2026-10-22.md Finding 1)."""
+    if len(ckpt_episode) == 0 or ckpt_greedy[-1] != final:
+        return None
     bad = np.flatnonzero(ckpt_greedy != final)
     return int(ckpt_episode[bad[-1] + 1]) if bad.size else int(ckpt_episode[0])
 
@@ -191,14 +194,14 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         final = int(np.argmax(d["final_q"]))
         w = grid[final]
         settle = settled_from(ep, greedy, final)
-        exc = excursions(ch_ep, ch_act, final, settle, n_ep, loss)
+        exc = excursions(ch_ep, ch_act, final, settle, n_ep, loss) if settle is not None else []
         half_exc = [e for e in exc if e[0] > n_ep // 2]
         window = np.diff(np.concatenate([[0], ep]))
         regret_avg = np.cumsum(counts @ (u_best - u)) / ep * BPS
         reward = d["checkpoint_mean_reward"]
         reward_ma = np.array([reward[max(0, i - 4): i + 1].mean() for i in range(reward.size)])
         stable_at, _ = first_greedy_stable(ch_ep, ch_act, n_ep, k)
-        through_end = greedy_stable_through_end(ch_ep, n_ep, k)
+        through_end = greedy_stable_through_end(ch_ep, n_ep, k) if ch_act[-1] == final else None
         dq_at = first_for_good(ep, d["checkpoint_max_abs_dq"] < dq_tol, full_windows(ep, cfg["log_every"]))
         near_ck = first_for_good(ep, loss[greedy] <= near)
         near_ev = near_optimal_every_episode(ch_ep, ch_act, loss, near)
@@ -266,6 +269,9 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         "epsilon_final": float(cfg["epsilon0"] * np.exp(-cfg["beta"] * n_ep)),
         "random_tries_per_portfolio": float(cfg["epsilon0"] * (1 - np.exp(-cfg["beta"] * n_ep)) / cfg["beta"] / grid.shape[0]),
         "alpha_rule": cfg["alpha_rule"], "q_init": cfg["q_init"], "discount": cfg["discount"],
+        # Agent fields: tabular manifests leave them out (train.config_record).
+        "agent": cfg.get("agent", "tabular"), "feature_map": cfg.get("feature_map"),
+        "l2": cfg.get("l2", 0.0), "greedy_refresh_every": cfg.get("greedy_refresh_every", 1),
         "log_every": cfg["log_every"], "convergence_k": k, "near_optimal_bps": near, "dq_tol": dq_tol,
         "n_eval_episodes": settings.get("n_eval_episodes"),
     }

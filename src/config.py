@@ -33,6 +33,14 @@ training budget, the ε schedule or the grid, and leaves every constant above
 untouched, so running without `--run` still reproduces `baseline-v1` exactly.
 Each variant's settings and expected direction are written in EXPERIMENTS.md
 §7 before it runs.
+
+Constant-learning-rate runs (registered 2026-11-05, after the professor
+agreed to a constant alpha for function approximation and a separately tuned
+constant alpha for the tabular comparison): a variant can also change the
+agent (`agent`, `feature_map`, `l2`, `greedy_refresh_every`) and the learning
+rate (`alpha_rule`). Every alpha and l2 below was chosen by src/tune_fa.py on
+tuning seeds (master seed 20261103), recorded in results/tuning/fa_tuning.json,
+never on the reported seeds. EXPERIMENTS.md §8 holds the full registration.
 """
 
 import math
@@ -90,6 +98,11 @@ class Experiment:
     episode_length: int = EPISODE_LENGTH
     epsilon_at_halfway: float = EPSILON_AT_HALFWAY
     n_episodes: int = N_EPISODES
+    alpha_rule: str | float = ALPHA_RULE
+    agent: str = "tabular"
+    feature_map: str | None = None
+    l2: float = 0.0
+    greedy_refresh_every: int = 1
 
 
 @dataclass(frozen=True)
@@ -99,8 +112,8 @@ class RunVariant:
     suffix goes on every experiment name (baseline_g5_grid20_<suffix>) so its
     folders can never be mistaken for the baseline's. expected is the
     direction written down before the run, registered the date it was. It is
-    the one-line summary INDEX.md prints; EXPERIMENTS.md §7 holds the full
-    expectation.
+    the one-line summary INDEX.md prints; EXPERIMENTS.md §7 (§8 for the
+    constant-learning-rate runs) holds the full expectation.
     """
 
     run_id: str
@@ -111,12 +124,33 @@ class RunVariant:
     n_episodes: int = N_EPISODES
     epsilon_at_halfway: float = EPSILON_AT_HALFWAY
     increment: float = INCREMENT_BASELINE
+    alpha_rule: str | float = ALPHA_RULE
+    agent: str = "tabular"
+    feature_map: str | None = None
+    l2: float = 0.0
+    greedy_refresh_every: int = 1
 
     def changes(self) -> dict:
         """The settings this variant moves away from the baseline, as {name: (baseline, variant)}."""
-        base = {"episode_length": EPISODE_LENGTH, "n_episodes": N_EPISODES,
-                "epsilon_at_halfway": EPSILON_AT_HALFWAY, "increment": INCREMENT_BASELINE}
-        return {k: (v, getattr(self, k)) for k, v in base.items() if getattr(self, k) != v}
+        return {k: (v, getattr(self, k)) for k, v in BASELINE_RUN_SETTINGS.items() if getattr(self, k) != v}
+
+
+# What a variant can change, at its baseline value. The last five are the
+# learning rate and the agent; tabular runs keep their defaults.
+BASELINE_RUN_SETTINGS = {
+    "episode_length": EPISODE_LENGTH, "n_episodes": N_EPISODES, "epsilon_at_halfway": EPSILON_AT_HALFWAY,
+    "increment": INCREMENT_BASELINE, "alpha_rule": ALPHA_RULE, "agent": "tabular", "feature_map": None,
+    "l2": 0.0, "greedy_refresh_every": 1,
+}
+AGENT_SETTINGS = ("alpha_rule", "agent", "feature_map", "l2", "greedy_refresh_every")
+
+# Tuned on master seed 20261103 by src/tune_fa.py (results/tuning/fa_tuning.json,
+# FA_INTEGRATION_NOTES.md §5): each value is a fraction of the model's stability
+# bound 2 / max||phi||^2, which is 2 for tabular and quadratic and 2/45 for splines.
+TUNED_ALPHA_TABULAR = 0.00032  # fraction 1.6e-4 of 2
+TUNED_ALPHA_QUADRATIC = 0.00032  # fraction 1.6e-4 of 2
+TUNED_ALPHA_SPLINE = 7.111111111111112e-06  # fraction 1.6e-4 of 2/45; l2 = 0 won on 6 seeds (close call)
+FA_GREEDY_REFRESH = 100  # FA_INTEGRATION_NOTES.md §3
 
 
 # Every post-hoc run, by run_id. Each run branch adds its own entry.
@@ -147,6 +181,30 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         "near zero, discretization gap 5.7 -> 1.3 bps/yr at γ = 5 and unchanged at γ = 3 and 8",
         episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.03, increment=0.1,
     ),
+    "tabular-const": RunVariant(
+        "tabular-const", "TABconst", "2026-11-05",
+        "a larger mean learning gap than baseline-v1 at every γ, and fewer seeds meeting the primary convergence "
+        "rule at every γ (baseline-v1: 9, 8, 9 at γ = 5, 3, 8), because a constant alpha never averages the reward "
+        "noise away (Q-value noise about 49 bps/yr)",
+        alpha_rule=TUNED_ALPHA_TABULAR,
+    ),
+    "fa-quadratic": RunVariant(
+        "fa-quadratic", "FAquad", "2026-11-05",
+        "a smaller mean learning gap than tabular-const at every γ, and a higher median Spearman correlation and "
+        "top-10 recall over all portfolios; against baseline-v1 no direction is predicted. Reference model, never "
+        "the discovery result",
+        alpha_rule=TUNED_ALPHA_QUADRATIC, agent="linear", feature_map="quadratic",
+        greedy_refresh_every=FA_GREEDY_REFRESH,
+    ),
+    "fa-spline": RunVariant(
+        "fa-spline", "FAspline", "2026-11-05",
+        "a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every γ, "
+        "since most spline directions learn far more slowly than 13M episodes allow; no direction for the learning "
+        "gap against fa-quadratic (that argument points to larger, the γ = 5 tuning seeds to smaller), nor against "
+        "tabular-const or baseline-v1",
+        alpha_rule=TUNED_ALPHA_SPLINE, agent="linear", feature_map="spline", l2=0.0,
+        greedy_refresh_every=FA_GREEDY_REFRESH,
+    ),
 }
 
 
@@ -156,9 +214,11 @@ def experiments(run: RunVariant | None = None) -> list[Experiment]:
     if run is not None:
         grid = f"grid{round(run.increment * 100)}"
         purpose = f"post-hoc run {run.run_id}: {run.expected}"
+        agent = {k: getattr(run, k) for k in AGENT_SETTINGS}
         return [
             Experiment(f"{'baseline' if g == GAMMA_BASELINE else 'robust'}_g{int(g)}_{grid}_{run.suffix}",
-                       g, run.increment, purpose, run.episode_length, run.epsilon_at_halfway, run.n_episodes)
+                       g, run.increment, purpose, run.episode_length, run.epsilon_at_halfway, run.n_episodes,
+                       **agent)
             for g in (GAMMA_BASELINE, *GAMMA_ROBUSTNESS)
         ]
     return [
@@ -185,11 +245,15 @@ def train_config(experiment: Experiment, n_episodes: int | None = None, n_runs: 
         n_runs=n_runs,
         beta=beta_for(n_episodes, experiment.epsilon_at_halfway),
         increment=experiment.increment,
-        alpha_rule=ALPHA_RULE,
+        alpha_rule=experiment.alpha_rule,
         epsilon0=EPSILON0,
         q_init=Q_INIT,
         discount=DISCOUNT,
         log_every=log_every,
+        agent=experiment.agent,
+        feature_map=experiment.feature_map,
+        l2=experiment.l2,
+        greedy_refresh_every=experiment.greedy_refresh_every,
     )
 
 

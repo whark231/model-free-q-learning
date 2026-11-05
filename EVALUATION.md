@@ -100,6 +100,33 @@ many observations and episodes are required... how often convergence occurs
 across seeds") and the Part V requirement on "the number of observations needed
 to approach a clearly defined level of optimality."
 
+### Q-value fit (post hoc, added 2026-11-04)
+
+**In plain terms:** these say whether the agent learned the whole reward
+landscape or only found a good top pick. They were added for the
+function-approximation comparison, after the baseline results were seen, and
+are computed for tabular runs too so the two can be compared like for like.
+
+The reference for each portfolio is its true expected reward. The reward's
+variance uses ddof = 1, so with Gaussian returns the expected reward is
+exactly U(w); no adjustment is needed.
+
+| Name | Definition |
+|---|---|
+| `q_fit_all` | Over every portfolio on the grid: Pearson and Spearman correlation of the final Q̂ with U(w), and top-10 recall, the share of the true top 10 portfolios that are also in the learned top 10 (ties in Q̂ to the lowest index) |
+| `q_fit_visited` | The same, over the portfolios the agent tried at least once. A tabular agent never updates an untried portfolio, which keeps it at Q̂ = 0. On the 20% grid every portfolio is tried within the training budget, so this equals `q_fit_all` there; the two differ on the 10% grid or with short budgets |
+| `optimism_of_learned_bps` | 252 × (Q̂ − U) × 10,000 for the learned portfolio, in bps/yr. Positive means the agent overrates what it picked |
+
+Read optimism against its noise. For the tabular agent Q̂ is a sample mean,
+so its standard error is the reward SD divided by √(visits): about 0.7 bps/yr
+at B = 63 and 1.2 bps/yr at B = 20 for a portfolio visited about 11M times.
+Seeds that differ only in γ share their return path, so their optimism values
+move together and do not count as independent evidence.
+
+Correlations are `None` (blank in the CSV) when fewer than two portfolios are
+compared or either side is constant. The summary gives their spread across
+seeds under `q_fit`; `per_seed.csv` has one column per seed-level value.
+
 ### Evaluation sample
 
 The evaluation draws come from `SeedPlan.evaluation_rng()`, a stream that
@@ -121,6 +148,8 @@ against w_disc, with its standard error, is the reliable realized comparison.
 | Evaluation sample | One shared sample, 10,000 episodes in the demo | Common random numbers make paired differences precise | Separate samples per portfolio: much noisier comparisons |
 | Grid check | Refuse if the grid fingerprint in the manifest differs | An action index must mean the same portfolio it meant in training | Size check only |
 | Data check | Refuse if the calibration files changed since training | The benchmarks must describe the market the agent learned in | Warning only |
+| Q-fit reference (2026-11-04) | U(w), the exact expected reward | ddof = 1 makes the reward unbiased for U(w) | Realized evaluation rewards: add noise to a quantity known exactly |
+| Q-fit populations | All portfolios and visited portfolios, both reported | All portfolios is the natural FA question; visited portfolios keeps the tabular agent's untried zeros from deciding its score | Visited only: would hide that FA scores portfolios it never tried |
 
 > **Assumption:** the learned policy is evaluated with exploration off. The
 > assignment's "steady-state evaluation sample" is read as the policy the agent
@@ -142,9 +171,11 @@ against w_disc, with its standard error, is the reliable realized comparison.
 | Evaluation sample | Rebuilt independently from the evaluation stream; uncorrelated with training draws |
 | CSV contents | Match the summary |
 | Refusals | Changed data, changed grid, partial experiment, overwrite, comparison of experiments differing in more than the grid |
+| Q-fit metrics (2026-11-04) | Hand examples; correlations match `scipy.stats.pearsonr` and `spearmanr` with ties; an agent holding Q = U scores 1, 1, 1 and optimism 0; Q = U + c gives optimism exactly c; a fixed agent's optimism rebuilt from its logged window rewards; CSV columns match the summary |
+| Re-evaluating existing runs (2026-11-04) | `b63` and `eps-decay` (6 experiments) re-evaluated with the new code: every earlier number in `summary.json`, `weights.csv` and `performance.csv` identical |
 | Mutation testing | 17 deliberate bugs injected; 16 caught. The survivor changes only which weights the bar chart draws, which no test inspects |
 
-Full suite: 225 passed.
+Full suite: 225 passed when this table was written (2026-10-16); 373 after the Q-fit metrics (2026-11-04).
 
 ---
 

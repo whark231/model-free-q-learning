@@ -236,6 +236,7 @@ const fmtParam = (k, v) => {
   if (k === "master_seed") return String(v);
   if (["epsilon_at_half", "epsilon_final", "dq_tol"].includes(k)) return Number(v) < 0.001 ? Number(v).toExponential(1) : f(v, 3);
   if (k === "random_tries_per_portfolio") return f(v, 0);
+  if (["alpha_rule", "l2"].includes(k) && typeof v === "number") return v === 0 ? "0" : Number(v).toExponential(2);
   if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString("en-US") : f(v, 3);
   return esc(v);
 };
@@ -422,7 +423,7 @@ function detailSection() {
   e.seeds.forEach(s => { if (!hasSeries) return; const p = document.createElement("div"); p.className = "sm-panel";
     p.innerHTML = `<div class="sm-title"><b>Seed ${s.run}</b><span class="port">${port(s.weights)} · ${s.is_best ? "best" : f(s.loss_best) + " bps"}</span></div><div class="chart"></div>`; sm.appendChild(p);
     lineChart(p.querySelector(".chart"), { compact: true, height: 140, x: { min: 0, max: xmax, fmt: v => f(v, 0) + "M", tipFmt: v => f(v, 1) + "M days" }, y: { min: 0, max: 150, ticks: [0, 50, 100, 150], tipFmt: v => f(v) + " bps" }, refs: [{ y: near }],
-      vmarks: [{ x: s.settled_obs / 1e6 }, { x: s.primary_obs == null ? null : s.primary_obs / 1e6, dash: true }], series: [{ label: "Greedy loss", color: c, xs, data: s.series.loss, step: true, width: 1.75 }] }); });
+      vmarks: [{ x: s.settled_obs == null ? null : s.settled_obs / 1e6 }, { x: s.primary_obs == null ? null : s.primary_obs / 1e6, dash: true }], series: [{ label: "Greedy loss", color: c, xs, data: s.series.loss, step: true, width: 1.75 }] }); });
   const seedC = css("--seed"), muted = css("--muted");
   if (hasSeries) {
     lineChart($("sp-lc"), { height: 250, x: { min: 0, max: xmax, label: "Simulated days (millions)", fmt: v => f(v, 0) + "M", tipFmt: v => f(v, 1) + "M days" }, y: { ...yRange([...e.seeds.flatMap(s => s.series.reward_pct), e.benchmarks.u_best_daily * 25200]), label: "CE return (%/yr)", fmt: v => v + "%", tipFmt: v => f(v, 2) + "%" },

@@ -18,6 +18,8 @@ import pytest
 import src.train as train
 from src.action_space.grid import generate_weight_grid
 from src.environment import ReturnSimulator, SeedPlan, load_calibration
+from src.fa_agent import LinearQAgent
+from src.features import quadratic_features
 from src.rewards import episodic_mean_variance_reward
 from src.train import TrainConfig, alpha_callable, run_experiment
 
@@ -409,3 +411,150 @@ class TouchesAnotherEntry(EpsilonGreedyAverager):
 def test_a_copy_that_drifts_from_the_agent_stops_the_run(tmp_path, cls):
     with pytest.raises(RuntimeError, match="copy of the Q-table differs"):
         run_experiment(small_config(), tmp_path, agent_factory=lambda c, n, rng: cls(n, rng))
+
+
+# ---------------------------------------------------------------------------
+# Function-approximation path (post hoc): train_one_run_fa
+# ---------------------------------------------------------------------------
+
+
+def fa_config(**overrides):
+    settings = dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, greedy_refresh_every=10)
+    settings.update(overrides)
+    return small_config(**settings)
+
+
+class RecordingLinear(LinearQAgent):
+    """LinearQAgent that records every (action, reward) it is given."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.actions, self.rewards = [], []
+
+    def update(self, action, reward):
+        super().update(action, reward)
+        self.actions.append(action)
+        self.rewards.append(reward)
+
+
+def test_logged_greedy_matches_the_learned_portfolio_in_every_run(tmp_path):
+    """The reviewer's failure case: before refreshes had to divide the budget,
+    6 of 16 small runs ended on a stale greedy. Now every run must agree."""
+    config = fa_config(n_runs=6, alpha_rule=0.2, greedy_refresh_every=50)
+    run_experiment(config, tmp_path)
+    for run in range(6):
+        logs = load_run(tmp_path, run)
+        assert int(logs["final_greedy"]) == int(np.argmax(logs["final_q"]))
+
+
+@pytest.mark.parametrize("gap", [0.0, 5e-8])
+def test_fa_final_policy_uses_exact_scores_without_rewriting_cached_history(gap):
+    """A float32 tie can conceal a unique float64 winner. Keep the real
+    cached choice in the history while reporting the canonical final policy."""
+    config = fa_config(n_episodes=1, log_every=1, greedy_refresh_every=1, n_runs=1)
+    grid = np.eye(9)[:2]
+    agent = LinearQAgent(np.eye(2, dtype=np.float32), alpha=1e-20, epsilon0=0, beta=0,
+                         rng=np.random.default_rng(0))
+    agent._theta[:] = [1.0 + gap, 1.0]  # controlled tie / near-tie, unchanged by tiny update
+    mu, sigma = load_calibration()
+    logs = train.train_one_run(config, grid, ReturnSimulator(mu, sigma, np.random.default_rng(0)), agent)
+    assert agent.greedy_action == 1
+    assert logs["checkpoint_greedy"][-1] == logs["greedy_change_action"][-1] == 1
+    assert int(logs["final_greedy"]) == int(np.argmax(logs["final_q"])) == 0
+    assert logs["final_q"][0] - logs["final_q"][1] == pytest.approx(gap)
+
+
+def test_a_factory_that_builds_the_wrong_agent_type_is_refused(tmp_path):
+    F = quadratic_features(generate_weight_grid(9, 0.25))
+
+    def factory(c, n, rng):
+        return LinearQAgent(F, alpha=0.1, epsilon0=1.0, beta=0.0, rng=rng)
+
+    with pytest.raises(TypeError, match="wrong agent"):
+        run_experiment(small_config(n_runs=1), tmp_path, agent_factory=factory)
+
+
+def test_fa_rewards_match_an_independent_rebuild(tmp_path):
+    """The FA path must draw the same returns stream and grid rows as the
+    tabular path: rebuild every reward from scratch and compare exactly."""
+    config = fa_config(n_runs=1)
+    F = quadratic_features(generate_weight_grid(9, config.increment))
+    agents = []
+
+    def factory(c, n, rng):
+        agents.append(RecordingLinear(F, alpha=0.1, epsilon0=c.epsilon0, beta=c.beta, rng=rng,
+                                      greedy_refresh_every=c.greedy_refresh_every))
+        return agents[-1]
+
+    run_experiment(config, tmp_path, agent_factory=factory)
+    mu, sigma = load_calibration()
+    grid = generate_weight_grid(9, config.increment)
+    sim = ReturnSimulator(mu, sigma, SeedPlan(config.master_seed, 1).run_streams(0)[0])
+    expected = [episodic_mean_variance_reward(grid[a], sim.sample_episode(config.episode_length), config.gamma)
+                for a in agents[0].actions]
+    assert len(expected) == config.n_episodes
+    np.testing.assert_array_equal(agents[0].rewards, expected)
+
+
+def test_fa_run_logs_exact_q_values_and_theta(tmp_path):
+    config = fa_config(n_runs=1)
+    manifest = run_experiment(config, tmp_path)
+    logs = load_run(tmp_path)
+    F = quadratic_features(generate_weight_grid(9, config.increment))
+    np.testing.assert_allclose(logs["final_q"], F @ logs["final_theta"], rtol=0, atol=1e-15)
+    np.testing.assert_array_equal(logs["checkpoint_q"][-1], logs["final_q"].astype(np.float32))
+    assert manifest["agent_class"] == "src.fa_agent.LinearQAgent"
+    assert manifest["n_features"] == 45
+    assert manifest["config"]["agent"] == "linear" and manifest["config"]["feature_map"] == "quadratic"
+    assert {"src/fa_agent.py", "src/features.py"} <= set(manifest["code_sha256"])
+
+
+def test_fa_greedy_changes_only_at_refreshes(tmp_path):
+    """The cached greedy can change only on an update that triggers a
+    refresh, so every logged change falls on a multiple of the interval."""
+    config = fa_config(n_runs=1, greedy_refresh_every=10)
+    run_experiment(config, tmp_path)
+    logs = load_run(tmp_path)
+    changes = logs["greedy_change_episode"][1:]
+    assert changes.size > 0
+    assert np.all(changes % 10 == 0)
+    # The run ends on a refresh, so the logged greedy is the portfolio evaluate.py reports.
+    assert int(logs["final_greedy"]) == int(np.argmax(logs["final_q"]))
+
+
+def test_fa_run_is_reproducible_from_its_seed(tmp_path):
+    run_experiment(fa_config(n_runs=1), tmp_path / "a")
+    run_experiment(fa_config(n_runs=1), tmp_path / "b")
+    a, b = load_run(tmp_path / "a"), load_run(tmp_path / "b")
+    for key in a:
+        np.testing.assert_array_equal(a[key], b[key], err_msg=key)
+
+
+def test_tabular_record_and_hashes_are_unchanged_by_the_fa_fields(tmp_path):
+    """A tabular run's manifest must not gain the FA keys or FA code hashes,
+    so it still matches the baseline-v1 manifests."""
+    manifest = run_experiment(small_config(n_runs=1), tmp_path, agent_factory=averager_factory)
+    assert not set(train.FA_FIELD_DEFAULTS) & set(manifest["config"])
+    assert not {"src/fa_agent.py", "src/features.py"} & set(manifest["code_sha256"])
+    assert "n_features" not in manifest
+
+
+@pytest.mark.parametrize("overrides", [
+    dict(feature_map="quadratic"),  # tabular run with an FA setting
+    dict(l2=0.1),
+    dict(greedy_refresh_every=5),
+    dict(agent="spline"),  # not an agent type
+    dict(agent="linear", alpha_rule=0.1),  # no feature map
+    dict(agent="linear", feature_map="cubic", alpha_rule=0.1),
+    dict(agent="linear", feature_map="quadratic"),  # sample-average alpha
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, discount=0.5),
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, q_init=1.0),
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, l2=-1.0),
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, greedy_refresh_every=0),
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, greedy_refresh_every=7),  # 2,500 not a multiple
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, greedy_refresh_every=500, log_every=750),
+    dict(agent="linear", feature_map="quadratic", alpha_rule=0.1, l2=True),
+])
+def test_inconsistent_fa_settings_are_rejected(overrides):
+    with pytest.raises(ValueError):
+        small_config(**overrides)

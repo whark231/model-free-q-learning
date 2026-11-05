@@ -29,7 +29,6 @@ import argparse
 import json
 import platform
 import shutil
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,7 +36,7 @@ import numpy as np
 
 from src import config as cfg
 from src.evaluate import compare_experiments, evaluate_experiment
-from src.train import _git_commit, run_experiment
+from src.train import FA_FIELD_DEFAULTS, _git_commit, config_record, run_experiment
 
 COMPARISON_NAME = "comparison_g5_grid20_vs_grid25"
 
@@ -61,8 +60,10 @@ def batch_settings(n_episodes: int, n_runs: int, n_eval_episodes: int, log_every
         settings.update({
             "episode_length": run.episode_length, "beta": cfg.beta_for(n_episodes, run.epsilon_at_halfway),
             "increments": [run.increment], "post_hoc_run": run.run_id,
-            "epsilon_at_halfway": run.epsilon_at_halfway,
+            "epsilon_at_halfway": run.epsilon_at_halfway, "alpha_rule": run.alpha_rule,
         })
+        if run.agent != "tabular":  # tabular variants keep the keys their committed settings.json files have
+            settings.update({k: getattr(run, k) for k in ("agent", "feature_map", "l2", "greedy_refresh_every")})
     return settings
 
 
@@ -90,8 +91,12 @@ def training_status(run_dir: Path, train_cfg) -> str:
             raise ValueError(f"{run_dir} has files but no manifest; delete that folder and run again")
         return "new"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    wanted = json.loads(json.dumps(asdict(train_cfg)))
-    diff = sorted(k for k in wanted if manifest["config"].get(k) != wanted[k])
+    wanted = json.loads(json.dumps(config_record(train_cfg)))  # tabular: same keys as baseline-v1's manifests
+    have = manifest["config"]
+    # Compare every key on either side; a missing function-approximation key
+    # means its tabular default, so a tabular config never matches an FA folder.
+    diff = sorted(k for k in set(wanted) | set(have)
+                  if have.get(k, FA_FIELD_DEFAULTS.get(k)) != wanted.get(k, FA_FIELD_DEFAULTS.get(k)))
     if diff:
         raise ValueError(f"{run_dir} was trained with different settings ({', '.join(diff)}); nothing was changed")
     done, expected = len(manifest["runs"]), manifest["config"]["n_runs"]
@@ -122,9 +127,11 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int | No
     plan = [(e, cfg.train_config(e, n_episodes, n_runs, log_every)) for e in selected]
     if dry_run:
         for e, tc in plan:
+            agent = "tabular" if tc.agent == "tabular" else f"linear {tc.feature_map} (l2={tc.l2:g})"
             print(f"{e.name}: gamma={tc.gamma}, grid={tc.increment}, {tc.n_runs} runs x {tc.n_episodes:,} "
                   f"episodes x B={tc.episode_length}; epsilon {e.epsilon_at_halfway:g} at halfway "
-                  f"(beta={tc.beta:.4g}); K={eval_cfg.converge_k:,}; {e.purpose}")
+                  f"(beta={tc.beta:.4g}); agent {agent}, alpha {tc.alpha_rule}; K={eval_cfg.converge_k:,}; "
+                  f"{e.purpose}")
         return {"planned": [e.name for e, _ in plan]}
 
     settings = batch_settings(n_episodes, n_runs, n_eval_episodes, log_every, run)
@@ -211,12 +218,14 @@ def _index_markdown(index: dict) -> str:
         f"{'Full-scale settings.' if index['full_scale'] else '**Reduced settings: a pipeline check, not report results.**'}",
         "",
         *([f"**Post-hoc run `{index['post_hoc_run']['run_id']}`**, registered {index['post_hoc_run']['registered']} "
-           f"after the baseline results were seen (EXPERIMENTS.md §7). Expected beforehand: "
+           f"after the baseline results were seen (EXPERIMENTS.md §7 and §8). Expected beforehand: "
            f"{index['post_hoc_run']['expected']}", ""] if index["post_hoc_run"] else []),
         f"γ ∈ {s['gammas']} (baseline {s['gamma_baseline']:g}), B = {s['episode_length']}, "
         f"{s['n_runs']} seeds × {s['n_episodes']:,} episodes, master seed {s['master_seed']}, "
         f"K = {s['convergence_k']:,} episodes (convergence rule: `{primary}`), ΔQ tolerance {s['dq_tol']:g}, "
-        f"near-optimal line {s['near_optimal_bps']:g} bps/yr, {s['n_eval_episodes']:,} evaluation episodes.",
+        f"near-optimal line {s['near_optimal_bps']:g} bps/yr, {s['n_eval_episodes']:,} evaluation episodes. "
+        f"Learning rate α: {s['alpha_rule']}; agent: {s.get('agent', 'tabular')}"
+        f"{' (' + s['feature_map'] + ' features, l2 ' + format(s['l2'], 'g') + ')' if s.get('feature_map') else ''}.",
         "",
         "Losses are certainty-equivalent, in basis points per year, against the best portfolio on that grid. "
         "For each rule: the share of seeds that met it, and in brackets the median simulated days "

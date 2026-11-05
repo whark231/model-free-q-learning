@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); later runs follow `reports/README.md`
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05, not yet run (§8); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---
@@ -622,3 +622,122 @@ the command above, extended to γ = 3 and 8.
 - With this budget a finer grid costs tabular Q-learning more in learning
   than it gains in discretization. The run did not test a larger budget on
   the 10% grid, so it cannot say how much more training would close the gap.
+
+---
+
+## 8. Constant-learning-rate runs (registered 2026-11-05, post hoc)
+
+**TL;DR / In plain terms:** three more runs, all with a constant learning rate α instead of the baseline's α = 1/N(a). The professor agreed to a constant α for function approximation (FA) and a separately tuned constant α for the tabular comparison.
+- `tabular-const` is the baseline agent with its own tuned constant α.
+- `fa-quadratic` is the FA agent handed the true functional form: the reference model.
+- `fa-spline` is the FA agent with generic smooth features: the main model.
+
+Every α (and the spline l2) was chosen on separate tuning seeds before these runs (§8.1). These runs were designed after the baseline results were seen, so the report labels them post hoc.
+
+**Key concepts to understand**
+
+- **Why compare with `tabular-const`, not only `baseline-v1`.** `fa-quadratic` and `tabular-const` have the same α (3.2e-4), seeds and settings. They differ mainly in how a reward is shared across portfolios: one-hot features (tabular) or 45 quadratic features. With one-hot features the FA agent gives the tabular Q-values (`src/tests/test_fa_agent.py`), so this pair isolates what the features do.
+  - Two mechanical differences remain. FA refreshes its greedy portfolio every 100 updates and breaks ties at random; tabular does both every episode, ties to the lowest index.
+  - Against `baseline-v1`, the learning rate also differs.
+- **A constant α never averages the noise away.** Each Q-value keeps a noise floor of about σ·√(α/2) for tabular. With σ ≈ 1.55e-3 per episode at B = 20, α = 3.2e-4 gives about 2.0e-5 per day, or 49 bps/yr. The best grid portfolio leads the second by 20.0, 10.5 and 11.5 bps/yr at γ = 3, 5 and 8.
+- **How each expectation is read.**
+  - "Learning gap" means the mean over the 10 seeds, as in `REVIEW_HISTORY.md` §8.
+  - "Q-value fit" means the median over seeds of the Spearman correlation and the top-10 recall over all portfolios (`q_fit_all`, `EVALUATION.md` §2).
+  - The fit metrics are in each experiment's `evaluation/summary.json`; the HTML reports do not show them yet.
+- **Tuned at γ = 5 only.** The same α and l2 are used at γ = 3 and 8.
+
+**Key takeaways**
+
+- `baseline-v1` stays the headline for Parts IV and V. These runs go in the FA extension and in the Part III discussion of the learning-rate rule ("whether it changes with action visits").
+- The quadratic is the correctly specified reference. Only `fa-spline` can speak to whether the agent finds the structure without being told it, and no such claim is made before its results.
+- Evaluate all three with the Q-value fit metrics (`EVALUATION.md` §2), and compare with `baseline-v1` re-evaluated the same way.
+
+### 8.1 Tuning (done 2026-11-04 to 2026-11-05)
+
+`python -m src.tune_fa --all --jobs 4` on master seed 20261103 (never the reported 20261016). The procedure:
+- each candidate α (8 fractions of each model's stability bound) trained in full on 3 seeds;
+- each seed's final portfolio scored by realized reward on 200,000 fresh evaluation episodes;
+- for each model, the candidate with the highest mean kept;
+- if the runner-up was within one seed-paired standard error, the top 3 trained on 3 more seeds and decided on all 6.
+
+The rule was fixed before any full-scale result. Details are in `FA_INTEGRATION_NOTES.md` §5. Records and the scored table are in `results/tuning/` (`fa_tuning.json`, `run.log`, `extend.log`).
+
+| Model | Chosen α | Fraction of bound | l2 | Decided on |
+|---|---|---|---|---|
+| Tabular (constant α) | 3.2e-4 | 1.6e-4 of 2 | — | 3 seeds, runner-up outside one SE |
+| Quadratic (reference) | 3.2e-4 | 1.6e-4 of 2 | 0 | 3 seeds, runner-up outside one SE |
+| Spline (main) | 7.11e-6 | 1.6e-4 of 2/45 | 0 | 6 seeds: a close call; l2 = 1e-4 led on seeds 0 to 2, l2 = 0 won over all 6 |
+
+Two notes on the tuning:
+- **A bug in the close-call check.** The spline's first summary called its runner-up "not close" because of a rounding difference of 1.2e-14. That was a bug in the check (fixed in commit `945a55e`), so the extra seeds ran as the rule requires.
+- **The rule checks only the runner-up.** For the quadratic, the third-ranked candidate (fraction 8e-4) is within one seed SE of the best, but it is not the runner-up, so the rule did not extend it. The rule was applied as fixed rather than widened after seeing the table.
+
+The 9 extra-seed records (spline seeds 3 to 5 of the three extended candidates) name commit `945a55e-dirty`, because the registration edits in this section's commit were uncommitted while they ran. None of those edits touch training or tuning: `src/tune_fa.py` reads only constants from `src/config.py`, and their values did not change.
+
+The tuning numbers are tuning-seed scores. Each model's best is the maximum of 8 to 16 candidates, so it is optimistic, and none of these numbers is reported as a result.
+
+### 8.2 Settings shared by the three runs
+
+| Setting | `baseline-v1` | These runs |
+|---|---|---|
+| Learning rate | α = 1/N(a) | constant, tuned (§8.1) |
+| Agent | tabular | tabular (`tabular-const`) or linear FA (`fa-quadratic`, `fa-spline`) |
+| Greedy portfolio | recomputed every episode | FA: refreshed every 100 updates (`FA_INTEGRATION_NOTES.md` §3) |
+| Episode length B | 20 | 20 |
+| Training episodes per seed | 13,000,000 | 13,000,000 |
+| ε at halfway | 1% | 1% |
+| Grid | 20% (1,287) | 20% (1,287) |
+| γ | 3, 5, 8 | 3, 5, 8 |
+| Seeds | 10, master seed 20261016 | same |
+| K (convergence) | 1,300,000 episodes | same |
+
+### 8.3 Run `tabular-const` (post hoc)
+
+The baseline agent with α = 3.2e-4 for every update. Experiments: `{baseline_g5, robust_g3, robust_g8}_grid20_TABconst`.
+
+**Expected direction, written before running.**
+- **Learning gap:** a larger mean than `baseline-v1`'s at every γ.
+- **Primary convergence rule:** fewer seeds meet it than in `baseline-v1` at every γ (9, 8 and 9 of 10 at γ = 5, 3 and 8). The Q-value noise floor (about 49 bps/yr) is far above the gaps between the top portfolios, so the greedy portfolio keeps switching among near-ties.
+- **Discretization gap:** identical to `baseline-v1`'s (2.5, 5.7 and 6.1 bps/yr at γ = 3, 5 and 8).
+
+### 8.4 Run `fa-quadratic` (post hoc, reference model)
+
+The FA agent with the 45 quadratic features w_i·w_j, α = 3.2e-4, l2 = 0 and greedy refresh every 100 updates. Experiments: `{baseline_g5, robust_g3, robust_g8}_grid20_FAquad`.
+
+**Expected direction, written before running.**
+- **Against `tabular-const`** (same α, seeds and settings), at every γ:
+  - a smaller mean learning gap;
+  - a higher Q-value fit: median Spearman correlation and top-10 recall over all portfolios.
+
+  Every reward updates all 45 parameters, so the agent averages over far more data per parameter than per tabular cell. §4 of `FA_INTEGRATION_NOTES.md` puts its Q̂ noise at about 17 bps/yr at this α, and its slowest direction learns in about 5.5M of the 13M episodes.
+- **Against `baseline-v1`:** no direction is predicted.
+- **Discretization gap:** identical to `baseline-v1`'s.
+
+### 8.5 Run `fa-spline` (post hoc, main model)
+
+The FA agent with additive plus pairwise cubic B-spline features, α = 7.11e-6, l2 = 0 and greedy refresh every 100 updates. The features are 909 columns, of rank 369 on this grid. They are never told the reward is quadratic, though they can represent it (`src/features.py`). Experiments: `{baseline_g5, robust_g3, robust_g8}_grid20_FAspline`.
+
+**Expected direction, written before running.**
+- **Against `fa-quadratic`,** at every γ: a lower Q-value fit (median Spearman correlation and top-10 recall over all portfolios). `FA_INTEGRATION_NOTES.md` §4 puts the spline's Q̂ noise at about 39 bps/yr at this α. Its median direction needs about 3.8e8 episodes to learn, far more than 13M, so most of the spline's directions stay near their starting value of 0.
+- **Learning gap against `fa-quadratic`:** no direction is predicted. The slow-learning argument points to a larger gap, since picking the best portfolio needs only the top of the landscape right. On the tuning seeds at γ = 5, though, the spline's final portfolios earned more than the quadratic's: 523 bps/yr over 6 seeds against 507 over 3. Those are tuning scores, each the best of its model's candidates, so they are optimistic. The evidence points both ways, so no direction is registered. (An earlier draft predicted a larger gap; it was changed before anything ran, after the independent review pointed out the tuning evidence.)
+- **Against `tabular-const` and `baseline-v1`:** no direction is predicted.
+- **Discretization gap:** identical to `baseline-v1`'s.
+
+### 8.6 Commands and run time
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"   # until the Windows print fix (NEXT_STEPS_FOR_ALBERT.md)
+python -m src.run_experiments --run tabular-const --dry-run
+python -m src.run_experiments --run tabular-const --results-dir results/tabular-const
+python -m src.run_experiments --run fa-quadratic --results-dir results/fa-quadratic
+python -m src.run_experiments --run fa-spline --results-dir results/fa-spline
+```
+
+The three are independent, so they can run as three processes at once. Before starting, time a short run of each with `--episodes 200000 --runs 1 --results-dir results/smoke_<run_id>`.
+
+**Estimated time** comes from the tuning runs on William's machine, 4 at a time, per 13M-episode seed:
+- tabular about 30 min;
+- quadratic about 22 min;
+- spline about 17 min.
+
+The tabular figure is about 6× the 5 min per seed `baseline-v1` took alone on Albert's Mac. It is unexplained, so use the timing check above. For 30 seeds each, that is up to about 15, 11 and 8.5 hours sequentially. Evaluation adds a few minutes per experiment.

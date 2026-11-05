@@ -46,6 +46,35 @@ def test_settled_from_is_first_checkpoint_after_the_last_disagreement():
     assert extract.settled_from(ckpt, np.array([7, 7, 7, 7, 7]), final=7) == 10
 
 
+@pytest.mark.parametrize("greedy", [[1, 7, 2], [1, 2, 3], []])
+def test_settled_from_is_missing_when_the_final_policy_did_not_settle(greedy):
+    assert extract.settled_from(np.arange(len(greedy)), np.array(greedy), final=7) is None
+
+
+def test_fa_tied_final_policy_agrees_across_training_evaluation_and_reporting(tmp_path):
+    from src.train import TrainConfig
+    from src.evaluate import EvalConfig
+    tc = TrainConfig(gamma=5, episode_length=20, n_episodes=1, master_seed=2, n_runs=1,
+                     beta=0.001, log_every=1, agent="linear", feature_map="quadratic", alpha_rule=0.1)
+    manifest = run_experiment(tc, tmp_path)
+    with np.load(tmp_path / "run_000.npz") as logs:
+        final = int(np.argmax(logs["final_q"]))
+        cached = int(logs["checkpoint_greedy"][-1])
+        assert cached != final  # real calibration and seed reproduce the review finding
+        assert logs["final_q"][cached] == logs["final_q"][final]
+        assert int(logs["final_greedy"]) == final
+    assert manifest["runs"][0]["final_greedy_action"] == final
+    summary = evaluate_experiment(tmp_path, EvalConfig(100, 1, 1e-5, 25))
+    mu, sigma = load_calibration()
+    report = extract.extract_experiment(tmp_path, {"near_optimal_bps": 25, "dq_tol": 1e-5},
+                                        mu, sigma, extract.PROCESSED_DIR)
+    assert summary["per_seed"][0]["learned_action"] == report["seeds"][0]["action"] == final
+    assert report["seeds"][0]["settled_obs"] is None
+    assert report["summary"]["settled"]["n"] == 0
+    assert report["seeds"][0]["primary_obs"] is None
+    assert summary["per_seed"][0]["greedy_stable_through_end_episode"] is None
+
+
 def test_excursions_count_a_hop_between_two_wrong_actions_once():
     loss = np.array([0.0, 50.0, 300.0, 20.0])
     ch_ep = np.array([0, 100, 200, 205, 210, 400, 403])
@@ -241,3 +270,36 @@ def test_long_run_extracts_with_binning_and_medians_taken_before_binning(long_ru
     for s in e["seeds"]:
         assert len(s["series"]["loss"]) == extract.MAX_POINTS
         assert s["settled_obs"] % 60 == 0
+
+
+def test_the_settings_table_records_the_agent(tmp_path):
+    """FA manifests carry agent fields; tabular ones leave them out and read as tabular."""
+    from src.train import TrainConfig
+    common = dict(gamma=5, episode_length=20, n_episodes=200, master_seed=2, n_runs=1, beta=0.001,
+                  log_every=100, increment=0.25)
+    mu, sigma = load_calibration()
+    run_experiment(TrainConfig(**common, agent="linear", feature_map="spline", alpha_rule=1e-3, l2=1e-4,
+                               greedy_refresh_every=100), tmp_path / "fa")
+    run_experiment(TrainConfig(**common), tmp_path / "tab")
+    settings = {"near_optimal_bps": 25, "dq_tol": 1e-5}
+    fa = extract.extract_experiment(tmp_path / "fa", settings, mu, sigma, extract.PROCESSED_DIR)["params"]
+    tab = extract.extract_experiment(tmp_path / "tab", settings, mu, sigma, extract.PROCESSED_DIR)["params"]
+    assert (fa["agent"], fa["feature_map"], fa["l2"], fa["greedy_refresh_every"], fa["alpha_rule"]) == \
+        ("linear", "spline", 1e-4, 100, 1e-3)
+    assert (tab["agent"], tab["feature_map"], tab["l2"], tab["greedy_refresh_every"], tab["alpha_rule"]) == \
+        ("tabular", None, 0.0, 1, "sample_average")
+    assert {"agent", "feature_map", "l2", "greedy_refresh_every"} <= {k for k, _ in build.COMPARED_PARAMS}
+
+
+def test_older_report_data_read_as_tabular_so_comparisons_show_only_real_changes(tmp_path):
+    """data.json files extracted before the agent fields existed must not
+    make a constant-alpha tabular run look like it changed the agent."""
+    old = _exp(alpha_rule="sample_average")
+    for key in build.AGENT_PARAM_DEFAULTS:
+        del old["params"][key]
+    (tmp_path / "old").mkdir()
+    (tmp_path / "old" / "data.json").write_text(json.dumps({"experiments": [old]}))
+    loaded = build.load_run_data("old", tmp_path)["experiments"][0]
+    assert {k: loaded["params"][k] for k in build.AGENT_PARAM_DEFAULTS} == build.AGENT_PARAM_DEFAULTS
+    new = _exp(alpha_rule=0.00032, **build.AGENT_PARAM_DEFAULTS)
+    assert [c["param"] for c in build.param_changes(loaded, new)] == ["alpha_rule"]
