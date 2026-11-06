@@ -1,0 +1,1060 @@
+{
+  "full_scale": true,
+  "settings": {
+    "git_commit": "da2b0fa66fb975299dea58b87685ad5fff4526d1",
+    "grid_sha256": "1f1537ce9a93b0cda5eca4c82d435980577907f0681efd7ca7a8eacc55b6c328",
+    "calibration_sha256": "a7a480220d358beb7d44751afa7afe333886ffe853d2b9d2d83b890b7763fd5a",
+    "seed_plan": {
+      "master_seed": 20261016,
+      "n_runs": 10,
+      "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+      "streams": {
+        "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+        "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+        "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+      },
+      "numpy_version": "2.3.5"
+    },
+    "gamma": 5.0,
+    "block_length": 20,
+    "steps_per_seed": 13000000,
+    "evaluation_paths": 1000,
+    "evaluation_blocks": 100,
+    "evaluation_discount": 0.95
+  },
+  "baseline_original_median_learning_gap_bps_per_year": 14.088193381652179,
+  "costs": [
+    {
+      "cost": 0,
+      "benchmarks": {
+        "grid_oracle": {
+          "realized_net_ce_bps_per_year": 521.7244062357208,
+          "expected_net_ce_bps_per_year": 524.7734009937019,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        },
+        "myopic": {
+          "realized_net_ce_bps_per_year": 521.7244062357208,
+          "expected_net_ce_bps_per_year": 524.7734009937019,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        },
+        "ignore_cost": {
+          "realized_net_ce_bps_per_year": 521.7244062357208,
+          "expected_net_ce_bps_per_year": 524.7734009937019,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        }
+      },
+      "seeds": [
+        {
+          "seed": 0,
+          "learned": {
+            "seed": 0,
+            "visited_pairs": 945839,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 56.70742456945422,
+            "expected_net_ce_bps_per_year": 51.413540210434235,
+            "one_way_turnover_per_path": 72.69019999999998,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 473.35986078326766
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 521.7244062357208,
+            "expected_net_ce_bps_per_year": 524.7734009937019,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -473.35986078326766
+        },
+        {
+          "seed": 1,
+          "learned": {
+            "seed": 1,
+            "visited_pairs": 946392,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 43.150140011818216,
+            "expected_net_ce_bps_per_year": 60.98207243485643,
+            "one_way_turnover_per_path": 70.60699999999997,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 463.79132855884546
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 508.7608338905779,
+            "expected_net_ce_bps_per_year": 508.92174945782335,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -447.9396770229669
+        },
+        {
+          "seed": 2,
+          "learned": {
+            "seed": 2,
+            "visited_pairs": 946676,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 11.334287011868588,
+            "expected_net_ce_bps_per_year": 52.63917362917527,
+            "one_way_turnover_per_path": 67.43659999999998,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 472.1342273645266
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 486.2630177940078,
+            "expected_net_ce_bps_per_year": 487.57213409115064,
+            "one_way_turnover_per_path": 0.7170000000000001,
+            "trades_per_path": 0.998
+          },
+          "paired_net_ce_delta_bps_per_year": -434.93296046197537
+        },
+        {
+          "seed": 3,
+          "learned": {
+            "seed": 3,
+            "visited_pairs": 945911,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 75.71738322253455,
+            "expected_net_ce_bps_per_year": 88.38494612576642,
+            "one_way_turnover_per_path": 67.82219999999998,
+            "trades_per_path": 99.507,
+            "oracle_gap_bps_per_year": 436.3884548679355
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 513.2736820819898,
+            "expected_net_ce_bps_per_year": 514.2419904556461,
+            "one_way_turnover_per_path": 0.7182000000000001,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -425.8570443298797
+        },
+        {
+          "seed": 4,
+          "learned": {
+            "seed": 4,
+            "visited_pairs": 945149,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 62.452819160760676,
+            "expected_net_ce_bps_per_year": 56.95598280392308,
+            "one_way_turnover_per_path": 67.66359999999995,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 467.81741818977883
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 510.56303974440016,
+            "expected_net_ce_bps_per_year": 512.4486657662761,
+            "one_way_turnover_per_path": 0.727,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -455.49268296235306
+        },
+        {
+          "seed": 5,
+          "learned": {
+            "seed": 5,
+            "visited_pairs": 944348,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 24.671410631539512,
+            "expected_net_ce_bps_per_year": 39.61874628174129,
+            "one_way_turnover_per_path": 70.62019999999998,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 485.15465471196063
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 521.7244062357208,
+            "expected_net_ce_bps_per_year": 524.7734009937019,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -485.15465471196063
+        },
+        {
+          "seed": 6,
+          "learned": {
+            "seed": 6,
+            "visited_pairs": 945665,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 64.49859383707162,
+            "expected_net_ce_bps_per_year": 67.70053690409874,
+            "one_way_turnover_per_path": 70.21999999999994,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 457.0728640896032
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 508.7608338905779,
+            "expected_net_ce_bps_per_year": 508.92174945782335,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -441.2212125537246
+        },
+        {
+          "seed": 7,
+          "learned": {
+            "seed": 7,
+            "visited_pairs": 945739,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 53.44935853354425,
+            "expected_net_ce_bps_per_year": 56.22121737156655,
+            "one_way_turnover_per_path": 72.63839999999993,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 468.5521836221353
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 489.6228375385517,
+            "expected_net_ce_bps_per_year": 488.04380012840346,
+            "one_way_turnover_per_path": 0.7376,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -431.82258275683694
+        },
+        {
+          "seed": 8,
+          "learned": {
+            "seed": 8,
+            "visited_pairs": 946055,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 83.34795486307799,
+            "expected_net_ce_bps_per_year": 86.20548066903825,
+            "one_way_turnover_per_path": 73.59479999999994,
+            "trades_per_path": 99.505,
+            "oracle_gap_bps_per_year": 438.56792032466365
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 477.2830661967127,
+            "expected_net_ce_bps_per_year": 477.4253285737124,
+            "one_way_turnover_per_path": 0.6725999999999999,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -391.21984790467417
+        },
+        {
+          "seed": 9,
+          "learned": {
+            "seed": 9,
+            "visited_pairs": 945534,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 59.758479320215216,
+            "expected_net_ce_bps_per_year": 44.6345732385765,
+            "one_way_turnover_per_path": 69.31039999999999,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 480.1388277551254
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 521.7244062357208,
+            "expected_net_ce_bps_per_year": 524.7734009937019,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -480.1388277551254
+        }
+      ],
+      "median_learned_net_ce": 56.588600087744815,
+      "median_learned_realized_ce": 58.23295194483472,
+      "median_baseline_net_ce": 510.68520761204974,
+      "median_baseline_realized_ce": 509.66193681748905,
+      "paired_delta_mean": -446.7139351242765,
+      "paired_delta_se": 8.999261655727507,
+      "positive_pairs": 0,
+      "median_oracle_gap": 468.1848009059571,
+      "median_learned_turnover": 70.41349999999996,
+      "median_baseline_turnover": 0.7194,
+      "median_trades": 100.0,
+      "median_coverage": 0.5710013891832073,
+      "stable_seeds": 0
+    },
+    {
+      "cost": 1,
+      "benchmarks": {
+        "grid_oracle": {
+          "realized_net_ce_bps_per_year": 517.0211143843018,
+          "expected_net_ce_bps_per_year": 520.8717723393132,
+          "one_way_turnover_per_path": 0.7222000000000001,
+          "trades_per_path": 1.201
+        },
+        "myopic": {
+          "realized_net_ce_bps_per_year": 512.2753012608717,
+          "expected_net_ce_bps_per_year": 515.9423369051427,
+          "one_way_turnover_per_path": 0.6372000000000001,
+          "trades_per_path": 1.036
+        },
+        "ignore_cost": {
+          "realized_net_ce_bps_per_year": 517.7590190449883,
+          "expected_net_ce_bps_per_year": 520.8080138029692,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        }
+      },
+      "seeds": [
+        {
+          "seed": 0,
+          "learned": {
+            "seed": 0,
+            "visited_pairs": 945668,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": 33.681385867417106,
+            "expected_net_ce_bps_per_year": 38.49789843550689,
+            "one_way_turnover_per_path": 67.41419999999997,
+            "trades_per_path": 98.845,
+            "oracle_gap_bps_per_year": 482.3738739038063
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 517.7590190449883,
+            "expected_net_ce_bps_per_year": 520.8080138029692,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -482.3101153674623
+        },
+        {
+          "seed": 1,
+          "learned": {
+            "seed": 1,
+            "visited_pairs": 946426,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -6.718605218796731,
+            "expected_net_ce_bps_per_year": -11.051474944544532,
+            "one_way_turnover_per_path": 71.57739999999994,
+            "trades_per_path": 98.719,
+            "oracle_gap_bps_per_year": 531.9232472838578
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 503.4981560526612,
+            "expected_net_ce_bps_per_year": 503.65907161990657,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -514.7105465644511
+        },
+        {
+          "seed": 2,
+          "learned": {
+            "seed": 2,
+            "visited_pairs": 945771,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -17.963540096313917,
+            "expected_net_ce_bps_per_year": -17.022414145577823,
+            "one_way_turnover_per_path": 69.28659999999998,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 537.8941864848911
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 482.30270062046,
+            "expected_net_ce_bps_per_year": 483.6118169176029,
+            "one_way_turnover_per_path": 0.7170000000000001,
+            "trades_per_path": 0.998
+          },
+          "paired_net_ce_delta_bps_per_year": -500.6342310631807
+        },
+        {
+          "seed": 3,
+          "learned": {
+            "seed": 3,
+            "visited_pairs": 946376,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -41.34004017256557,
+            "expected_net_ce_bps_per_year": -34.08933617763561,
+            "one_way_turnover_per_path": 72.53919999999997,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 554.9611085169488
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 509.318434925627,
+            "expected_net_ce_bps_per_year": 510.28674329928305,
+            "one_way_turnover_per_path": 0.7182000000000001,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -544.3760794769187
+        },
+        {
+          "seed": 4,
+          "learned": {
+            "seed": 4,
+            "visited_pairs": 945680,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -40.20487426747288,
+            "expected_net_ce_bps_per_year": -7.149898498739418,
+            "one_way_turnover_per_path": 66.48499999999999,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 528.0216708380526
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 506.56849995485436,
+            "expected_net_ce_bps_per_year": 508.4541259767302,
+            "one_way_turnover_per_path": 0.727,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -515.6040244754696
+        },
+        {
+          "seed": 5,
+          "learned": {
+            "seed": 5,
+            "visited_pairs": 945238,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -5.294392823536131,
+            "expected_net_ce_bps_per_year": -16.65349759296379,
+            "one_way_turnover_per_path": 68.88179999999996,
+            "trades_per_path": 99.903,
+            "oracle_gap_bps_per_year": 537.5252699322771
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 517.7590190449883,
+            "expected_net_ce_bps_per_year": 520.8080138029692,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -537.461511395933
+        },
+        {
+          "seed": 6,
+          "learned": {
+            "seed": 6,
+            "visited_pairs": 946252,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -40.419783166385166,
+            "expected_net_ce_bps_per_year": -43.70364595039841,
+            "one_way_turnover_per_path": 74.72499999999992,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 564.5754182897116
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 503.4981560526612,
+            "expected_net_ce_bps_per_year": 503.65907161990657,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -547.362717570305
+        },
+        {
+          "seed": 7,
+          "learned": {
+            "seed": 7,
+            "visited_pairs": 946048,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -64.22677054016856,
+            "expected_net_ce_bps_per_year": -68.8827030748104,
+            "one_way_turnover_per_path": 76.17379999999996,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 589.7544754141236
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 484.99898186593134,
+            "expected_net_ce_bps_per_year": 483.4199444557829,
+            "one_way_turnover_per_path": 0.7376,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -552.3026475305933
+        },
+        {
+          "seed": 8,
+          "learned": {
+            "seed": 8,
+            "visited_pairs": 945856,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -13.479534718177055,
+            "expected_net_ce_bps_per_year": 0.9081424325741013,
+            "one_way_turnover_per_path": 66.79959999999996,
+            "trades_per_path": 98.643,
+            "oracle_gap_bps_per_year": 519.9636299067391
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 473.9273485724632,
+            "expected_net_ce_bps_per_year": 474.06961094946274,
+            "one_way_turnover_per_path": 0.6725999999999999,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -473.16146851688865
+        },
+        {
+          "seed": 9,
+          "learned": {
+            "seed": 9,
+            "visited_pairs": 946086,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -30.3844345823691,
+            "expected_net_ce_bps_per_year": -23.55066049573815,
+            "one_way_turnover_per_path": 72.75099999999998,
+            "trades_per_path": 99.8,
+            "oracle_gap_bps_per_year": 544.4224328350514
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 517.7590190449883,
+            "expected_net_ce_bps_per_year": 520.8080138029692,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -544.3586742987073
+        }
+      ],
+      "median_learned_net_ce": -16.837955869270807,
+      "median_learned_realized_ce": -24.173987339341508,
+      "median_baseline_net_ce": 506.0565987983184,
+      "median_baseline_realized_ce": 505.0333280037578,
+      "paired_delta_mean": -521.228201625991,
+      "paired_delta_se": 9.010024394186248,
+      "positive_pairs": 0,
+      "median_oracle_gap": 537.709728208584,
+      "median_learned_turnover": 70.43199999999996,
+      "median_baseline_turnover": 0.7194,
+      "median_trades": 99.95150000000001,
+      "median_coverage": 0.5710997972070233,
+      "stable_seeds": 0
+    },
+    {
+      "cost": 2,
+      "benchmarks": {
+        "grid_oracle": {
+          "realized_net_ce_bps_per_year": 512.3511039662304,
+          "expected_net_ce_bps_per_year": 517.145175015167,
+          "one_way_turnover_per_path": 0.7198,
+          "trades_per_path": 1.283
+        },
+        "myopic": {
+          "realized_net_ce_bps_per_year": 508.07120515210204,
+          "expected_net_ce_bps_per_year": 512.580923055604,
+          "one_way_turnover_per_path": 0.637,
+          "trades_per_path": 1.411
+        },
+        "ignore_cost": {
+          "realized_net_ce_bps_per_year": 513.7936318542555,
+          "expected_net_ce_bps_per_year": 516.8426266122364,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        }
+      },
+      "seeds": [
+        {
+          "seed": 0,
+          "learned": {
+            "seed": 0,
+            "visited_pairs": 945330,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -80.9056287264226,
+            "expected_net_ce_bps_per_year": -72.90701429632249,
+            "one_way_turnover_per_path": 67.73960000000001,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 590.0521893114894
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 513.7936318542555,
+            "expected_net_ce_bps_per_year": 516.8426266122364,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -589.7496409085588
+        },
+        {
+          "seed": 1,
+          "learned": {
+            "seed": 1,
+            "visited_pairs": 946323,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -118.64951653417125,
+            "expected_net_ce_bps_per_year": -121.06195613849223,
+            "one_way_turnover_per_path": 71.39599999999994,
+            "trades_per_path": 98.551,
+            "oracle_gap_bps_per_year": 638.2071311536592
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 498.23547821474466,
+            "expected_net_ce_bps_per_year": 498.3963937819899,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -619.4583499204821
+        },
+        {
+          "seed": 2,
+          "learned": {
+            "seed": 2,
+            "visited_pairs": 946314,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -127.15527082757968,
+            "expected_net_ce_bps_per_year": -103.26094466216438,
+            "one_way_turnover_per_path": 76.98819999999989,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 620.4061196773314
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 478.3423834469122,
+            "expected_net_ce_bps_per_year": 479.65149974405523,
+            "one_way_turnover_per_path": 0.7170000000000001,
+            "trades_per_path": 0.998
+          },
+          "paired_net_ce_delta_bps_per_year": -582.9124444062196
+        },
+        {
+          "seed": 3,
+          "learned": {
+            "seed": 3,
+            "visited_pairs": 945767,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -93.09610944251187,
+            "expected_net_ce_bps_per_year": -95.98560794847802,
+            "one_way_turnover_per_path": 65.94279999999996,
+            "trades_per_path": 94.819,
+            "oracle_gap_bps_per_year": 613.130782963645
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 505.3631877692641,
+            "expected_net_ce_bps_per_year": 506.33149614292023,
+            "one_way_turnover_per_path": 0.7182000000000001,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -602.3171040913983
+        },
+        {
+          "seed": 4,
+          "learned": {
+            "seed": 4,
+            "visited_pairs": 945945,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -50.1623322881823,
+            "expected_net_ce_bps_per_year": -55.342333260862155,
+            "one_way_turnover_per_path": 66.949,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 572.4875082760291
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 502.5739601653085,
+            "expected_net_ce_bps_per_year": 504.45958618718436,
+            "one_way_turnover_per_path": 0.727,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -559.8019194480465
+        },
+        {
+          "seed": 5,
+          "learned": {
+            "seed": 5,
+            "visited_pairs": 945590,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -69.3696945154007,
+            "expected_net_ce_bps_per_year": -84.76138062834679,
+            "one_way_turnover_per_path": 66.84719999999999,
+            "trades_per_path": 99.703,
+            "oracle_gap_bps_per_year": 601.9065556435137
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 513.7936318542555,
+            "expected_net_ce_bps_per_year": 516.8426266122364,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -601.6040072405831
+        },
+        {
+          "seed": 6,
+          "learned": {
+            "seed": 6,
+            "visited_pairs": 946099,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -79.70967921202265,
+            "expected_net_ce_bps_per_year": -85.81473046637473,
+            "one_way_turnover_per_path": 64.64020000000006,
+            "trades_per_path": 99.507,
+            "oracle_gap_bps_per_year": 602.9599054815417
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 498.23547821474466,
+            "expected_net_ce_bps_per_year": 498.3963937819899,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -584.2111242483646
+        },
+        {
+          "seed": 7,
+          "learned": {
+            "seed": 7,
+            "visited_pairs": 946649,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -130.98411039497356,
+            "expected_net_ce_bps_per_year": -141.58745810717673,
+            "one_way_turnover_per_path": 69.17919999999998,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 658.7326331223437
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 480.37512619331096,
+            "expected_net_ce_bps_per_year": 478.7960887831624,
+            "one_way_turnover_per_path": 0.7376,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -620.3835468903392
+        },
+        {
+          "seed": 8,
+          "learned": {
+            "seed": 8,
+            "visited_pairs": 945181,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -127.59141370397954,
+            "expected_net_ce_bps_per_year": -116.89251591218219,
+            "one_way_turnover_per_path": 67.40399999999997,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 634.0376909273491
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 470.57163094821357,
+            "expected_net_ce_bps_per_year": 470.71389332521323,
+            "one_way_turnover_per_path": 0.6725999999999999,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -587.6064092373954
+        },
+        {
+          "seed": 9,
+          "learned": {
+            "seed": 9,
+            "visited_pairs": 945795,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -112.57883585158248,
+            "expected_net_ce_bps_per_year": -85.59961340604369,
+            "one_way_turnover_per_path": 71.22019999999995,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 602.7447884212106
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 513.7936318542555,
+            "expected_net_ce_bps_per_year": 516.8426266122364,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -602.44224001828
+        }
+      ],
+      "median_learned_net_ce": -90.90016920742637,
+      "median_learned_realized_ce": -102.83747264704718,
+      "median_baseline_net_ce": 501.42798998458716,
+      "median_baseline_realized_ce": 500.4047191900266,
+      "paired_delta_mean": -595.0486786409667,
+      "paired_delta_se": 5.752967029268329,
+      "positive_pairs": 0,
+      "median_oracle_gap": 608.0453442225933,
+      "median_learned_turnover": 67.5718,
+      "median_baseline_turnover": 0.7194,
+      "median_trades": 100.0,
+      "median_coverage": 0.5710502913300116,
+      "stable_seeds": 0
+    },
+    {
+      "cost": 5,
+      "benchmarks": {
+        "grid_oracle": {
+          "realized_net_ce_bps_per_year": 503.37213544988305,
+          "expected_net_ce_bps_per_year": 507.576651108731,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.775
+        },
+        "myopic": {
+          "realized_net_ce_bps_per_year": 475.30345031111267,
+          "expected_net_ce_bps_per_year": 479.1639941559888,
+          "one_way_turnover_per_path": 0.5366000000000001,
+          "trades_per_path": 1.752
+        },
+        "ignore_cost": {
+          "realized_net_ce_bps_per_year": 501.8974702820576,
+          "expected_net_ce_bps_per_year": 504.94646504003845,
+          "one_way_turnover_per_path": 0.7194,
+          "trades_per_path": 1.0
+        }
+      },
+      "seeds": [
+        {
+          "seed": 0,
+          "learned": {
+            "seed": 0,
+            "visited_pairs": 945449,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -338.3247913497936,
+            "expected_net_ce_bps_per_year": -336.75118846237297,
+            "one_way_turnover_per_path": 74.05179999999987,
+            "trades_per_path": 98.722,
+            "oracle_gap_bps_per_year": 844.327839571104
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 501.8974702820576,
+            "expected_net_ce_bps_per_year": 504.94646504003845,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -841.6976535024114
+        },
+        {
+          "seed": 1,
+          "learned": {
+            "seed": 1,
+            "visited_pairs": 946499,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -310.36327643180175,
+            "expected_net_ce_bps_per_year": -308.0915143830117,
+            "one_way_turnover_per_path": 68.5358,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 815.6681654917427
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 482.4474447009949,
+            "expected_net_ce_bps_per_year": 482.60836026824006,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -790.6998746512518
+        },
+        {
+          "seed": 2,
+          "learned": {
+            "seed": 2,
+            "visited_pairs": 945655,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -238.86379882787156,
+            "expected_net_ce_bps_per_year": -257.48340203615373,
+            "one_way_turnover_per_path": 64.60039999999995,
+            "trades_per_path": 99.902,
+            "oracle_gap_bps_per_year": 765.0600531448847
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 466.4614319262688,
+            "expected_net_ce_bps_per_year": 467.77054822341177,
+            "one_way_turnover_per_path": 0.7170000000000001,
+            "trades_per_path": 0.998
+          },
+          "paired_net_ce_delta_bps_per_year": -725.2539502595655
+        },
+        {
+          "seed": 3,
+          "learned": {
+            "seed": 3,
+            "visited_pairs": 945656,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -250.28360574519678,
+            "expected_net_ce_bps_per_year": -237.35500588932203,
+            "one_way_turnover_per_path": 73.62199999999991,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 744.9316569980531
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 493.49744630017534,
+            "expected_net_ce_bps_per_year": 494.46575467383144,
+            "one_way_turnover_per_path": 0.7182000000000001,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -731.8207605631535
+        },
+        {
+          "seed": 4,
+          "learned": {
+            "seed": 4,
+            "visited_pairs": 945331,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -265.1197555229257,
+            "expected_net_ce_bps_per_year": -284.51063957435434,
+            "one_way_turnover_per_path": 61.93300000000001,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 792.0872906830854
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 490.5903407966712,
+            "expected_net_ce_bps_per_year": 492.4759668185471,
+            "one_way_turnover_per_path": 0.727,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -776.9866063929014
+        },
+        {
+          "seed": 5,
+          "learned": {
+            "seed": 5,
+            "visited_pairs": 944943,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -348.3586105244416,
+            "expected_net_ce_bps_per_year": -330.14842946304844,
+            "one_way_turnover_per_path": 74.78539999999988,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 837.7250805717795
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 501.8974702820576,
+            "expected_net_ce_bps_per_year": 504.94646504003845,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -835.0948945030868
+        },
+        {
+          "seed": 6,
+          "learned": {
+            "seed": 6,
+            "visited_pairs": 945590,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -280.8801728054207,
+            "expected_net_ce_bps_per_year": -283.1085219643692,
+            "one_way_turnover_per_path": 67.08879999999994,
+            "trades_per_path": 99.9,
+            "oracle_gap_bps_per_year": 790.6851730731003
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 482.4474447009949,
+            "expected_net_ce_bps_per_year": 482.60836026824006,
+            "one_way_turnover_per_path": 0.7920000000000001,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -765.7168822326092
+        },
+        {
+          "seed": 7,
+          "learned": {
+            "seed": 7,
+            "visited_pairs": 945968,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -307.59861469433196,
+            "expected_net_ce_bps_per_year": -332.67383962517096,
+            "one_way_turnover_per_path": 72.9809999999999,
+            "trades_per_path": 99.9,
+            "oracle_gap_bps_per_year": 840.250490733902
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 466.5035591754499,
+            "expected_net_ce_bps_per_year": 464.9245217653014,
+            "one_way_turnover_per_path": 0.7376,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -797.5983613904723
+        },
+        {
+          "seed": 8,
+          "learned": {
+            "seed": 8,
+            "visited_pairs": 945488,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -282.13881616635496,
+            "expected_net_ce_bps_per_year": -292.5759636940582,
+            "one_way_turnover_per_path": 67.01299999999999,
+            "trades_per_path": 100.0,
+            "oracle_gap_bps_per_year": 800.1526148027892
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 460.5044780754649,
+            "expected_net_ce_bps_per_year": 460.64674045246454,
+            "one_way_turnover_per_path": 0.6725999999999999,
+            "trades_per_path": 0.999
+          },
+          "paired_net_ce_delta_bps_per_year": -753.2227041465228
+        },
+        {
+          "seed": 9,
+          "learned": {
+            "seed": 9,
+            "visited_pairs": 945509,
+            "possible_pairs": 1656369,
+            "checkpoint_stable_through_end": false,
+            "last_checkpoint_policy_change": 13000000,
+            "realized_net_ce_bps_per_year": -303.89187949250794,
+            "expected_net_ce_bps_per_year": -300.9406499080486,
+            "one_way_turnover_per_path": 68.01619999999996,
+            "trades_per_path": 99.9,
+            "oracle_gap_bps_per_year": 808.5173010167796
+          },
+          "baseline": {
+            "realized_net_ce_bps_per_year": 501.8974702820576,
+            "expected_net_ce_bps_per_year": 504.94646504003845,
+            "one_way_turnover_per_path": 0.7194,
+            "trades_per_path": 1.0
+          },
+          "paired_net_ce_delta_bps_per_year": -805.8871149480871
+        }
+      ],
+      "median_learned_net_ce": -296.75830680105344,
+      "median_learned_realized_ce": -293.01534782943145,
+      "median_baseline_net_ce": 487.5421635433936,
+      "median_baseline_realized_ce": 486.5188927488331,
+      "paired_delta_mean": -782.3978802590062,
+      "paired_delta_se": 12.52879463674265,
+      "positive_pairs": 0,
+      "median_oracle_gap": 804.3349579097844,
+      "median_learned_turnover": 68.27599999999998,
+      "median_baseline_turnover": 0.7194,
+      "median_trades": 99.951,
+      "median_coverage": 0.5708567957985207,
+      "stable_seeds": 0
+    }
+  ]
+}
