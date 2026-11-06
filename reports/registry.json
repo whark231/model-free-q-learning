@@ -197,12 +197,12 @@
       "notes": {
         "tldr": [
           "All 30 seeds (3 γ × 10) trained 13M episodes with a constant learning rate α = 3.2e-4 in place of 1/N, with no crashes. The mean learning gap rose at every γ against baseline-v1: 17.6 to 43.5 bps/yr at γ = 5, 30.6 to 107.2 at γ = 3 and 13.0 to 43.3 at γ = 8.",
-          "2 of 30 seeds ended on the exactly-best grid portfolio (0, 2 and 0 of 10 at γ = 5, 3 and 8), against 3, 5 and 5 of 10 in baseline-v1. A constant α leaves about 49 bps/yr of noise in every Q-value, more than the 10.5 to 20.0 bps/yr that separate the best two grid portfolios."
+          "2 of 30 seeds ended on the exactly-best grid portfolio (0, 2 and 0 of 10 at γ = 5, 3 and 8), against 3, 5 and 5 of 10 in baseline-v1. With a constant α and Q starting at 0, portfolios tried only during exploration end at about 0.3 of their true value, so the agent rarely revisits a rival once ε fades."
         ],
         "takeaways": [
           "Paired by seed against baseline-v1, the mean learning-gap difference was +25.9 bps/yr (SE 11.5) at γ = 5, +76.6 (24.6) at γ = 3 and +30.2 (8.0) at γ = 8. One seed beat its baseline-v1 pair at γ = 5 and none at γ = 3 or 8.",
           "Registered expectations (EXPERIMENTS.md §8.3). A larger mean learning gap than baseline-v1 at every γ: met. Fewer seeds meeting the primary convergence rule at every γ: not met at any γ (10, 8 and 10 of 10 at γ = 5, 3 and 8, against 9, 8 and 9).",
-          "Stability is not accuracy here. At γ = 5 all 10 seeds held their final portfolio for the last 1.3M episodes, none of them on the best portfolio, and the 10 seeds ended on 9 different portfolios. The cause is measured: with a constant α and Q starting at 0, a portfolio updated N times holds about (1 − (1 − α)^N) of its true value. Most portfolios are tried only during exploration, about 1,100 times, so they end near 0.3 of their value (run_000 slopes 0.291, 0.291 and 0.296 at γ = 5, 3 and 8), while the greedy one sits at 1.06 to 1.14. No shrunken rival can overtake the greedy portfolio once ε fades (EXPERIMENTS.md §8.7).",
+          "Under a constant α the primary rule tracks stability and says little about accuracy. At γ = 5 all 10 seeds held their final portfolio for the last 1.3M episodes, none of them on the best portfolio, and the 10 seeds ended on 9 different portfolios. Measured: a portfolio updated N times holds about (1 − (1 − α)^N) of its true value; most are tried only during exploration, about 1,100 times, and end near 0.3 (run_000 slopes 0.291, 0.291 and 0.296 at γ = 5, 3 and 8), while the greedy portfolio sits at 0.69 to 1.14 of its value across the 30 seeds. Inferred, not tested: shrunken rivals cannot overtake the greedy portfolio once ε fades (EXPERIMENTS.md §8.7).",
           "Seeds that stayed within 25 bps/yr of the best from some point on: 4, 2 and 1 of 10 at γ = 5, 3 and 8, against 7, 6 and 7 in baseline-v1.",
           "Q-value fit over all 1,287 portfolios, median over seeds: Spearman 0.813, 0.703 and 0.917, top-10 recall 25%, 15% and 20% at γ = 5, 3 and 8. These mostly measure the shrinkage above. The committed baseline-v1 summaries have no Q-fit numbers yet, so this report cannot set them side by side."
         ],
@@ -232,7 +232,7 @@
       "notes": {
         "tldr": [
           "All 30 seeds trained 13M episodes with a linear Q-function on the 45 quadratic features (α = 3.2e-4, l2 = 0), the correctly specified reference model. Against tabular-const, which shares α, seeds and settings, the mean learning gap fell at γ = 5 (43.5 to 22.6 bps/yr) and γ = 3 (107.2 to 8.0) and rose at γ = 8 (43.3 to 58.7).",
-          "The fit of the whole Q-value landscape improved at every γ (median Spearman 0.915, 0.854 and 0.951 against 0.813, 0.703 and 0.917), but the top pick did not follow at γ = 8: all 10 seeds missed the best portfolio there, by 55.7 or 70.8 bps/yr."
+          "The ranking of the whole Q-value landscape improved at every γ (median Spearman 0.915, 0.854 and 0.951 against 0.813, 0.703 and 0.917), but the top pick did not follow at γ = 8: all 10 seeds missed the best portfolio there, by 55.7 or 70.8 bps/yr."
         ],
         "takeaways": [
           "Paired by seed against tabular-const, the mean learning-gap difference was −20.9 bps/yr (SE 9.8) at γ = 5, −99.2 (23.7) at γ = 3 and +15.4 (6.5) at γ = 8. Against baseline-v1 (tabular, α = 1/N): +5.0 (5.2), −22.6 (12.8) and +45.7 (5.6).",
@@ -242,7 +242,7 @@
         ],
         "caveats": [
           "Post hoc, and the reference model only: it is told the reward is quadratic in the weights, so it is never the discovery result (that is fa-spline). α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.4).",
-          "Besides the features, two mechanical differences from tabular-const remain: the FA agent refreshes its greedy portfolio every 100 updates and breaks ties at random; tabular-const does both every episode and breaks ties to the lowest index.",
+          "Besides the features, one mechanical difference from tabular-const remains: the FA agent refreshes its greedy portfolio every 100 updates, tabular-const every episode. Both break ties at random when acting.",
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
           "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit; the HTML report does not show them yet.",
@@ -275,7 +275,7 @@
         "caveats": [
           "Spline and tabular-const use separately tuned learning rates, so this comparison combines changes in features and learning rate.",
           "The baseline-v1 Q-fit numbers above come from a re-evaluation of baseline-v1 that is not committed: the committed results/baseline_g5_grid20, robust_g3_grid20 and robust_g8_grid20 summaries have no q_fit block. Commit the re-evaluated summaries so these numbers can be reproduced.",
-          "Post hoc. α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.5). The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
+          "Post hoc. α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.5). The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed: with α = 7.11e-6 and ‖φ‖² at most 45, one update moves a value by at most about 3.2e-4 times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
           "Against tabular runs the report lists src/fa_agent.py and src/features.py as changed training code; tabular runs do not hash those files. Calibration and code flags against runs built on another machine can be line-ending artifacts (AUDIT_2026-11-06.md)."
         ]
       },

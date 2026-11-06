@@ -1,25 +1,24 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-11-05
-**Status:** the baseline and five post-hoc runs are done. The function-approximation (FA) code, the Q-value fit metrics and the step-size tuning are done. Three constant-learning-rate runs are registered but not run: `tabular-const`, `fa-quadratic` and `fa-spline`. Closed items are in `REVIEW_HISTORY.md`. The FA hand-off to Albert, with every edit to his files, is in `FA_INTEGRATION_NOTES.md`.
+**Date:** 2026-11-06
+**Status:** the required work (Parts I to VI) is done and independently re-checked. The three constant-learning-rate runs (`tabular-const`, `fa-quadratic`, `fa-spline`) are run, merged into `dev` and reported. The transaction-cost sweep has run but its agent learns nothing; it needs a redesign. The whole-project audit is in `AUDIT_2026-11-06.md`. Closed items are in `REVIEW_HISTORY.md`.
 
 ---
 
 ## TL;DR / In plain terms
 
-The professor agreed to a constant learning rate α for FA, and a separately tuned constant α for the tabular comparison. Tuning on separate seeds picked 3.2e-4 for tabular and the quadratic, and 7.11e-6 with l2 = 0 for the splines. The three runs are registered with their expected results. They start once Albert has reviewed the PR and agreed to those expectations. No FA result exists yet.
+The audit found no correctness bug in the core code or in the FA code. It did find that the predictions we registered for the FA-era runs mostly failed (four of five checks, in whole or in part), and that two of our stated reasons were wrong; `EXPERIMENTS.md` §8.7 now says so plainly, and the report should too. The transaction-cost agent scores like a random portfolio even when trading is free, so the TC extension needs a design decision from both of us before any more TC runs. After that, pick the final runs and write.
 
 **Key concepts to understand**
 
-- **The model ladder.** Tabular (the baseline) → splines, the main model (generic smooth features, never told the reward is quadratic) → quadratic, the correctly specified reference. The quadratic is never reported as the discovery result.
-- **Why `tabular-const` exists.** It has the same α, seeds and settings as `fa-quadratic`, so the pair differs only in the features. Against `baseline-v1` (α = 1/N), the learning rate also differs.
-- **Constant α keeps a noise floor.** For tabular at α = 3.2e-4 it is about 49 bps/yr per Q-value. The best grid portfolio leads the second by only 10.5 bps/yr at γ = 5 (`EXPERIMENTS.md` §8).
+- **Shrinkage under a constant α.** With α constant and Q starting at 0, a portfolio updated N times holds about (1 − (1 − α)^N) of its true value. Portfolios tried only during exploration (about 1,100 times) end at about 0.3 of their value, measured at 0.29 to 0.30 in `tabular-const`'s logs. The inferred consequence (not tested by a counterfactual run) is that the greedy portfolio can then never be overtaken, which would explain why `tabular-const` "converged" in 28 of 30 seeds while finding the best portfolio in 2.
+- **Unfinished FA directions.** Uniform exploration lasts about 1/β ≈ 1.41M episodes, not the 13M our §8.4 estimate assumed. At that count 36 of the 45 quadratic directions and 351 of the 369 spline directions barely move from θ = 0. This is the suspected cause of the γ = 8 miss (every FA seed holds 20% SPY where the best portfolio holds 40%); it is not tested yet.
 
 **Key takeaways**
 
-- `baseline-v1` stays the headline for Parts IV and V. Everything FA and constant-α is labelled post hoc.
-- On the tuning seeds, tabular with α = 1/N scored 48 bps/yr above the best constant α (seed SE 28). These are tuning numbers, not results, but they are worth a sentence in the Part III learning-rate discussion.
+- `baseline-v1` stays the headline for Parts IV and V.
+- For the FA section: both FA models beat `tabular-const` at γ = 5 and 3 (paired −20.9 ± 9.8 and −99.2 ± 23.7 bps/yr for the quadratic) and fit the landscape better at every γ, but neither beats `baseline-v1` reliably. `fa-spline` fit the landscape better than the correctly specified quadratic on Spearman, against our prediction. No "discovery" claim.
 
 ---
 
@@ -27,33 +26,28 @@ The professor agreed to a constant learning rate α for FA, and a separately tun
 
 | Component | Where | Evidence |
 |---|---|---|
-| Benchmarks, grid, reward, tabular agent | `src/benchmarks/`, `src/action_space/`, `src/rewards.py`, `src/agent.py` | `REVIEW_HISTORY.md` §1 |
-| Baseline and five post-hoc runs | `results/`, `reports/` | `REVIEW_HISTORY.md` §8, `EXPERIMENTS.md` §7 |
-| FA agent, quadratic and spline features, FA training path | `src/fa_agent.py`, `src/features.py`, `src/train.py` | `FA_INTEGRATION_NOTES.md` §1; independent reviews applied |
-| Q-value fit metrics (correlation, top-10 recall, optimism) | `src/evaluate.py` | `EVALUATION.md` §2; `b63` and `eps-decay` re-evaluated |
-| Step-size tuning | `src/tune_fa.py`, `results/tuning/` | `FA_INTEGRATION_NOTES.md` §5, `EXPERIMENTS.md` §8.1; 108 runs; close-call rule fixed before any result |
-| `tabular-const`, `fa-quadratic`, `fa-spline` registered | `src/config.py`, `EXPERIMENTS.md` §8 | Values tested against `fa_tuning.json`; committed post-hoc folders still match |
+| Benchmarks, grid, reward, tabular agent | `src/benchmarks/`, `src/action_space/`, `src/rewards.py`, `src/agent.py` | `REVIEW_HISTORY.md` §1; re-derived in the audit |
+| Baseline and five tabular post-hoc runs | `results/`, `reports/` | `REVIEW_HISTORY.md` §8, `EXPERIMENTS.md` §7 |
+| FA agent, features, training path, Q-value fit metrics | `src/fa_agent.py`, `src/features.py`, `src/train.py`, `src/evaluate.py` | `FA_INTEGRATION_NOTES.md`; audit found no bug |
+| Step-size tuning | `src/tune_fa.py`, `results/tuning/` | `EXPERIMENTS.md` §8.1 |
+| `tabular-const`, `fa-quadratic`, `fa-spline` run and reported | `results/<run>/`, `reports/<run>/` | `EXPERIMENTS.md` §8.7; report notes written 2026-11-06 |
+| Whole-project audit | `AUDIT_2026-11-06.md` | Four independent reviewers |
 
-405 tests pass.
+407 tests pass.
 
 ## Your next steps
 
-1. **Finish `tabular-const`** (see the to-do below), then commit `results/tabular-const/`, `reports/tabular-const/` and `reports/registry.json` on `run/tabular-const` and open a PR to `dev`.
-2. **Run `fa-quadratic` and `fa-spline`**, one at a time on our own machines, each on its branch (`run/fa-quadratic`, `run/fa-spline`, made from `dev` after PR #23). `tabular-const` took 10.5 to 13.4 min per seed. After each run: tag the commit, register it with `compare_with` (`reports/README.md`), extract and build on the machine that ran it. Merge the runs into `dev` in order (`tabular-const`, then `fa-quadratic`, then `fa-spline`), so each report can compare against the ones before it. Expect a small `registry.json` conflict each time; keep every entry.
-3. **Transaction-cost extension, with Albert.** First settle the two open prospectus decisions: a fixed cost or a sweep, and how finely to represent holdings. `feature/transaction-costs` is ready.
-4. **Review Albert's evaluation PR** for `RUN_ISSUES` Findings 1 to 3 when he opens it.
-5. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; it only speeds up 10% grid tabular runs.
-6. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α vs 1/N discussion), and the FA extension.
-
-**`tabular-const` report notes (to do).** The run finished on 2026-11-06 (30 seeds, trained at tag `tabular-const`, commit `bc311a3`). It is registered in `reports/registry.json`, extracted and built (`reports/tabular-const/`), but its `notes` are empty. To do:
-- Read the report and check it against the expectations in `EXPERIMENTS.md` §8.3: a larger mean learning gap than `baseline-v1` at every γ, and fewer seeds meeting the primary rule at every γ (baseline-v1: 9, 8 and 9).
-- Fill in `tldr`, `takeaways` and `caveats`, then run `python -m src.reporting.build tabular-const`.
-- Record the outcome under §8.3, as was done for §7.7.
-- The Q-fit numbers are in each `evaluation/summary.json` under `q_fit`, not in the report.
-- Put this in `caveats`: the report flags the calibration and `grid.py`, `environment.py` and `rewards.py` as changed against `baseline-v1`. That is false: the content is byte-identical once Windows line endings are normalized. `agent.py` and `train.py` really changed, but not in tabular behaviour (an `epsilon` property; the FA path and logging).
+1. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.
+2. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. The strongest FA candidate is FA on the 10% grid (C1), where tabular struggled most; a γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
+3. **Write the FA section** using `EXPERIMENTS.md` §8.7, including the failed expectations, the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
+4. **Merge run branches through PRs.** The hand-resolved `registry.json` conflict in the `fa-quadratic` merge left invalid JSON on `dev` (repaired on `feature/project-audit`). A test that loads the registry and builds every report would catch this (`AUDIT_2026-11-06.md` L6).
+5. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; speeds up 10% grid tabular runs only, so it matters if C1 includes a tabular 10% comparison.
+6. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α versus 1/N discussion), and the FA extension.
 
 ## To decide with Albert
 
-**Which post-hoc runs go in the report.** `grid10-robustness` is the action-space check and γ = 3 and 8 the economic check. `b63` and `n26m` cover "different training budgets, episode lengths". `eps-decay` should stay short, as mostly a negative result. `all-three` is the combined check `grid10-robustness` is compared against. The three new runs belong in the FA extension.
+**TC redesign** (step 1 above).
 
-**A 10% grid FA run.** `fa-spline-grid10` was planned in `FA_INTEGRATION_NOTES.md` §2. Decide after the 20% grid results.
+**Final runs.** `AUDIT_2026-11-06.md` §6: R0 (re-evaluations, no training) first, then a TC option, C1 to C3, P1 and P2 as time allows.
+
+**Which post-hoc runs go in the report.** `grid10-robustness` is the action-space check and γ = 3 and 8 the economic check. `b63` and `n26m` cover "different training budgets, episode lengths". `eps-decay` stays short, as mostly a negative result. `all-three` is the combined check `grid10-robustness` is compared against. The three constant-α runs go in the FA extension and in the Part III learning-rate discussion.

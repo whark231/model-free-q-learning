@@ -2,7 +2,7 @@
 
 **Written:** 2026-10-22 by Claude, for Albert · **Run:** 01:35 to 05:00 EDT, commit `80a6e9c`, settings from `src/config.py` unchanged
 **Status of every item below:** found and verified, **nothing fixed in code yet**. The plan in §4 waits on Albert's go-ahead.
-**Checked again 2026-11-06 (`AUDIT_2026-11-06.md`):** steps 1 to 3 of §4 are still open in the code: no total-gap column in `per_seed.csv` or `INDEX.md`, no post-hoc "settled" measure, no checkpoint label, and no commit or extra file hashes in `summary.json`. The training logs are now tracked (step 7 done).
+**Checked again 2026-11-06 (`AUDIT_2026-11-06.md`):** steps 1 to 3 of §4 are still open in the code: no total-gap column in `per_seed.csv` or `INDEX.md`, no post-hoc "settled" measure, no checkpoint label, and no commit or extra file hashes in `summary.json`. The console run logs (`results/full_run_*.log`) are now tracked (step 7 done); the `run_*.npz` training logs stay uncommitted by design.
 
 ---
 
