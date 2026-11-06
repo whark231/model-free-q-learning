@@ -38,12 +38,19 @@ The professor agreed to a constant learning rate α for FA, and a separately tun
 
 ## Your next steps
 
-1. **Open the PR** `feature/function-approximation` → `dev`. Ask Albert to review the edits to his files (`FA_INTEGRATION_NOTES.md` §1) and to agree to the expected directions in `EXPERIMENTS.md` §8 **before any of the three runs starts**.
-2. **After the merge, run the three** on a run branch from `dev`. First time a short run of each (`EXPERIMENTS.md` §8.6), because the tabular tuning runs were about 6× slower than expected. Then the full runs, about 9 hours as three parallel processes. Then evaluate and build the reports.
-3. **Transaction-cost extension, with Albert.** The shared code uses quadratic costs and the previous grid target as the state. The cost, discount and learning-rate comparisons each have their own run branch. See [Transaction costs and rebalancing](TRANSACTION_COSTS.md) for the branch breakdown, rationale and commands.
+1. **Finish `tabular-const`** (see the to-do below), then commit `results/tabular-const/`, `reports/tabular-const/` and `reports/registry.json` on `run/tabular-const` and open a PR to `dev`.
+2. **Run `fa-quadratic` and `fa-spline`**, one at a time on our own machines, each on its branch (`run/fa-quadratic`, `run/fa-spline`, made from `dev` after PR #23). `tabular-const` took 10.5 to 13.4 min per seed. After each run: tag the commit, register it with `compare_with` (`reports/README.md`), extract and build on the machine that ran it. Merge the runs into `dev` in order (`tabular-const`, then `fa-quadratic`, then `fa-spline`), so each report can compare against the ones before it. Expect a small `registry.json` conflict each time; keep every entry.
+3. **Transaction-cost extension, with Albert.** First settle the two open prospectus decisions: a fixed cost or a sweep, and how finely to represent holdings. `feature/transaction-costs` is ready.
 4. **Review Albert's evaluation PR** for `RUN_ISSUES` Findings 1 to 3 when he opens it.
 5. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; it only speeds up 10% grid tabular runs.
 6. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α vs 1/N discussion), and the FA extension.
+
+**`tabular-const` report notes (to do).** The run finished on 2026-11-06 (30 seeds, trained at tag `tabular-const`, commit `bc311a3`). It is registered in `reports/registry.json`, extracted and built (`reports/tabular-const/`), but its `notes` are empty. To do:
+- Read the report and check it against the expectations in `EXPERIMENTS.md` §8.3: a larger mean learning gap than `baseline-v1` at every γ, and fewer seeds meeting the primary rule at every γ (baseline-v1: 9, 8 and 9).
+- Fill in `tldr`, `takeaways` and `caveats`, then run `python -m src.reporting.build tabular-const`.
+- Record the outcome under §8.3, as was done for §7.7.
+- The Q-fit numbers are in each `evaluation/summary.json` under `q_fit`, not in the report.
+- Put this in `caveats`: the report flags the calibration and `grid.py`, `environment.py` and `rewards.py` as changed against `baseline-v1`. That is false: the content is byte-identical once Windows line endings are normalized. `agent.py` and `train.py` really changed, but not in tabular behaviour (an `epsilon` property; the FA path and logging).
 
 ## To decide with Albert
 
