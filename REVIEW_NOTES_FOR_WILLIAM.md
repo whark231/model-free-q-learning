@@ -40,7 +40,7 @@ The professor agreed to a constant learning rate α for FA, and a separately tun
 
 1. **Open the PR** `feature/function-approximation` → `dev`. Ask Albert to review the edits to his files (`FA_INTEGRATION_NOTES.md` §1) and to agree to the expected directions in `EXPERIMENTS.md` §8 **before any of the three runs starts**.
 2. **After the merge, run the three** on a run branch from `dev`. First time a short run of each (`EXPERIMENTS.md` §8.6), because the tabular tuning runs were about 6× slower than expected. Then the full runs, about 9 hours as three parallel processes. Then evaluate and build the reports.
-3. **Transaction-cost extension, with Albert.** First settle the two open prospectus decisions: a fixed cost or a sweep, and how finely to represent holdings. `feature/transaction-costs` is ready.
+3. **Transaction-cost extension, with Albert.** The shared code uses quadratic costs and the previous grid target as the state. The cost, discount and learning-rate comparisons each have their own run branch. See [Transaction costs and rebalancing](TRANSACTION_COSTS.md) for the branch breakdown, rationale and commands.
 4. **Review Albert's evaluation PR** for `RUN_ISSUES` Findings 1 to 3 when he opens it.
 5. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; it only speeds up 10% grid tabular runs.
 6. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α vs 1/N discussion), and the FA extension.
