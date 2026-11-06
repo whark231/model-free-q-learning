@@ -1,0 +1,4 @@
+{
+  "anchor": {"reference_cost_bps": 2, "discount": 0.95, "alpha": null},
+  "constant-rate": {"reference_cost_bps": 2, "discount": 0.95, "alpha": 0.00032}
+}
