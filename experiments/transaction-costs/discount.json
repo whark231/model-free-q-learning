@@ -1,0 +1,5 @@
+{
+  "myopic": {"reference_cost_bps": 2, "discount": 0, "alpha": null},
+  "discount-090": {"reference_cost_bps": 2, "discount": 0.9, "alpha": null},
+  "anchor": {"reference_cost_bps": 2, "discount": 0.95, "alpha": null}
+}

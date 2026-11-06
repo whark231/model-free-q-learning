@@ -1,0 +1,6 @@
+{
+  "no-cost": {"reference_cost_bps": 0, "discount": 0.95, "alpha": null},
+  "low-cost": {"reference_cost_bps": 1, "discount": 0.95, "alpha": null},
+  "anchor": {"reference_cost_bps": 2, "discount": 0.95, "alpha": null},
+  "high-cost": {"reference_cost_bps": 5, "discount": 0.95, "alpha": null}
+}

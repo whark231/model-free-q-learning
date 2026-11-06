@@ -176,11 +176,50 @@
         "baseline-v1",
         "tabular-const",
         "fa-spline"
+        ],
+    },
+    {
+      "id": "tabular-const",
+      "title": "Tabular agent with a tuned constant learning rate",
+      "date": "2026-11-06",
+      "results_dir": "results/tabular-const",
+      "git_ref": "tabular-const",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc constant-learning-rate run (EXPERIMENTS.md §8.3), registered 2026-11-05 before running. Learning rate 1/N(a) -> constant α = 3.2e-4, tuned on separate seeds (master seed 20261103, results/tuning/fa_tuning.json); everything else as baseline-v1: B = 20, 13M episodes, ε 1% at halfway, 20% grid, γ = 3, 5, 8, 10 seeds, master seed 20261016. Trained at commit bc311a3 (tag tabular-const).",
+      "compare_with": [
+        "baseline-v1"
       ],
       "notes": {
         "tldr": [],
         "takeaways": [],
         "caveats": []
+      }
+    },
+    {
+      "id": "fa-spline",
+      "title": "Spline function approximation",
+      "date": "2026-11-06",
+      "results_dir": "results/fa-spline",
+      "git_ref": "bc311a3",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Additive and pairwise cubic B-splines with alpha = 7.11e-6, l2 = 0 and greedy refresh every 100 updates. The 20% grid, 20-day blocks and baseline exploration schedule are shared with tabular-const.",
+      "notes": {
+        "tldr": [
+          "Thirty full-budget seeds across γ = 5, 3 and 8, paired with tabular-const on simulated returns."
+        ],
+        "takeaways": [
+          "γ = 5. Median learning gap was 5.3 bps/yr (range 0.0–78.5), versus 42.0 for tabular-const and 14.1 for baseline-v1. The paired mean difference versus tabular-const was -27.8 bps/yr (SE 11.9). 5/10 seeds found the best portfolio, 10/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.950 and 45%.",
+          "γ = 3. Median learning gap was 62.3 bps/yr (range 0.0–68.3), versus 102.6 for tabular-const and 10.0 for baseline-v1. The paired mean difference versus tabular-const was -61.8 bps/yr (SE 24.2). 3/10 seeds found the best portfolio, 10/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.945 and 65%.",
+          "γ = 8. Median learning gap was 51.6 bps/yr (range 50.0–61.2), versus 51.5 for tabular-const and 5.7 for baseline-v1. The paired mean difference versus tabular-const was +11.4 bps/yr (SE 5.1). 0/10 seeds found the best portfolio, 9/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.957 and 20%.",
+          "Against baseline-v1, the paired mean learning-gap differences (spline minus baseline) were −1.8 bp/yr (SE 9.5), +14.8 (17.3) and +41.6 (6.0) at γ = 5, 3 and 8. The γ = 5 median improved, with a much smaller paired mean change.",
+          "Median Spearman correlation / top-10 recall versus baseline-v1 and tabular-const: γ = 5: baseline-v1 0.821 / 35%; tabular-const 0.813 / 25%; γ = 3: baseline-v1 0.710 / 20%; tabular-const 0.703 / 15%; γ = 8: baseline-v1 0.920 / 20%; tabular-const 0.917 / 20%."
+        ],
+        "caveats": [
+          "Spline and tabular-const use separately tuned learning rates, so this comparison combines changes in features and learning rate.",
+          "The registered Q-fit expectation concerns fa-quadratic and requires its completed results."
+        ]
       }
     }
   ]

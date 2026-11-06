@@ -1,0 +1,233 @@
+{
+  "written_utc": "2026-11-06T10:42:55+00:00",
+  "git_commit": "bc311a387bd18ee8ab98b4e5415e49bd9e7497f0",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 7.084877209212449e-07,
+    "alpha_rule": 7.111111111111112e-06,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 1300000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.2
+    ],
+    "post_hoc_run": "fa-spline",
+    "epsilon_at_halfway": 0.01,
+    "agent": "linear",
+    "feature_map": "spline",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "fa-spline",
+    "registered": "2026-11-05",
+    "expected": "a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every \u03b3, since most spline directions learn far more slowly than 13M episodes allow; no direction for the learning gap against fa-quadratic (that argument points to larger, the \u03b3 = 5 tuning seeds to smaller), nor against tabular-const or baseline-v1"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid20_FAspline",
+      "purpose": "post-hoc run fa-spline: a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every \u03b3, since most spline directions learn far more slowly than 13M episodes allow; no direction for the learning gap against fa-quadratic (that argument points to larger, the \u03b3 = 5 tuning seeds to smaller), nor against tabular-const or baseline-v1",
+      "gamma": 5.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "baseline_g5_grid20_FAspline",
+      "discretization_gap_bps": 5.739520916227216,
+      "learning_gap_bps": {
+        "mean": 15.74501021882794,
+        "median": 5.26570526902794,
+        "min": 0.0,
+        "max": 78.50779815412255,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.5,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 104249000.0,
+            "median": 83196000.0,
+            "min": 65786000.0,
+            "max": 255632000.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 164192800.0,
+            "median": 173900000.0,
+            "min": 84232000.0,
+            "max": 255632000.0,
+            "n": 10
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.8,
+          "observations": {
+            "mean": 74900000.0,
+            "median": 62900000.0,
+            "min": 37600000.0,
+            "max": 136000000.0,
+            "n": 8
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g3_grid20_FAspline",
+      "purpose": "post-hoc run fa-spline: a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every \u03b3, since most spline directions learn far more slowly than 13M episodes allow; no direction for the learning gap against fa-quadratic (that argument points to larger, the \u03b3 = 5 tuning seeds to smaller), nor against tabular-const or baseline-v1",
+      "gamma": 3.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g3_grid20_FAspline",
+      "discretization_gap_bps": 2.4742144891934794,
+      "learning_gap_bps": {
+        "mean": 45.399184893914985,
+        "median": 62.29028733851743,
+        "min": 0.0,
+        "max": 68.27689986169338,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.3,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 103955600.0,
+            "median": 106014000.0,
+            "min": 49880000.0,
+            "max": 178780000.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 160663600.0,
+            "median": 142308000.0,
+            "min": 62448000.0,
+            "max": 258860000.0,
+            "n": 10
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.3,
+          "observations": {
+            "mean": 41800000.0,
+            "median": 36400000.0,
+            "min": 24000000.0,
+            "max": 65000000.0,
+            "n": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g8_grid20_FAspline",
+      "purpose": "post-hoc run fa-spline: a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every \u03b3, since most spline directions learn far more slowly than 13M episodes allow; no direction for the learning gap against fa-quadratic (that argument points to larger, the \u03b3 = 5 tuning seeds to smaller), nor against tabular-const or baseline-v1",
+      "gamma": 8.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g8_grid20_FAspline",
+      "discretization_gap_bps": 6.133499610241306,
+      "learning_gap_bps": {
+        "mean": 54.63304006335702,
+        "median": 51.5775279353077,
+        "min": 49.95935228815782,
+        "max": 61.174484793278914,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 138845600.0,
+            "median": 137171000.0,
+            "min": 103316000.0,
+            "max": 179042000.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 201022222.2222222,
+            "median": 219506000.0,
+            "min": 124390000.0,
+            "max": 255234000.0,
+            "n": 9
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        }
+      }
+    }
+  ],
+  "comparison": null
+}
