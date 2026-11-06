@@ -162,6 +162,24 @@
           "The three γ trained in parallel as three processes into one results folder (seeds are deterministic, so results equal a sequential run); a final sequential pass reused all three and wrote the index. William's update() speed fix (REVIEW_NOTES_FOR_WILLIAM.md item 3) was not in; it changes speed only. Trained at commit e13a9a6 (local tag grid10-robustness, not pushed); its src/ is identical to 81814e6. Training logs (run_*.npz, about 12 GB) stay on Albert's Mac."
         ]
       }
+    },
+    {
+      "id": "tabular-const",
+      "title": "Tabular agent with a tuned constant learning rate",
+      "date": "2026-11-06",
+      "results_dir": "results/tabular-const",
+      "git_ref": "tabular-const",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc constant-learning-rate run (EXPERIMENTS.md §8.3), registered 2026-11-05 before running. Learning rate 1/N(a) -> constant α = 3.2e-4, tuned on separate seeds (master seed 20261103, results/tuning/fa_tuning.json); everything else as baseline-v1: B = 20, 13M episodes, ε 1% at halfway, 20% grid, γ = 3, 5, 8, 10 seeds, master seed 20261016. Trained at commit bc311a3 (tag tabular-const).",
+      "compare_with": [
+        "baseline-v1"
+      ],
+      "notes": {
+        "tldr": [],
+        "takeaways": [],
+        "caveats": []
+      }
     }
   ]
 }

@@ -1,0 +1,229 @@
+{
+  "written_utc": "2026-11-06T02:49:27+00:00",
+  "git_commit": "bc311a387bd18ee8ab98b4e5415e49bd9e7497f0",
+  "python": "3.10.2",
+  "numpy": "2.2.6",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 7.084877209212449e-07,
+    "alpha_rule": 0.00032,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 1300000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.2
+    ],
+    "post_hoc_run": "tabular-const",
+    "epsilon_at_halfway": 0.01
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "tabular-const",
+    "registered": "2026-11-05",
+    "expected": "a larger mean learning gap than baseline-v1 at every \u03b3, and fewer seeds meeting the primary convergence rule at every \u03b3 (baseline-v1: 9, 8, 9 at \u03b3 = 5, 3, 8), because a constant alpha never averages the reward noise away (Q-value noise about 49 bps/yr)"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid20_TABconst",
+      "purpose": "post-hoc run tabular-const: a larger mean learning gap than baseline-v1 at every \u03b3, and fewer seeds meeting the primary convergence rule at every \u03b3 (baseline-v1: 9, 8, 9 at \u03b3 = 5, 3, 8), because a constant alpha never averages the reward noise away (Q-value noise about 49 bps/yr)",
+      "gamma": 5.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "baseline_g5_grid20_TABconst",
+      "discretization_gap_bps": 5.7395209162273515,
+      "learning_gap_bps": {
+        "mean": 43.49746576041444,
+        "median": 42.038836642643915,
+        "min": 10.531410538055813,
+        "max": 109.91868944066765,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 49151850.0,
+            "median": 52329160.0,
+            "min": 26918040.0,
+            "max": 65949200.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 67176406.0,
+            "median": 53233970.0,
+            "min": 26918040.0,
+            "max": 209624100.0,
+            "n": 10
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.4,
+          "observations": {
+            "mean": 16700000.0,
+            "median": 19100000.0,
+            "min": 1000000.0,
+            "max": 27600000.0,
+            "n": 4
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g3_grid20_TABconst",
+      "purpose": "post-hoc run tabular-const: a larger mean learning gap than baseline-v1 at every \u03b3, and fewer seeds meeting the primary convergence rule at every \u03b3 (baseline-v1: 9, 8, 9 at \u03b3 = 5, 3, 8), because a constant alpha never averages the reward noise away (Q-value noise about 49 bps/yr)",
+      "gamma": 3.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g3_grid20_TABconst",
+      "discretization_gap_bps": 2.4742144891952553,
+      "learning_gap_bps": {
+        "mean": 107.16093559650149,
+        "median": 102.63113029617924,
+        "min": 0.0,
+        "max": 205.17307214855836,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.2,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 45852546.0,
+            "median": 31766220.0,
+            "min": 26773260.0,
+            "max": 132375760.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.8,
+          "observations": {
+            "mean": 60187452.5,
+            "median": 50944100.0,
+            "min": 27810980.0,
+            "max": 132375760.0,
+            "n": 8
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.2,
+          "observations": {
+            "mean": 119200000.0,
+            "median": 119200000.0,
+            "min": 2000000.0,
+            "max": 236400000.0,
+            "n": 2
+          }
+        }
+      }
+    },
+    {
+      "name": "robust_g8_grid20_TABconst",
+      "purpose": "post-hoc run tabular-const: a larger mean learning gap than baseline-v1 at every \u03b3, and fewer seeds meeting the primary convergence rule at every \u03b3 (baseline-v1: 9, 8, 9 at \u03b3 = 5, 3, 8), because a constant alpha never averages the reward noise away (Q-value noise about 49 bps/yr)",
+      "gamma": 8.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g8_grid20_TABconst",
+      "discretization_gap_bps": 6.13349961024035,
+      "learning_gap_bps": {
+        "mean": 43.25478307532491,
+        "median": 51.52938170347488,
+        "min": 11.462404194612049,
+        "max": 61.17448479327898,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 45862544.0,
+            "median": 35475970.0,
+            "min": 27223940.0,
+            "max": 105989940.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 112562348.0,
+            "median": 109736670.0,
+            "min": 27351200.0,
+            "max": 213009720.0,
+            "n": 10
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.1,
+          "observations": {
+            "mean": 87600000.0,
+            "median": 87600000.0,
+            "min": 87600000.0,
+            "max": 87600000.0,
+            "n": 1
+          }
+        }
+      }
+    }
+  ],
+  "comparison": null
+}

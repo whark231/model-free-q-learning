@@ -39,7 +39,7 @@ The FA work changed several of your files, with my permission and Claude's docum
 
 ## Your next steps
 
-1. **Review the FA PR** (`feature/function-approximation` → `dev`). `FA_INTEGRATION_NOTES.md` §1 lists every edit to your files:
+1. **Review the FA PR** (`feature/function-approximation` → `dev`). Merged as PR #23 on 2026-11-05. `FA_INTEGRATION_NOTES.md` §1 lists every edit to your files:
    - `train.py`, `run_experiments.py` and `evaluate.py`;
    - `config.py`: the new run fields and the three registrations;
    - the reporting code: agent fields in the settings table, and α formatting.
@@ -57,6 +57,13 @@ The FA work changed several of your files, with my permission and Claude's docum
 6. **The Q-value fit metrics are not in the HTML reports.** `src/reporting` reads none of them, so two of the new runs' expectations can only be checked in `evaluation/summary.json`. Adding them to `extract.py` and the template would put them in the comparison. Not blocking.
 7. **A false "calibration changed" flag on Windows**, from before this work. Every report built on William's machine flags the calibration as changed against `baseline-v1`. The independent review found the processed CSVs hash to `baseline-v1`'s values once CRLF line endings become LF, so the hash should be taken over normalized line endings (or the files pinned to LF in `.gitattributes`).
 8. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations.
+
+**`tabular-const` report notes (to do, William).** The run finished on 2026-11-06 (30 seeds, trained at tag `tabular-const`, commit `bc311a3`). It is registered in `reports/registry.json`, extracted and built (`reports/tabular-const/`), but its `notes` are empty. To do:
+- Read the report and check it against the expectations in `EXPERIMENTS.md` §8.3: a larger mean learning gap than `baseline-v1` at every γ, and fewer seeds meeting the primary rule at every γ (baseline-v1: 9, 8 and 9).
+- Fill in `tldr`, `takeaways` and `caveats`, then run `python -m src.reporting.build tabular-const`.
+- Record the outcome under §8.3, as was done for §7.7.
+- The Q-fit numbers are in each `evaluation/summary.json` under `q_fit`, not in the report.
+- Put this in `caveats`: the report flags the calibration and `grid.py`, `environment.py` and `rewards.py` as changed against `baseline-v1`. That is false: the content is byte-identical once Windows line endings are normalized. `agent.py` and `train.py` really changed, but not in tabular behaviour (an `epsilon` property; the FA path and logging).
 
 ## To decide together
 
