@@ -164,6 +164,21 @@
       }
     },
     {
+      "id": "fa-quadratic",
+      "title": "Quadratic function approximation with a tuned constant learning rate",
+      "date": "2026-11-06",
+      "results_dir": "results/fa-quadratic",
+      "git_ref": "fa-quadratic",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc function-approximation run (EXPERIMENTS.md §8.4), registered 2026-11-05 before running. The tabular Q-table is replaced by a linear Q-function on 45 quadratic features of the weights, the correctly specified reference model and never the discovery result. Constant α = 3.2e-4 and l2 = 0, tuned on separate seeds (master seed 20261103, results/tuning/fa_tuning.json); greedy portfolio refreshed every 100 updates. Everything else as tabular-const: B = 20, 13M episodes, ε 1% at halfway, 20% grid, γ = 3, 5, 8, 10 seeds, master seed 20261016. Trained at commit bc311a3 (tag fa-quadratic).",
+      "compare_with": [
+        "baseline-v1",
+        "tabular-const",
+        "fa-spline"
+        ],
+    },
+    {
       "id": "tabular-const",
       "title": "Tabular agent with a tuned constant learning rate",
       "date": "2026-11-06",
