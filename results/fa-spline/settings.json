@@ -1,0 +1,32 @@
+{
+  "gammas": [
+    3.0,
+    5.0,
+    8.0
+  ],
+  "gamma_baseline": 5.0,
+  "episode_length": 20,
+  "n_episodes": 13000000,
+  "n_runs": 10,
+  "master_seed": 20261016,
+  "epsilon0": 1.0,
+  "beta": 7.084877209212449e-07,
+  "alpha_rule": 7.111111111111112e-06,
+  "q_init": 0.0,
+  "discount": 0.0,
+  "log_every": 10000,
+  "convergence_k": 1300000,
+  "primary_convergence_rule": "greedy_stable_through_end",
+  "dq_tol": 1e-05,
+  "near_optimal_bps": 25.0,
+  "n_eval_episodes": 10000,
+  "increments": [
+    0.2
+  ],
+  "post_hoc_run": "fa-spline",
+  "epsilon_at_halfway": 0.01,
+  "agent": "linear",
+  "feature_map": "spline",
+  "l2": 0.0,
+  "greedy_refresh_every": 100
+}
