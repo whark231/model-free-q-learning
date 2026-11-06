@@ -6,11 +6,14 @@ Can a model-free Q-learning agent recover a near-optimal nine-ETF portfolio when
 it only observes simulated rewards, never the expected returns or covariances
 behind them? We calibrate a Gaussian market from 20 years of ETF data, compute
 the mean-variance optimum, train a tabular Q-learning agent on simulated
-returns, and measure how close it gets.
+returns, and measure how close it gets. Two bonus extensions build on this:
+function approximation (a linear Q-function over portfolio features) and
+transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations, both passing the full test suite:
+Tested on two combinations, both passing the full test suite (407 tests on
+2026-11-06):
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -23,6 +26,13 @@ Tested on two combinations, both passing the full test suite:
 pip install -r requirements.txt
 ```
 
+**Windows:** several commands print "γ" and stop with a `UnicodeEncodeError`
+under the default console encoding. Set the encoding first:
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"
+```
+
 ## Reproduce
 
 From the repo root:
@@ -30,29 +40,61 @@ From the repo root:
 ```bash
 python -m pytest src/tests -q          # all tests pass
 python -m src.data.clean               # rebuild data/processed/ from the committed raw data
-python -m src.run_experiments          # train and evaluate every experiment (about 3.5 hours)
+python -m src.run_experiments          # baseline-v1: train and evaluate every experiment
 ```
-
-Post-hoc variants run with `--run <run_id>` into their own results folder;
-`EXPERIMENTS.md` §7 lists each one, its command and its expected run time.
 
 Do not re-run `src.data.download_raw` to reproduce results. The raw data
 (downloaded 2026-09-24) is committed because Yahoo restates history, and a new
 download would change the calibration.
 
+**Post-hoc runs** use `--run <run_id>` into their own results folder, for
+example `python -m src.run_experiments --run b63 --results-dir results/b63`.
+`EXPERIMENTS.md` §7 lists the tabular variants (`eps-decay`, `b63`, `n26m`,
+`all-three`, `grid10-robustness`) and §8 the constant-learning-rate runs
+(`tabular-const`, `fa-quadratic`, `fa-spline`), each with its command,
+expected direction and run time.
+
+**Transaction costs** run through their own script with a configuration file
+(`TRANSACTION_COSTS.md`):
+
+```bash
+python -m src.transaction_costs experiments/transaction-costs/quadratic-cost.json --dry-run
+python -m src.tc_sweep_report      # rebuilds reports/tc-quadratic-cost/ from results/tc-quadratic-cost/
+```
+
+**Reports** are rebuilt from committed files only:
+
+```bash
+python -m src.reporting.build --all    # every reports/<run_id>/report.html
+```
+
+Extracting a new run (`python -m src.reporting.extract <run_id>`) needs that
+run's training logs, which stay on the machine that trained it
+(`reports/README.md`).
+
 ## Seeds
 
-All randomness comes from master seed **20261016** (`src/config.py`), split
-into separate streams per run for returns, the agent's exploration, and
+All reported randomness comes from master seed **20261016** (`src/config.py`),
+split into separate streams per run for returns, the agent's exploration, and
 evaluation (`SeedPlan` in `src/environment.py`). Each run's manifest records
-the seed plan.
+the seed plan. Seed i draws the same simulated returns in every run, so runs
+can be compared seed by seed. The learning rates for the constant-α runs were
+tuned on a separate master seed, **20261103**, never on the reported one
+(`EXPERIMENTS.md` §8.1).
 
 ## Expected outputs
 
-`results/INDEX.md` summarizes every experiment and links to its files. Each
-experiment folder holds the training logs (`run_*.npz`, `manifest.json`) and an
-`evaluation/` folder with `summary.json`, CSV tables and figures. See
-`EXPERIMENTS.md` for the full layout.
+| Where | What |
+|---|---|
+| `results/INDEX.md` | Summary of `baseline-v1`'s four experiments |
+| `results/<run_id>/INDEX.md` | Summary of each post-hoc run |
+| `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (grouped weight bars, learning curve, cumulative regret, losses by seed) |
+| `results/comparison_g5_grid20_vs_grid25/`, `results/grid10-robustness/comparison_*` | The action-space resolution comparisons |
+| `results/tc-quadratic-cost/` | The transaction-cost sweep, one JSON per cost level |
+| `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
+
+Training logs (`run_*.npz`) are not committed; every summary and report is.
+See `EXPERIMENTS.md` §4 for the folder layout.
 
 ## Pipeline
 
@@ -66,5 +108,9 @@ experiment folder holds the training logs (`run_*.npz`, `manifest.json`) and an
 | Training runner | `src/train.py` | |
 | Evaluation against the benchmarks | `src/evaluate.py` | `EVALUATION.md` |
 | Experiment settings and batch runner | `src/config.py`, `src/run_experiments.py` | `EXPERIMENTS.md` |
+| Function approximation: features, agent, step-size tuning | `src/features.py`, `src/fa_agent.py`, `src/tune_fa.py` | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 |
+| Transaction costs: stateful agent, grid oracle, sweep report | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `TRANSACTION_COSTS.md` |
+| Run reports | `src/reporting/` | `reports/README.md` |
 
 `PROJECT_PROSPECTUS.md` has the plan and task ownership.
+`AUDIT_2026-11-06.md` lists the open issues found in the 2026-11-06 audit.

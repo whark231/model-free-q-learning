@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05, not yet run (§8); later runs follow `reports/README.md`
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05 and run 2026-11-06, outcome in §8.7; the transaction-cost runs are run separately by `src/transaction_costs.py` (`TRANSACTION_COSTS.md`); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---
@@ -23,8 +23,8 @@ Albert's Mac and can be stopped and restarted.
 
 **Key takeaways**
 
-- Part IV (row 7 of the prospectus) has its convergence rule and settings fixed;
-  the next step is the full-scale run.
+- Part IV (row 7 of the prospectus) has its convergence rule and settings fixed,
+  and the full-scale run (`baseline-v1`) is done, with post-hoc runs in §7 and §8.
 - Results land in `results/`. The small outputs are committed; the training
   logs stay local (see §4).
 
@@ -129,8 +129,10 @@ put every reduced-settings run there. Commit results with
 ## 6. Design notes
 
 - **Shared random streams.** Every experiment uses the same master seed, so
-  seed i sees identical simulated returns and exploration draws in all four
-  experiments, and all are scored on the same evaluation sample. Differences
+  seed i sees identical simulated returns in all four experiments, and all are
+  scored on the same evaluation sample. Exploration draws match only between
+  experiments on the same grid, because the random action is drawn from the
+  grid's size (`RUN_ISSUES_2026-10-22.md` Finding 4). Differences
   between experiments therefore come from the setting that changed, not from
   luck.
 - **The near-optimal line across γ.** 25 bps/yr is 3.5%, 4.8% and 6.7% of the
@@ -625,7 +627,7 @@ the command above, extended to γ = 3 and 8.
 
 ---
 
-## 8. Constant-learning-rate runs (registered 2026-11-05, post hoc)
+## 8. Constant-learning-rate runs (registered 2026-11-05, run 2026-11-06, post hoc)
 
 **TL;DR / In plain terms:** three more runs, all with a constant learning rate α instead of the baseline's α = 1/N(a). The professor agreed to a constant α for function approximation (FA) and a separately tuned constant α for the tabular comparison.
 - `tabular-const` is the baseline agent with its own tuned constant α.
@@ -741,3 +743,62 @@ The three are independent, so they can run as three processes at once. Before st
 - spline about 17 min.
 
 The tabular figure is about 6× the 5 min per seed `baseline-v1` took alone on Albert's Mac. It is unexplained, so use the timing check above. For 30 seeds each, that is up to about 15, 11 and 8.5 hours sequentially. Evaluation adds a few minutes per experiment.
+
+**Actual time** (from each manifest; one run at a time, all trained at commit `bc311a3`): `tabular-const` 9.9 to 15.2 min per seed (6.2 hours) and `fa-quadratic` 7.9 to 9.2 min (4.1 hours), both on William's machine; `fa-spline` 4.7 to 5.2 min (2.4 hours) on Albert's. The tuning estimates were inflated by running 4 jobs at once.
+
+### 8.7 Outcome, written after the runs (2026-11-06)
+
+**TL;DR / In plain terms:** a constant learning rate made the tabular agent clearly worse than `baseline-v1`, as expected. Both FA models beat `tabular-const` at γ = 5 and 3 and fit the whole reward landscape better at every γ, but neither beat `baseline-v1` reliably, and at γ = 8 every constant-α run picked a portfolio with too little SPY. Only one of the five registered expectations held in full; the other four failed in whole or in part, and they are reported that way.
+
+All numbers are from each experiment's `evaluation/summary.json`. Learning gaps are in bps/yr. Seeds are paired across runs (same master seed and returns stream), and the SE is of the paired mean over 10 seeds.
+
+| γ | Run | Mean gap | Median (range) | Exactly best | Primary rule | Near-optimal | Spearman (all) | Top-10 recall |
+|---|---|---|---|---|---|---|---|---|
+| 5 | `baseline-v1` | 17.6 | 14.1 (0.0 to 47.3) | 3 | 9 | 7 | not committed | not committed |
+| 5 | `tabular-const` | 43.5 | 42.0 (10.5 to 109.9) | 0 | 10 | 4 | 0.813 | 25% |
+| 5 | `fa-quadratic` | 22.6 | 22.6 (15.9 to 29.4) | 0 | 2 | 5 | 0.915 | 55% |
+| 5 | `fa-spline` | 15.7 | 5.3 (0.0 to 78.5) | 5 | 10 | 8 | 0.950 | 45% |
+| 3 | `baseline-v1` | 30.6 | 10.0 (0.0 to 81.1) | 5 | 8 | 6 | not committed | not committed |
+| 3 | `tabular-const` | 107.2 | 102.6 (0.0 to 205.2) | 2 | 8 | 2 | 0.703 | 15% |
+| 3 | `fa-quadratic` | 8.0 | 0.0 (0.0 to 20.0) | 6 | 0 | 10 | 0.854 | 80% |
+| 3 | `fa-spline` | 45.4 | 62.3 (0.0 to 68.3) | 3 | 10 | 3 | 0.945 | 65% |
+| 8 | `baseline-v1` | 13.0 | 5.7 (0.0 to 53.1) | 5 | 9 | 7 | not committed | not committed |
+| 8 | `tabular-const` | 43.3 | 51.5 (11.5 to 61.2) | 0 | 10 | 1 | 0.917 | 20% |
+| 8 | `fa-quadratic` | 58.7 | 55.7 (55.7 to 70.8) | 0 | 9 | 0 | 0.951 | 20% |
+| 8 | `fa-spline` | 54.6 | 51.6 (50.0 to 61.2) | 0 | 9 | 0 | 0.957 | 20% |
+
+Counts are seeds out of 10. "Near-optimal" is the `near_optimal_for_good` rule (within 25 bps/yr from some point on). The discretization gap is identical to `baseline-v1`'s in every run, as expected.
+
+Paired mean learning-gap differences (SE):
+
+| Pair | γ = 5 | γ = 3 | γ = 8 |
+|---|---|---|---|
+| `tabular-const` − `baseline-v1` | +25.9 (11.5) | +76.6 (24.6) | +30.2 (8.0) |
+| `fa-quadratic` − `tabular-const` | −20.9 (9.8) | −99.2 (23.7) | +15.4 (6.5) |
+| `fa-spline` − `tabular-const` | −27.8 (11.9) | −61.8 (24.2) | +11.4 (5.1) |
+| `fa-spline` − `fa-quadratic` | −6.9 (8.3) | +37.4 (10.2) | −4.1 (2.0) |
+| `fa-quadratic` − `baseline-v1` | +5.0 (5.2) | −22.6 (12.8) | +45.7 (5.6) |
+| `fa-spline` − `baseline-v1` | −1.8 (9.5) | +14.8 (17.3) | +41.6 (6.0) |
+
+**Registered expectations against the results:**
+
+| Run | Expectation (§8.3 to §8.5) | Outcome |
+|---|---|---|
+| `tabular-const` | Larger mean learning gap than `baseline-v1` at every γ | Met |
+| `tabular-const` | Fewer seeds meeting the primary rule at every γ | Not met at any γ (10, 8, 10 against 9, 8, 9) |
+| `fa-quadratic` | Smaller mean learning gap than `tabular-const` at every γ | Met at γ = 5 and 3; not at γ = 8 |
+| `fa-quadratic` | Higher median Spearman and top-10 recall than `tabular-const` at every γ | Spearman met at all three; recall met at γ = 5 and 3, tied at γ = 8 |
+| `fa-spline` | Lower median Spearman and top-10 recall than `fa-quadratic` at every γ | Not met: Spearman higher at every γ; recall lower at γ = 5 and 3, tied at γ = 8 |
+
+**What the results say, and what they do not.**
+- **The primary rule measures stability, not accuracy, under a constant α.** `tabular-const` met it in 28 of 30 seeds while ending on the best portfolio in 2. The registered reason for predicting the opposite (a noise floor that keeps the greedy portfolio switching) was wrong. The measured cause is shrinkage toward the starting value 0:
+  - with a constant α and Q starting at 0, a portfolio updated N times holds about (1 − (1 − α)^N)·U of its true value U;
+  - most portfolios are tried only during exploration, a median of about 1,100 times, which gives 0.296·U;
+  - in `run_000`, regressing final Q on U over portfolios with fewer than 5,000 visits gives slopes of 0.291, 0.291 and 0.296 at γ = 5, 3 and 8, while the greedy portfolio sits at 1.06 to 1.14 of its U.
+
+  So every rival is shrunk about 70% toward 0, and none can overtake the greedy portfolio once ε fades. The agent locks in on whatever was greedy then. The same shrinkage means `tabular-const`'s Q-fit and optimism numbers mostly measure this effect, not noise.
+- **§8.4's speed estimate assumed uniform exploration for the whole budget.** "The slowest direction learns in about 5.5M of the 13M episodes" treats every episode as a uniform draw. Uniform exploration actually totals about 1/β ≈ 1.41M episodes, and at that count 36 of the 45 quadratic directions and 351 of the 369 spline directions have α·λ·1.41M < 1, so they never finish learning from θ = 0 (independent review, 2026-11-06).
+- **The ΔQ rule is uninformative under a constant α.** Every seed of all three runs meets it in the first 10,000-episode window, because one update moves a value by about 5e-7, far below the 1e-5 tolerance.
+- **γ = 8 is a systematic miss.** The best grid portfolio there is 40% SPY, 40% IEF, 20% GLD. All 20 FA seeds and 6 of 10 `tabular-const` seeds hold 20% SPY, against 1 of 10 in `baseline-v1`. `fa-quadratic` picks the same portfolio on 8 of 10 seeds, which points to a bias shared by every seed rather than noise. The suspected cause is the unfinished directions above. Solving the average (mean-field) update from θ = 0 over 1.41M uniform episodes predicts the spline's γ = 8 pick at a 50.0 bps/yr gap, against actual picks 50.0 to 61.2 off, and predicts the best portfolio at γ = 3 and 5. For the quadratic, this exploration-only calculation is far off, so it explains the quadratic's miss only in part. Also untested: α was tuned at γ = 5 only.
+- **No discovery claim.** `fa-spline` fits the landscape at least as well as the correctly specified quadratic on Spearman, but its picks are not better than `baseline-v1`'s at any γ in a way the SEs support (−1.8 ± 9.5 at γ = 5). That is evidence the generic features can represent the landscape, not that the agent found the optimum.
+- **`baseline-v1` has no committed Q-fit numbers.** Its summaries need re-evaluating with the current `evaluate.py` and committing before the FA-versus-tabular fit comparison can include it (`AUDIT_2026-11-06.md`).

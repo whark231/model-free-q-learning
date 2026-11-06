@@ -56,18 +56,18 @@ Do these in order. Steps 1 and 2 happen **before** training starts.
    "learning gap shrinks"), the exact command and the estimated run time.
    Commit it before running, so the expected direction is on record before
    any result exists.
-2. **Set the run up on its own branch.** `run_experiments` has flags only for
-   the episode count, seeds, evaluation episodes, log interval and `--only`.
-   Everything else is a constant in `src/config.py`: `EPISODE_LENGTH` for B,
-   `EPSILON_AT_HALFWAY` for the ε schedule, and `experiments()` for the grid,
-   γ values and experiment names. Edit them on the run's branch with a
-   recorded reason (the docstring at the top of `src/config.py` asks for one),
-   and give every experiment a name that says what differs, for example
-   `baseline_g5_grid20_B60`, so names never collide across runs. Then pick a
-   short run id, for example `b60-v1`, and train into its own folder:
+2. **Set the run up on its own branch.** Since 2026-10-27 a variant is a
+   `RunVariant` entry in `POST_HOC_RUNS` in `src/config.py`: the changed
+   settings (B, episode count, ε at halfway, grid, learning rate, agent and
+   features), a name suffix so experiment names never collide across runs,
+   the registration date and the expected direction. Add the entry on the
+   run's branch with a recorded reason, commit it, then train into the run's
+   own folder:
    ```bash
-   python -m src.run_experiments --results-dir results/b60-v1
+   python -m src.run_experiments --run b63 --results-dir results/b63
    ```
+   Without `--run`, `run_experiments` trains the baseline settings.
+   (`EXPERIMENTS.md` §7.1 has the details.)
 3. **Tag the code** that produced the run, for example `git tag b60-v1`, on the commit you trained from. (For `baseline-v1` the tag sits on a later commit with behaviour-equivalent edits; the training commit `80a6e9c` is in each manifest and in the report header.)
 4. **Register the run** in `reports/registry.json`, appending at the end:
    ```json
@@ -140,6 +140,9 @@ Do these in order. Steps 1 and 2 happen **before** training starts.
 
 ## Notes for the planned runs
 
+Written before the 2026-10-28 runs; every run below is now done. Kept because
+the reasoning still applies to new runs.
+
 - **Longer B.** Compare by simulated days and by episodes: a run with B = 60
   sees three times the data per episode. The report shows the settled point in
   both units. The exact reward SD falls roughly with √B, so "tries to separate
@@ -170,6 +173,14 @@ Do these in order. Steps 1 and 2 happen **before** training starts.
 - **Size.** Each `data.json` is about 0.7 MB for four experiments; earlier runs
   are layered in without per-seed time series, so a report grows by roughly
   0.3 MB per earlier run.
+
+## Reports outside this pipeline
+
+`reports/tc-quadratic-cost/` is built by `python -m src.tc_sweep_report`
+(flags `--results`, `--out`, `--allow-reduced`) from
+`results/tc-quadratic-cost/{no-cost,low-cost,anchor,high-cost}.json`. It is
+not in `registry.json` and has no `tldr`, `takeaways` or `caveats` block;
+its text is fixed in the script (`TRANSACTION_COSTS.md`).
 
 ## Assumptions
 

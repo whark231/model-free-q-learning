@@ -1,7 +1,11 @@
 # Review History
 
 **Covers:** every closed review item and settled decision between Albert and
-William, 2026-09-29 to 2026-10-26. Moved here from
+William, 2026-09-29 to 2026-10-28 (§8 was added 2026-10-28). Later work is
+recorded elsewhere: `grid10-robustness` in `EXPERIMENTS.md` §7.7, the FA
+extension and its tuning in `FA_INTEGRATION_NOTES.md` and `EXPERIMENTS.md` §8,
+the transaction-cost extension in `TRANSACTION_COSTS.md`, and the 2026-11-06
+audit in `AUDIT_2026-11-06.md`. Moved here from
 `REVIEW_NOTES_FOR_WILLIAM.md` on 2026-10-26 so that file can list only open
 work. Section numbers §1 to §6 are unchanged from the original, because code
 comments in `src/config.py` and `src/tests/test_agent.py` cite them.
@@ -14,8 +18,9 @@ This is the paper trail. It records what was found in William's files and how
 each issue was fixed (§1), how the Q-learning core was split between us (§2),
 how γ, B and the convergence rule were decided and why (§3, §6), and the
 follow-up ideas we tested after the full run and rejected (§7). Nothing in
-here is waiting on anyone, except the two items marked as reopened, which are
-tracked in `REVIEW_NOTES_FOR_WILLIAM.md`.
+here is waiting on anyone, except the one item marked as reopened (§5.3, the
+tabular `update()` return value), which is tracked in
+`REVIEW_NOTES_FOR_WILLIAM.md`.
 
 **Key concepts to understand**
 

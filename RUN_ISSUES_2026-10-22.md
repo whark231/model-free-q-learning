@@ -2,6 +2,7 @@
 
 **Written:** 2026-10-22 by Claude, for Albert · **Run:** 01:35 to 05:00 EDT, commit `80a6e9c`, settings from `src/config.py` unchanged
 **Status of every item below:** found and verified, **nothing fixed in code yet**. The plan in §4 waits on Albert's go-ahead.
+**Checked again 2026-11-06 (`AUDIT_2026-11-06.md`):** steps 1 to 3 of §4 are still open in the code: no total-gap column in `per_seed.csv` or `INDEX.md`, no post-hoc "settled" measure, no checkpoint label, and no commit or extra file hashes in `summary.json`. The training logs are now tracked (step 7 done).
 
 ---
 
@@ -177,7 +178,7 @@ episode averaged over training, or multiply by B.
   `rewards.py` and `grid.py`, but not `evaluate.py`, `config.py` or
   `run_experiments.py`. `summary.json` records no commit (only `index.json` does).
 - pandas and matplotlib versions are not recorded.
-- `EXPERIMENTS.md` line 3 still says "no full-scale run yet".
+- `EXPERIMENTS.md` line 3 still says "no full-scale run yet". (Fixed later.)
 
 ### Finding 8 (note): the median learning gap is not any seed's value
 

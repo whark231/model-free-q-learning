@@ -1,14 +1,12 @@
 # Function Approximation: Integration Notes for Albert
 
-**From:** William (with Claude) · **Date:** 2026-11-03, updated 2026-11-05 · **Branch:** `feature/function-approximation`
-**Status:**
+**From:** William (with Claude) · **Date:** 2026-11-03, updated 2026-11-06 · **Branch:** merged into `dev` (PR #23)
+**Status (2026-11-06):**
 - **Built:** agent, features, the `train.py` path and the Q-value fit metrics, all tested and independently reviewed.
 - **Tuned:** the step size, on tuning seeds (§5).
-- **Registered, not run:** three constant-learning-rate runs, `tabular-const`, `fa-quadratic` and `fa-spline` (`EXPERIMENTS.md` §8). The professor agreed to a constant α for FA and a separately tuned constant α for the tabular comparison.
+- **Run:** the three constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline`, 30 seeds each at commit `bc311a3`, in `dev` (PRs #24 and #25; `fa-spline` in Albert's commit `9355610`). Outcomes and the registered expectations are in `EXPERIMENTS.md` §8.7; the reports are in `reports/<run_id>/`.
 
-No FA result exists yet. Everything here is post hoc relative to `baseline-v1`.
-
-**What I need from you before the runs:** review the edits to your files (§1), and agree to the expected directions in `EXPERIMENTS.md` §8.3 to §8.5.
+Everything here is post hoc relative to `baseline-v1`. The sections below are the design record and were written before the runs; where a result later contradicted a prediction, `EXPERIMENTS.md` §8.7 says so. Open issues from the 2026-11-06 audit are in `AUDIT_2026-11-06.md`.
 
 ---
 
