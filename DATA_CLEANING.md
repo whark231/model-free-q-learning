@@ -38,18 +38,24 @@ Q-learning agent) is built from that table and its average and covariance.
 3. The correlations look like real markets, which is the main evidence nothing
    is scrambled: stocks move together, Treasuries move opposite to stocks, gold
    is roughly independent.
-4. One decision is still William's: the value of γ. The reward is settled as
-   the episodic realized mean-variance reward in `src/rewards.py`.
+4. γ is settled: 5 for the baseline, with 3 and 8 as the robustness check
+   (§8.4, decided 2026-10-16). The reward is the episodic realized
+   mean-variance reward in `src/rewards.py`.
 
 ---
 
 ## 1. How to reproduce
 
 ```bash
-python3 -m src.data.download_raw   # writes data/raw/   (network required)
-python3 -m src.data.clean          # writes data/interim/ and data/processed/
-python3 -m pytest src/tests -q     # full suite; test_data_pipeline.py covers this pipeline
+python -m src.data.clean          # writes data/interim/ and data/processed/ from the committed data/raw/
+python -m pytest src/tests -q     # full suite; test_data_pipeline.py covers this pipeline
 ```
+
+To reproduce the results, do not re-run `python -m src.data.download_raw`.
+The raw files are committed because Yahoo restates adjusted history, and a
+new download would change the calibration (`README.md`). The download script
+is kept for the record of how `data/raw/` was made. On Windows use `python`,
+not `python3`.
 
 `download_raw.py` is the only script that reaches the network and the only one
 that writes to `data/raw/`. Running it again overwrites the raw sample, which is
@@ -335,8 +341,8 @@ The alternative-calibration-window check in Part VI is where to probe this.
 
 ### 7.4 The French daily rate is quantized
 The French daily RF is constant within each month and rounded to 1bp, taking
-only three distinct values across the sample (0, 1e-4, 2e-4). Cumulating it
-gives 35.06% over the sample against 33.80% from the monthly file, a bias of
+only three distinct values across the sample (0, 1e-4, 2e-4). Summing it
+(not compounding) gives 35.06% over the sample against 33.80% from the monthly file, a bias of
 about 6bp per year.
 
 This is immaterial under our constraint and it is worth knowing why. With
@@ -352,7 +358,7 @@ produced with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, yfinance 1.7.0
 scipy 1.15.3 instead, the latest versions available on Python 3.10
 (William's machine): numpy dropped Python 3.10 support entirely starting at
 2.3, so the two machines cannot share one exact numpy version. The full test
-suite (244 tests, including exact-value checks on `np.linalg.eigvalsh` and
+suite (244 tests at the time, 407 on 2026-11-06, including exact-value checks on `np.linalg.eigvalsh` and
 SLSQP results) passes under both combinations, so this does not affect
 reproducibility of the results, only of installing the dependencies.
 `MANIFEST.json` records yfinance, pandas and requests but not numpy or

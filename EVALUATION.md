@@ -1,7 +1,7 @@
 # Parts IV and V: Evaluating the Learned Policy
 
 **Owner:** Albert · **Status:** built and tested on `dev`; rules and thresholds fixed 2026-10-16 (§7)
-**Code:** `src/evaluate.py` · **Tests:** `src/tests/test_evaluate.py` (24 tests)
+**Code:** `src/evaluate.py` · **Tests:** `src/tests/test_evaluate.py` (31 tests on 2026-11-06)
 **Date:** 2026-10-16, numpy 2.3.5, matplotlib 3.10.6
 
 ---
@@ -117,9 +117,17 @@ exactly U(w); no adjustment is needed.
 | `q_fit_visited` | The same, over the portfolios the agent tried at least once. A tabular agent never updates an untried portfolio, which keeps it at Q̂ = 0. On the 20% grid every portfolio is tried within the training budget, so this equals `q_fit_all` there; the two differ on the 10% grid or with short budgets |
 | `optimism_of_learned_bps` | 252 × (Q̂ − U) × 10,000 for the learned portfolio, in bps/yr. Positive means the agent overrates what it picked |
 
-Read optimism against its noise. For the tabular agent Q̂ is a sample mean,
-so its standard error is the reward SD divided by √(visits): about 0.7 bps/yr
-at B = 63 and 1.2 bps/yr at B = 20 for a portfolio visited about 11M times.
+Read optimism against its noise. For the tabular agent with α = 1/N(a), Q̂ is
+a sample mean, so its standard error is the reward SD divided by √(visits):
+about 0.7 bps/yr at B = 63 and 1.2 bps/yr at B = 20 for a portfolio visited
+about 11M times.
+
+With a constant α (run `tabular-const`) Q̂ is no longer a sample mean. Starting
+from 0, a portfolio updated N times holds about (1 − (1 − α)^N)·U. At α = 3.2e-4
+the median portfolio, tried about 1,100 times during exploration, sits at about
+0.3·U, so `tabular-const`'s correlations and top-10 recall mostly measure that
+shrinkage (`EXPERIMENTS.md` §8.7). The FA agents start θ at 0 and shrink the
+same way in directions exploration did not finish learning.
 Seeds that differ only in γ share their return path, so their optimism values
 move together and do not count as independent evidence.
 
@@ -218,8 +226,13 @@ are team decisions. The primary convergence rule is
 `greedy_stable_through_end`: the final greedy action held for at least K
 episodes. The ΔQ tolerance (1e-5) and the near-optimal line (25 bps/yr) are
 adopted defaults. All live in `src/config.py`; the run procedure is in
-`EXPERIMENTS.md`. Still open: the written justification for γ
+`EXPERIMENTS.md`. The written justification for γ was added 2026-10-19
 (`DATA_CLEANING.md` §8.4).
+
+Under a constant learning rate (the §8 runs in `EXPERIMENTS.md`) the ΔQ rule
+is met in the first window by every seed, because one update moves a value by
+about 5e-7, far below the 1e-5 tolerance. It says nothing about convergence
+there and should not be reported for those runs.
 
 The 25 bps line is a fixed number of basis points, so it is a tighter bar at
 some γ than others: it is 3.5%, 4.8% and 6.7% of the best grid portfolio's

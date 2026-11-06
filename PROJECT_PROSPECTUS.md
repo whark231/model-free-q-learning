@@ -2,58 +2,71 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** Draft — this is a rough plan and will be revised as we learn more. Treat every date here as a working target, not a hard commitment.
+**Status:** living plan, updated 2026-11-06 after the whole-project audit (`AUDIT_2026-11-06.md`). The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. What remains is choosing the final runs, a few code fixes, and the report.
+
+---
+
+## TL;DR / In plain terms
+
+Everything the assignment requires has been built, run and independently checked. The function-approximation extension has results; the transaction-cost extension runs but its agent learns nothing yet, so it needs a design decision. The next three weeks are: decide the last runs, run them, write the 10 to 15 page report, and fix the small issues the audit found.
+
+**Key concepts to understand**
+
+- **Required work versus bonus.** Parts I to VI earn the base grade (five 20% buckets). Bonus credit needs an extension that is "correctly designed, benchmarked, and interpreted"; complexity alone earns nothing.
+- **Post hoc.** Every run after `baseline-v1` was designed after its results were seen. Each was registered with an expected direction before it ran, and the report labels them post hoc.
+
+**Key takeaways**
+
+- `baseline-v1` is the headline result for Parts IV and V.
+- The transaction-cost design decision (`AUDIT_2026-11-06.md` §6.2) blocks any further TC run and should be made first.
 
 ---
 
 ## 1. Research Question
 
-Can a model-free reinforcement learning agent recover a near-optimal portfolio allocation when it observes only realized rewards — never the true expected returns or covariances used to generate them?
+Can a model-free reinforcement learning agent recover a near-optimal portfolio allocation when it observes only realized rewards, never the true expected returns or covariances used to generate them?
 
-We test this in a controlled, synthetic nine-ETF environment: calibrate a mean-variance "ground truth" from real historical data, then train a Q-learning agent purely on simulated returns from that calibrated model, and measure how close its learned policy gets to the true optimum.
+We test this in a controlled, synthetic nine-ETF environment: calibrate a mean-variance "ground truth" from real historical data, train a Q-learning agent purely on simulated returns from that calibrated model, and measure how close its learned policy gets to the true optimum.
 
-## 2. Assumptions About Team Skills (please correct if wrong)
+## 2. Assumptions About Team Skills
 
-This plan assumes:
-- **William**: more comfortable with coding/data science, will lead on the RL implementation and technical math (optimization, Q-learning algorithm).
-- **Albert**: newer to coding and quant finance, will lead on data construction, documentation, and results visualization early on — areas with a gentler learning curve — while pairing on the Q-learning core so both of us understand it deeply, not just one of us.
+- **William**: leads the RL implementation and the technical math (optimization, Q-learning, function approximation).
+- **Albert**: led data construction, the simulator, evaluation, reporting and documentation, and built the transaction-cost extension.
 
-As skills develop, the split should shift — by the extension phase (weeks 7–8 or earlier), the goal is for both of us to be comfortable modifying the core algorithm.
+Both of us now modify the core algorithm, as planned for the extension phase.
 
 ## 3. What Needs to Be Built
 
-Mapped to the assignment's required parts (Parts I–VI):
-
 ### Core (required for base grade)
-| # | Component | Assignment Part | Status (2026-10-29) |
+| # | Component | Assignment Part | Status (2026-11-06) |
 |---|---|---|---|
-| 1 | ~~Nine-ETF data pipeline: download, align, clean, adjust for distributions~~ | Part I | ✅ Done — `src/data/`, `DATA_CLEANING.md`, 5,152-day sample, 20 tests |
-| 2 | ~~Ground-truth environment: estimate μ, Σ; build the synthetic Gaussian return generator~~ | Part I | ✅ Done — μ, Σ in `data/processed/`; generator in `src/environment.py`, `ENVIRONMENT.md`, 69 tests |
-| 3 | ~~Theoretical mean-variance benchmark: closed-form continuous optimum + best discrete-grid portfolio~~ | Part II | ✅ Done — `src/benchmarks/mean_variance.py`, 29 tests |
-| 4 | ~~Feasible action space: portfolio-weight grid (20% increments, 1,287 actions baseline)~~ | Part III | ✅ Done — `src/action_space/grid.py`, 22 tests |
-| 5 | ~~Reward function: episodic realized mean-variance reward~~ | Part III | ✅ Done — `src/rewards.py`, 9 tests |
-| 6 | ~~Stateless tabular Q-learning agent with epsilon-greedy exploration (extension will likely use functional approximation)~~ | Part III | ✅ Done — `src/agent.py`, 24 tests |
-| 7 | ~~Training loop across multiple random seeds + convergence criterion~~ | Part IV | ✅ Done (2026-10-16), post-hoc variants via `--run` (2026-10-27) — runner `src/train.py`; settings fixed in `src/config.py`: γ ∈ {3, 5, 8} with 5 as baseline, B = 20, convergence = greedy action unchanged for 10% of training episodes; batch runner `src/run_experiments.py`; see `EXPERIMENTS.md`. Full-scale run done 2026-10-22: 4 experiments × 10 seeds × 13M episodes, `results/INDEX.md`, `RUN_ISSUES_2026-10-22.md` |
-| 8 | ~~Benchmark comparison: weight bar charts, L1/Euclidean distance, economic performance metrics~~ | Part V | ✅ Done (2026-10-22) — every experiment's `results/<name>/evaluation/` has the grouped weight bar chart, absolute weight differences, L1 and Euclidean distances, mean/vol/objective for learned, continuous, best discrete and equal weight, both gaps, and the per-seed gap distribution. Albert's `RUN_ISSUES` fix (total-gap column, Finding 3) adds to the tables; nothing needs retraining |
-| 9 | ~~Convergence analysis: learning curves, regret, comparison across ≥2 grid resolutions~~ | Part V | ✅ Done (2026-10-22) — learning curves, cumulative regret, observations to the 25 bps line, and the 20% vs 25% comparison (`results/comparison_g5_grid20_vs_grid25/`). Albert's `RUN_ISSUES` fix (Findings 1 and 2) relabels the convergence columns and adds a post-hoc measure; nothing needs retraining |
-| 10 | Robustness checks (at least 2: one action-space change, one economic/statistical assumption change) | Part VI | 🔶 Mostly done. Risk aversion: γ = 3 and 8 vs γ = 5, run 2026-10-22 ✅. Training budget, episode length and exploration (post hoc, 2026-10-28): runs `b63`, `n26m`, `eps-decay`, `all-three` ✅, each lowered the mean learning gap and worst seed at every γ (`REVIEW_HISTORY.md` §8). Action space: the 10% grid, registered as post-hoc run `grid10-robustness` (`EXPERIMENTS.md` §7.7, compared with `all-three`), not yet run, about 21 hours |
+| 1 | Nine-ETF data pipeline: download, align, clean, adjust for distributions | Part I | ✅ Done. `src/data/`, `DATA_CLEANING.md`; 5,152 days, 2006-02-07 to 2026-07-31. Rebuilt independently in the audit |
+| 2 | Ground-truth environment: μ, Σ and the synthetic Gaussian return generator | Part I | ✅ Done. `src/environment.py`, `ENVIRONMENT.md` |
+| 3 | Theoretical benchmark: closed-form, long-only continuous optimum, best grid portfolio | Part II | ✅ Done. `src/benchmarks/mean_variance.py`; re-derived by exact enumeration in the audit |
+| 4 | Feasible action space: 20% grid (1,287), plus 25% (495) and 10% (43,758) | Part III | ✅ Done. `src/action_space/grid.py` |
+| 5 | Reward: episodic realized mean-variance reward | Part III | ✅ Done. `src/rewards.py`; E[reward] = U(w) checked by Monte Carlo |
+| 6 | Stateless tabular Q-learning agent with ε-greedy exploration | Part III | ✅ Done. `src/agent.py` |
+| 7 | Training across seeds and a convergence rule fixed in advance | Part IV | ✅ Done. `baseline-v1`, 2026-10-22: γ = 3, 5, 8 and the 25% grid, 10 seeds × 13M episodes (`results/INDEX.md`, `EXPERIMENTS.md`) |
+| 8 | Benchmark comparison: weights, distances, economic performance | Part V | ✅ Done. Every experiment's `evaluation/` folder has the grouped weight bars, absolute differences, L1 and Euclidean distances, the performance table, both gaps and the per-seed distribution. `RUN_ISSUES` §4 steps 1 to 3 (total-gap column, "settled" measure) are still open in code (`AUDIT_2026-11-06.md` M10) |
+| 9 | Convergence analysis: learning curves, regret, two resolutions | Part V | ✅ Done. Learning curves, cumulative regret, observations to the 25 bps line; 20% vs 25% and 20% vs 10% grids |
+| 10 | Robustness checks (one action-space, one economic or statistical) | Part VI | ✅ Done. Risk aversion γ = 3 and 8; the 10% grid (`grid10-robustness`, 2026-10-29); training budget, episode length and exploration (`b63`, `n26m`, `eps-decay`, `all-three`, 2026-10-28) |
 
-Full suite: 283 tests passing (`python -m pytest src/tests -q`).
+Full suite: 407 tests passing (`python -m pytest src/tests -q`).
 
-### Extension (our chosen bonus angle)
-| # | Component | Notes | Status (2026-10-29) |
+### Extensions (bonus)
+| # | Component | Notes | Status (2026-11-06) |
 |---|---|---|---|
-| 11 | Transaction-cost-augmented environment: introduces a state (current holdings), penalizes turnover | Turns the bandit problem into a true sequential MDP | ⬜ Not started; in scope, Week 7 (Oct 30 to Nov 5). Decide the two open questions in §6 first |
-| 12 | Function approximation Q-learning: replaces the table once state × action space is too large | Compare directly against the tabular baseline at the same grid resolution | ⬜ Not started; in scope (confirmed 2026-10-26), Week 8 |
+| 11 | Transaction costs: state = previous target, quadratic cost on the move | `TRANSACTION_COSTS.md`, `src/transaction_costs.py` | 🔶 Built; quadratic-cost sweep run (0, 1, 2, 5 bp; 10 seeds). The code is correct but the agent learns nothing: at zero cost it scores like a random portfolio, 468 bps/yr below the oracle. Discount and learning-rate comparisons registered, **not run**, and should not be run as designed. Needs a redesign decision (`AUDIT_2026-11-06.md` H1, H2, §6.2) |
+| 12 | Function approximation: linear Q over quadratic or spline features | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 | ✅ Built, step size tuned on separate seeds, and run 2026-11-06: `tabular-const`, `fa-quadratic`, `fa-spline` (30 seeds each). Both FA models beat the constant-α tabular agent at γ = 5 and 3 and ranked the reward landscape better (Spearman); of the registered expectations, split into five checks, four failed in whole or part (`EXPERIMENTS.md` §8.7) |
 
 ### Deliverables
-| # | Component | Notes | Status (2026-10-29) |
+| # | Component | Notes | Status (2026-11-06) |
 |---|---|---|---|
-| 13 | Research report (~10–15 pages), following the assignment's required structure | Split into sections below | ⬜ Not started. Inputs ready: `reports/<run_id>/report.html` for every run, `REVIEW_HISTORY.md` §7 to §8 for the Q-learning results. Albert's `RUN_ISSUES` table fixes come first |
-| 14 | ~~Clean, reproducible Python code + README (run instructions, seeds, requirements)~~ | | ✅ Done — 283 tests, `requirements.txt` pinned (Python 3.10 and 3.13, see `README.md`), full README with run instructions, seeds, and the pipeline table |
+| 13 | Research report (10 to 15 pages) in the assignment's structure | Sections split in §4 | ⬜ Not started. Inputs: `reports/<run_id>/report.html`, `results/<experiment>/evaluation/`, `EXPERIMENTS.md` §7 and §8.7, `REVIEW_HISTORY.md` §7 and §8 |
+| 14 | Clean, reproducible code and README | | 🔶 README updated 2026-11-06. Windows print crash, line-ending hashing and the TC reproduction commands still to fix (`AUDIT_2026-11-06.md` M1, M2, M9) |
 | 15 | Class presentation | | ⬜ Not started |
 
-## 4. Task Ownership (draft — adjust as we go)
+## 4. Task Ownership
 
 | Component | Primary | Support |
 |---|---|---|
@@ -64,56 +77,47 @@ Full suite: 283 tests passing (`python -m pytest src/tests -q`).
 | Tabular Q-learning core | Agent (`agent.py`): William; training runner (`train.py`): Albert | Each reviews the other's PR |
 | Convergence analysis & visualizations | Albert | William |
 | Robustness checks | Split: one each | Cross-review |
-| Transaction-cost extension | William + Albert (paired) | — |
-| Function approximation extension | William | Albert (learns concept, assists) |
-| Report — Data/Calibration section | Albert | William |
-| Report — Theory/Benchmark section | William (derivation) + Albert (writing) | — |
-| Report — Q-learning/Extension sections | William | Albert reviews |
-| Report — Intro/Conclusion/Robustness | Both | — |
+| Transaction-cost extension | Albert built it; redesign paired (proposed 2026-11-06, to agree) | William |
+| Function approximation extension | William | Albert (reviewed the edits to his files) |
+| Report: Data/Calibration section | Albert | William |
+| Report: Theory/Benchmark section | William (derivation) + Albert (writing) | |
+| Report: Q-learning/Extension sections | William (FA); TC section proposed for Albert, to agree | Each reviews the other |
+| Report: Intro/Conclusion/Robustness | Both | |
 | README + code cleanup | Albert | William |
-| Presentation | Both | — |
+| Presentation | Both | |
 
-## 5. Timeline
+## 5. Timeline (remaining)
 
-**Note:** Thanksgiving week (Nov 20–26) falls near the end of our runway — the schedule below front-loads the report draft to finish *before* that week, leaving it as a buffer/polish week rather than a working week.
+Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular baseline, full baseline run and robustness runs (by 2026-10-29), FA and the TC sweep (2026-11-03 to 2026-11-06). The original order put TC in week 7 and FA in week 8; in practice both ran in week 8.
 
-| Week | Dates | Focus | Target Output |
+| Week | Dates | Focus | Target output |
 |---|---|---|---|
-| 1 | Sep 18–24 | Lock design decisions (grid resolution, reward formula, extension scope, transaction-cost approach); set up repo | Design doc committed to repo |
-| 2 | Sep 25–Oct 1 | Data pipeline + ground-truth environment | Cleaned 9-ETF dataset, μ/Σ estimates, summary stats & correlation matrix |
-| 3 | Oct 2–8 | Theoretical benchmark | Closed-form continuous optimum + best discrete-grid portfolio, verified |
-| 4 | Oct 9–15 | Action space + reward implementation | Working 20% grid (1,287 actions), reward function coded & unit-tested |
-| 5 | Oct 16–22 | Tabular Q-learning baseline | End-to-end training loop running on at least one seed |
-| 6 | Oct 23–29 | Full baseline experiments | Multi-seed runs, convergence criterion applied, required comparisons (weights, distances, economic performance) |
-| 7 | Oct 30–Nov 5 | Extension part 1: transaction costs | State-augmented environment running, compared against no-cost baseline |
-| 8 | Nov 6–12 | Extension part 2: function approximation | FA agent trained, compared against tabular baseline at same settings |
-| 9 | Nov 13–19 | Robustness checks + finalize results; start report draft | All figures/tables finalized; first full report draft |
-| 10 | Nov 20–26 | **Thanksgiving buffer week** — light schedule | Report polish, code cleanup, README |
-| Final | Nov 27–30 | Final review & submission | Submitted report + code + README |
+| 8 (rest) | Nov 6 to 12 | Decide the final runs and the TC redesign (`AUDIT_2026-11-06.md` §6, §7); re-evaluate `baseline-v1` and the other three runs for Q-fit; fix M1 to M5 | Final run list registered with expected directions; Q-fit committed |
+| 9 | Nov 13 to 19 | Run the final runs; build their reports; first full report draft | All figures and tables final; draft complete |
+| 10 | Nov 20 to 26 | Thanksgiving buffer: light schedule | Report polish, code cleanup, README |
+| Final | Nov 27 to 30 | Final review and submission | Report, code and README submitted |
 
-## 6. Open Decisions Still to Finalize
+## 6. Open Decisions
 
-- [x] Action library approach: fixed Cartesian grid, built in `src/action_space/grid.py` (also accepts a custom grid, so a sampled library stays possible without a code change)
-- [x] Robustness checks: the 10% grid (action space) and γ = 3 and 8 (risk aversion), decided 2026-10-26. The 25% grid stays as Part V's second resolution
+- [x] Action library: fixed Cartesian grid (`src/action_space/grid.py`)
+- [x] Robustness checks: the 10% grid (action space) and γ = 3 and 8 (risk aversion), decided 2026-10-26, both run
 - [x] Extensions: both transaction costs and function approximation, confirmed 2026-10-26
-- [x] Higher-B episode-length check: run as `b63` (2026-10-28), with `n26m`, `eps-decay` and `all-three` alongside. B = 252 not run
-- [ ] Which post-hoc runs the report covers in full and which in a sentence (decide with Albert before writing Part VI)
-- [ ] Fix the transaction-cost penalty: single fixed parameter, or swept across values as one of our two required robustness checks (extension-phase decision, not urgent yet)
-- [ ] Confirm state representation granularity for the transaction-cost extension (exact prior weights vs. coarsely bucketed) (extension-phase decision, not urgent yet)
+- [x] Higher-B episode-length check: run as `b63` (2026-10-28), with `n26m`, `eps-decay` and `all-three`. B = 252 not run
+- [x] FA learning rate: a constant α for FA and a separately tuned constant α for the tabular comparison, agreed with the professor 2026-11-05
+- [x] TC cost penalty and state: swept at 0, 1, 2 and 5 bp per 20-point transfer, with the exact previous grid target as the state (`TRANSACTION_COSTS.md`)
+- [ ] **TC redesign** before any further TC run: split learning and planning, add drift, a negative result, or a mix (`AUDIT_2026-11-06.md` §6.2)
+- [ ] **Final runs** from the candidates in `AUDIT_2026-11-06.md` §6 (for example FA on the 10% grid, a γ = 8 FA check, three versus nine assets)
+- [ ] Which post-hoc runs the report covers in full and which in a sentence (decide before writing Part VI)
 
-The Q-learning core's decisions (γ, the convergence rule, episode length,
-episode count, seed count, β and the second Part VI robustness check) were
-settled on 2026-10-16 and live in `src/config.py`, with the reasoning in
-`EXPERIMENTS.md` and `REVIEW_HISTORY.md` §6. γ's written,
-outside-grounds justification (the last piece of this that was still open)
-was added 2026-10-19 in `DATA_CLEANING.md` §8.4.
+The Q-learning core's decisions (γ, the convergence rule, episode length, episode count, seed count, β and the second Part VI robustness check) were settled on 2026-10-16 and live in `src/config.py`, with the reasoning in `EXPERIMENTS.md` and `REVIEW_HISTORY.md` §6. γ's written justification is in `DATA_CLEANING.md` §8.4 (2026-10-19).
 
 ## 7. Known Risks
 
-- **Weeks 6–8 are the highest-risk stretch** — this is where the extension work (state-dependent environment + function approximation) lives, and it's new territory for both of us. If it slips, the fallback is to submit a strong required baseline (Parts I–VI) and a partially-complete extension, clearly labeled as such — a correctly scoped smaller extension beats a broken ambitious one per the rubric.
-- **Thanksgiving week reduces available time** right before the deadline — hence the front-loaded schedule above.
-- **Learning curve on RL concepts** — since this is new to both of us in places, pad weeks 4–5 mentally; if the core Q-learning loop takes longer than planned, borrow time from week 6 (multi-seed runs can be trimmed) rather than from the extension.
+- **Transaction costs may not reach a credible result in time.** The audit found the current design cannot learn. Fallback: report it as a carefully diagnosed negative result and put the bonus weight on function approximation. A correctly scoped smaller extension beats a broken ambitious one under the rubric.
+- **Run time competes with writing.** A 30-seed run takes 2.5 to 7.5 hours per machine. Register and start the final runs early in week 9 so the draft is written while they train.
+- **Thanksgiving week reduces available time** right before the deadline, so the draft should be finished by Nov 19.
+- **Reproducibility on Windows.** Until the print crash and the line-ending hashing are fixed (`AUDIT_2026-11-06.md` M1, M2), a grader on Windows hits a crash and the reports show false "changed" flags.
 
 ---
 
-*This is a living document — update it as decisions get made and the timeline shifts.*
+*This is a living document. Update it as decisions get made and the timeline shifts.*
