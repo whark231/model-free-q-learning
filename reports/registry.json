@@ -211,7 +211,7 @@
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
           "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit; the HTML report does not show them yet.",
-          "The report flags the calibration and src/action_space/grid.py, src/environment.py and src/rewards.py as changed against baseline-v1. That is false: the files are identical once Windows line endings are normalized (AUDIT_2026-11-06.md). src/agent.py and src/train.py really changed, but not in tabular behaviour."
+          "Against baseline-v1 the report flags src/agent.py and src/train.py as changed training code. They really changed between baseline-v1's commit 80a6e9c and bc311a3, but not in tabular behaviour. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }
     },
@@ -246,7 +246,7 @@
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
           "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit; the HTML report does not show them yet.",
-          "Against tabular-const the report lists src/fa_agent.py and src/features.py as changed training code. Both runs trained at commit bc311a3; tabular runs simply do not hash those two files, and every file both runs hash is identical. Against baseline-v1 it also flags the calibration and grid.py, environment.py and rewards.py, which is the line-ending artifact described in AUDIT_2026-11-06.md."
+          "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const nothing is flagged; both trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }
     },
@@ -274,9 +274,8 @@
         ],
         "caveats": [
           "Spline and tabular-const use separately tuned learning rates, so this comparison combines changes in features and learning rate.",
-          "The baseline-v1 Q-fit numbers above come from a re-evaluation of baseline-v1 that is not committed: the committed results/baseline_g5_grid20, robust_g3_grid20 and robust_g8_grid20 summaries have no q_fit block. Commit the re-evaluated summaries so these numbers can be reproduced.",
           "Post hoc. α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.5). The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed: with α = 7.11e-6 and ‖φ‖² at most 45, one update moves a value by at most about 3.2e-4 times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
-          "Against tabular runs the report lists src/fa_agent.py and src/features.py as changed training code; tabular runs do not hash those files. Calibration and code flags against runs built on another machine can be line-ending artifacts (AUDIT_2026-11-06.md)."
+          "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const and fa-quadratic nothing is flagged; all three trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       },
       "compare_with": [

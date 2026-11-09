@@ -43,21 +43,13 @@ All documentation or data, no code:
 
 ## Your next steps
 
-1. **Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`** with the current `evaluate.py`, from your `.npz` logs, and commit the summaries (`AUDIT_2026-11-06.md` H3):
-   ```
-   $env:PYTHONIOENCODING = "utf-8"   # Windows only
-   python -m src.run_experiments --results-dir results
-   python -m src.run_experiments --run n26m --results-dir results/n26m      # likewise all-three, grid10-robustness
-   ```
-   Finished folders skip training. Every earlier number stays identical; only the Q-fit fields are added. If the `baseline-v1` numbers differ from the ones in `fa-spline`'s notes (0.821 / 35% and the others), correct the notes.
-2. **TC redesign, with me** (`AUDIT_2026-11-06.md` H1, H2, §6.2). Do not run `discount.json` or `learning-rate.json` as designed. Once we decide, the four single-variant configs behind the committed sweep should be committed too (M9).
-3. **Small code fixes, one PR** (none changes a number):
-   - Windows print crash: `sys.stdout.reconfigure(encoding="utf-8")` at the start of `main()` in `run_experiments.py`, `evaluate.py` and `tc_sweep_report.py` (M1).
-   - Line-ending hashing: `.gitattributes` with `* text=auto eol=lf`, hash normalized bytes, and compare only files hashed on both sides (M2, M3).
-   - Report headers: overlay `title`, `what_changed` and `git_ref` from the registry at build time (M4).
-   - Q-value fit in the extractor and template (M5).
-4. **`RUN_ISSUES` §4 steps 1 to 3, still open** (M10): the total-gap column, the post-hoc "settled" measure, provenance in `summary.json`, and the definitions in `EVALUATION.md`. I'll review the PR.
-5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Who writes the TC section is proposed in the prospectus (you, since you built it) and is yours to accept or change.
+**Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. No reported number changed.
+
+1. ~~**Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`**~~ Done 2026-11-09 (H3), plus `fa-spline`. Every earlier number came back identical. The `baseline-v1` Q fit matches the numbers in `fa-spline`'s notes (Spearman 0.821, 0.710, 0.920; top-10 recall 35%, 20%, 20% at γ = 5, 3, 8). `b63`, `eps-decay`, `tabular-const` and `fa-quadratic` need William, who holds their logs.
+2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). On hold. Do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11).
+3. ~~**Small code fixes**~~ Done 2026-11-09: M1 (except `tc_sweep_report.py`), M2, M3, M4, M5, plus L2.
+4. ~~**`RUN_ISSUES` §4 steps 1 to 3** (M10)~~ Done 2026-11-09: total gap, post-hoc `settled` and `near_optimal_every_episode`, provenance in `summary.json`, definitions in `EVALUATION.md` §2.
+5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Use the post-hoc `settled` measure next to the pre-registered rule, labelled post hoc. Who writes the TC section is proposed in the prospectus (you, since you built it) and is yours to accept or change.
 
 ## To decide together
 

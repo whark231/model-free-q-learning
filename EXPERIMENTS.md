@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05 and run 2026-11-06, outcome in §8.7; the transaction-cost runs are run separately by `src/transaction_costs.py` (`TRANSACTION_COSTS.md`); later runs follow `reports/README.md`
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05 and run 2026-11-06, outcome in §8.7; `baseline-v1`, `n26m`, `all-three`, `grid10-robustness` and `fa-spline` re-evaluated 2026-11-09 to add the total gap, the post-hoc settled measure, Q fit and provenance, with every earlier number unchanged (`AUDIT_2026-11-06.md` §2.1); the transaction-cost runs are run separately by `src/transaction_costs.py` (`TRANSACTION_COSTS.md`); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---

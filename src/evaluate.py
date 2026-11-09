@@ -49,8 +49,9 @@ Usage, from the repo root:
 
 import argparse
 import csv
-import hashlib
 import json
+import platform
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -69,7 +70,8 @@ from src.benchmarks.mean_variance import (  # noqa: E402
 )
 from src.data.universe import TICKERS  # noqa: E402
 from src.environment import PROCESSED_DIR, ReturnSimulator, SeedPlan, load_calibration  # noqa: E402
-from src.train import grid_fingerprint  # noqa: E402
+from src.hashing import file_sha256, matches  # noqa: E402
+from src.train import REPO_ROOT, _git_commit, grid_fingerprint  # noqa: E402
 
 TRADING_DAYS = 252
 BPS = 1e4
@@ -77,6 +79,10 @@ BENCHMARKS = ("continuous", "best_discrete", "equal_weight")
 # Below this |U_best| (daily), a relative gap divides by almost nothing.
 RELATIVE_GAP_FLOOR = 1e-5
 TOP_K = 10  # portfolios compared by the top-k recall
+# Evaluation-side code whose digest goes into summary.json; training code is
+# already in each manifest's code_sha256 (RUN_ISSUES_2026-10-22.md Finding 7).
+EVAL_CODE_FILES = ("src/evaluate.py", "src/config.py", "src/run_experiments.py", "src/hashing.py",
+                   "src/benchmarks/mean_variance.py")
 RUN_KEYS = (
     "checkpoint_episode", "checkpoint_mean_reward", "checkpoint_max_abs_dq", "checkpoint_greedy",
     "checkpoint_action_counts", "checkpoint_next_epsilon", "greedy_change_episode",
@@ -236,6 +242,47 @@ def first_for_good(checkpoint_episode, ok, mask=None):
     return int(episodes[bad[-1] + 1 if bad.size else 0])
 
 
+def settled_from(checkpoint_episode, checkpoint_greedy, final: int):
+    """First checkpoint from which the final action is greedy at every later
+    checkpoint, or None if it is not greedy at the final checkpoint.
+    Post-hoc and descriptive (RUN_ISSUES_2026-10-22.md Finding 1)."""
+    if len(checkpoint_episode) == 0 or checkpoint_greedy[-1] != final:
+        return None
+    bad = np.flatnonzero(np.asarray(checkpoint_greedy) != final)
+    return int(checkpoint_episode[bad[-1] + 1]) if bad.size else int(checkpoint_episode[0])
+
+
+def near_optimal_every_episode(change_episode, change_action, loss_by_action, threshold: float):
+    """First episode after which every greedy action, brief switches included,
+    stays within `threshold` bps/yr of the best. None if never. The every-episode
+    counterpart of near_optimal_for_good, which is read at checkpoints only
+    (RUN_ISSUES_2026-10-22.md Finding 2)."""
+    over = np.flatnonzero(np.asarray(loss_by_action)[change_action] > threshold)
+    if over.size == 0:
+        return int(change_episode[0])
+    i = over[-1]
+    return int(change_episode[i + 1]) if i + 1 < len(change_episode) else None
+
+
+def provenance() -> dict:
+    """What produced this evaluation: commit, evaluation-code digests and the
+    library versions that can change tables or figures."""
+    import matplotlib as mpl
+    import scipy
+    try:
+        import pandas
+        pandas_version = pandas.__version__
+    except ImportError:  # pandas is not needed to evaluate
+        pandas_version = None
+    return {
+        "git_commit": _git_commit(),
+        "code_sha256": {name: file_sha256(REPO_ROOT / name) for name in EVAL_CODE_FILES},
+        "python": platform.python_version(),
+        "numpy": np.__version__, "scipy": scipy.__version__,
+        "matplotlib": mpl.__version__, "pandas": pandas_version,
+    }
+
+
 def _spread(values) -> dict:
     values = np.array([v for v in values if v is not None], dtype=float)
     if values.size == 0:
@@ -251,10 +298,9 @@ def _spread(values) -> dict:
 def load_manifest(run_dir: Path, processed_dir: Path, grid: np.ndarray | None = None, allow_partial=False) -> dict:
     """Read the manifest and refuse anything that would make the comparison
     describe a different experiment from the one that ran."""
-    manifest = json.loads((Path(run_dir) / "manifest.json").read_text())
+    manifest = json.loads((Path(run_dir) / "manifest.json").read_text(encoding="utf-8"))
     for name, digest in manifest["calibration_sha256"].items():
-        current = hashlib.sha256((Path(processed_dir) / name).read_bytes()).hexdigest()
-        if current != digest:
+        if not matches(Path(processed_dir) / name, digest):  # either line ending (src/hashing.py)
             raise ValueError(f"{name} has changed since training (sha256 mismatch); re-train or restore the data")
     if grid is not None:
         if grid.shape[0] != manifest["n_actions"]:
@@ -296,7 +342,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     mu, sigma = load_calibration(processed_dir)
-    peek = json.loads((run_dir / "manifest.json").read_text())
+    peek = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
     train = peek["config"]
     gamma, episode_length, log_every = train["gamma"], train["episode_length"], train["log_every"]
     grid = generate_weight_grid(mu.shape[0], increment=train["increment"])
@@ -332,6 +378,8 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
         through_end = greedy_stable_through_end(
             logs["greedy_change_episode"], train["n_episodes"], config.converge_k
         ) if logs["greedy_change_action"][-1] == action else None
+        loss_by_action = ce_loss_bps(u_disc, action_values)
+        settled = settled_from(logs["checkpoint_episode"], logs["checkpoint_greedy"], action)
         record = {
             "run": entry["run"],
             "learned_action": action,
@@ -359,6 +407,13 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "near_optimal_for_good_episode": first_for_good(
                 logs["checkpoint_episode"], greedy_loss <= config.near_optimal_bps
             ),
+            # Post hoc and descriptive, beside the fixed rules above (RUN_ISSUES_2026-10-22.md
+            # Findings 1 and 2): when the final action became greedy at every later
+            # checkpoint, and the near-optimal rule read at every episode.
+            "settled_episode": settled,
+            "near_optimal_every_episode_episode": near_optimal_every_episode(
+                logs["greedy_change_episode"], logs["greedy_change_action"], loss_by_action, config.near_optimal_bps
+            ),
             # Never-visited portfolios keep their initial Q in the tabular
             # agent, so the fit is also reported over visited portfolios only.
             "q_fit_all": q_fit(logs["final_q"], action_values),
@@ -368,9 +423,10 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
         regret = expected_regret(logs["checkpoint_action_counts"], action_values, u_disc)
         record["final_cumulative_regret"] = float(regret[-1])
         for key in ("greedy_stable_episode", "greedy_stable_through_end_episode",
-                    "dq_below_tol_for_good_episode", "near_optimal_for_good_episode"):
+                    "dq_below_tol_for_good_episode", "near_optimal_for_good_episode",
+                    "settled_episode", "near_optimal_every_episode_episode"):
             value = record[key]
-            record[key.replace("_episode", "_observations")] = None if value is None else value * episode_length
+            record[key.removesuffix("_episode") + "_observations"] = None if value is None else value * episode_length
         seeds.append(record)
         curves["obs"] = np.concatenate([[0], logs["checkpoint_episode"]]) * episode_length
         curves["reward"].append(logs["checkpoint_mean_reward"])
@@ -378,15 +434,24 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
         curves["regret"].append(np.concatenate([[0.0], regret]))
 
     losses = [s["ce_loss_vs_best_discrete_bps"] for s in seeds]
+    # The "median seed" is the upper median (the 6th of 10); _spread's median
+    # averages the two middle seeds, so it need not be any seed's value.
     median_seed = seeds[int(np.argsort(losses)[len(losses) // 2])]
     convergence_rules = {
         "greedy_stable": f"greedy action unchanged for {config.converge_k} episodes (first time)",
         "greedy_stable_through_end": f"the final greedy action held for at least {config.converge_k} episodes",
         "dq_below_tol_for_good": f"max |change in Q| below {config.dq_tol} in every full {log_every}-episode window from then on",
-        "near_optimal_for_good": f"greedy action within {config.near_optimal_bps} bps/yr (CE) of the best grid action from then on",
+        "near_optimal_for_good": f"greedy action within {config.near_optimal_bps} bps/yr (CE) of the best grid action at every {log_every}-episode checkpoint from then on",
+    }
+    # Post hoc, descriptive: reported beside the fixed rules, never in place of them.
+    descriptive_rules = {
+        "settled": f"the final greedy action is greedy at every {log_every}-episode checkpoint from then on",
+        "near_optimal_every_episode": f"every greedy action, brief switches included, within {config.near_optimal_bps} "
+                                      "bps/yr (CE) of the best grid action from then on",
     }
     summary = {
         "run_dir": str(run_dir),
+        "provenance": provenance(),
         "eval_config": asdict(config),
         "training_config": train,
         "n_seeds": len(seeds),
@@ -407,6 +472,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
         },
         "learned": {
             "ce_loss_vs_best_discrete_bps": _spread(losses),
+            "ce_loss_vs_continuous_bps": _spread([s["ce_loss_vs_continuous_bps"] for s in seeds]),
             "relative_learning_gap": _spread([s["relative_learning_gap"] for s in seeds]),
             "relative_gap_unreliable": bool(relative_unreliable),
             "objective_daily": _spread([s["exact"]["objective_daily"] for s in seeds]),
@@ -437,6 +503,14 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
                 }
                 for rule in convergence_rules
             },
+            "descriptive_rules": descriptive_rules,
+            **{
+                rule: {
+                    "share_of_seeds": float(np.mean([s[f"{rule}_episode"] is not None for s in seeds])),
+                    "observations": _spread([s[f"{rule}_observations"] for s in seeds]),
+                }
+                for rule in descriptive_rules
+            },
         },
         "per_seed": seeds,
         "notes": {
@@ -444,13 +518,19 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             "relative_gap": "(U_best - U) / |U_best|; None when |U_best| < 1e-5 per day",
             "evaluation_sample": f"{config.n_eval_episodes} episodes x {episode_length} days from SeedPlan's evaluation stream; exact values are primary, realized values a check",
             "mean_of_seed_weights": "average of the seeds' weights; not a portfolio any seed holds, so never compared with the benchmarks",
-            "regret_units": "daily objective units summed over episodes",
+            "regret_units": "daily objective units summed over episodes; divide by the episode count and "
+                            "multiply by 252 * 1e4 for the average loss per episode in bps/yr",
+            "total_gap": "ce_loss_vs_continuous_bps: discretization gap plus learning gap, per seed",
+            "median_seed": "the weights chart's median seed is the upper median (6th of 10 by learning gap); "
+                           "summary medians average the two middle seeds",
+            "observations": "simulated days = episodes x B; greedy_stable_through_end includes its K-episode "
+                            "waiting window",
             "q_fit": f"final Q-values vs the true expected reward U(w) of every portfolio (all) or of those the "
             f"agent tried (visited); top-{TOP_K} recall is the share of the true top {TOP_K} in the learned top "
             f"{TOP_K}; optimism is 252 * (Qhat - U) of the learned portfolio in bps/yr. Evaluation only",
         },
     }
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     _write_tables(out_dir, summary)
     _plot_weights(out_dir / "weights_grouped_bar.png", summary, median_seed)
     _plot_learning(out_dir / "learning_curve.png", curves, u_disc, u_cont, config.near_optimal_bps)
@@ -463,7 +543,7 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
                         processed_dir: Path = PROCESSED_DIR, overwrite: bool = False) -> dict:
     """Part V and Part IV: convergence under two or more grid resolutions.
     Refuses unless the experiments differ only in the grid increment."""
-    configs = [json.loads((Path(d) / "manifest.json").read_text())["config"] for d in run_dirs]
+    configs = [json.loads((Path(d) / "manifest.json").read_text(encoding="utf-8"))["config"] for d in run_dirs]
     base = {k: v for k, v in configs[0].items() if k != "increment"}
     for label, cfg in zip(labels, configs):
         other = {k: v for k, v in cfg.items() if k != "increment"}
@@ -484,11 +564,13 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
             "n_actions": summary["n_actions"],
             "discretization_gap_ce_bps": summary["discretization_gap"]["ce_loss_bps"],
             "ce_loss_vs_best_discrete_bps": summary["learned"]["ce_loss_vs_best_discrete_bps"],
+            "ce_loss_vs_continuous_bps": summary["learned"]["ce_loss_vs_continuous_bps"],
             "share_exactly_best_discrete": summary["learned"]["share_exactly_best_discrete"],
             "q_fit": summary["q_fit"],
             **{rule: conv[rule] for rule in conv["rules"]},
+            **{rule: conv[rule] for rule in conv["descriptive_rules"]},
         }
-    (out_dir / "comparison.json").write_text(json.dumps(results, indent=2) + "\n")
+    (out_dir / "comparison.json").write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
     _plot_comparison(out_dir / "convergence_by_resolution.png", curves, config.near_optimal_bps)
     return results
 
@@ -499,8 +581,8 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
 
 def _write_tables(out_dir: Path, summary: dict) -> None:
     seeds = summary["per_seed"]
-    with open(out_dir / "weights.csv", "w", newline="") as f:
-        writer = csv.writer(f)
+    with open(out_dir / "weights.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")  # LF on every machine (audit M2)
         writer.writerow(["ticker", *BENCHMARKS, *(f"learned_run_{s['run']}" for s in seeds),
                          *(f"absdiff_vs_continuous_run_{s['run']}" for s in seeds),
                          *(f"absdiff_vs_best_discrete_run_{s['run']}" for s in seeds)])
@@ -514,8 +596,8 @@ def _write_tables(out_dir: Path, summary: dict) -> None:
             ])
     rows = [(name, summary["benchmarks"][name]) for name in BENCHMARKS]
     rows += [(f"learned_run_{s['run']}", s) for s in seeds]
-    with open(out_dir / "performance.csv", "w", newline="") as f:
-        writer = csv.writer(f)
+    with open(out_dir / "performance.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")  # LF on every machine (audit M2)
         writer.writerow(["portfolio", "mean_annual", "vol_annual", "objective_daily", "ce_loss_vs_best_discrete_bps",
                          "realized_objective_daily", "realized_objective_se",
                          "realized_shortfall_vs_best_discrete_daily", "realized_shortfall_se"])
@@ -529,14 +611,15 @@ def _write_tables(out_dir: Path, summary: dict) -> None:
                 f"{realized['shortfall_vs_best_discrete_daily']:.3e}", f"{realized['shortfall_vs_best_discrete_se']:.2e}",
             ])
     keys = ["run", "learned_action", "visits_of_learned_action", "final_epsilon", "ce_loss_vs_best_discrete_bps",
-            "relative_learning_gap", "is_best_discrete", "l1_to_continuous", "euclidean_to_continuous",
+            "ce_loss_vs_continuous_bps", "relative_learning_gap", "is_best_discrete", "l1_to_continuous", "euclidean_to_continuous",
             "l1_to_best_discrete", "final_cumulative_regret", "greedy_stable_observations",
             "greedy_stable_through_end_observations", "dq_below_tol_for_good_observations",
-            "near_optimal_for_good_observations"]
+            "near_optimal_for_good_observations", "settled_observations",
+            "near_optimal_every_episode_observations"]
     fit_keys = [(population, stat) for population in ("all", "visited")
                 for stat in ("pearson", "spearman", "top_k_recall", "n_portfolios")]
-    with open(out_dir / "per_seed.csv", "w", newline="") as f:
-        writer = csv.writer(f)
+    with open(out_dir / "per_seed.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")  # LF on every machine (audit M2)
         writer.writerow(keys + [f"q_{stat}_{population}" for population, stat in fit_keys] + ["optimism_of_learned_bps"])
         for s in seeds:
             writer.writerow([s[k] for k in keys] + [s[f"q_fit_{population}"][stat] for population, stat in fit_keys]
@@ -676,6 +759,8 @@ def _moving_average(values, window):
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):  # absent under Jupyter or a redirected stdout
+        sys.stdout.reconfigure(encoding="utf-8")  # γ in output; Windows consoles default to cp1252 (audit M1)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("run_dirs", nargs="*", type=Path)
     parser.add_argument("--compare", nargs="+", type=Path, help="two or more run folders differing only in the grid")

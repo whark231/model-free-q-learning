@@ -15,8 +15,11 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import subprocess
+from functools import lru_cache
 from pathlib import Path
 
+from src.hashing import digest_variants
 from src.reporting.extract import REPORTS, ROOT, load_registry, registry_entry
 
 TEMPLATE = Path(__file__).resolve().parent / "template.html"
@@ -60,15 +63,47 @@ def _same(a, b) -> bool:
     return a == b
 
 
+@lru_cache(maxsize=None)
+def _committed_bytes(commit: str, path: str) -> bytes | None:
+    """A file's contents at a commit, or None when git or the commit is unavailable."""
+    try:
+        return subprocess.run(["git", "show", f"{commit}:{path}"], capture_output=True, check=True, cwd=ROOT).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def canonical_digest(digest: str, path: str, commit: str | None) -> str:
+    """The line-ending-normalized digest a stored digest stands for.
+
+    Manifests written on Windows before 2026-11-09 hashed CRLF bytes, so the
+    same file has a different digest there than on the Mac (AUDIT_2026-11-06.md
+    M2). When the file at the run's commit, with either line ending, gives the
+    stored digest, the LF digest is returned; otherwise the digest is kept as is
+    and any real difference still shows."""
+    if not commit:
+        return digest
+    data = _committed_bytes(commit.removesuffix("-dirty"), path)
+    return digest if data is None else digest_variants(data).get(digest, digest)
+
+
+def _digests(exp: dict, key: str, prefix: str = "") -> dict:
+    commit = exp.get("code", {}).get("git_commit")
+    stored = exp.get(key, {}) if key == "calibration_sha256" else exp.get("code", {}).get(key, {})
+    return {name: canonical_digest(d, prefix + name, commit) for name, d in stored.items()}
+
+
 def param_changes(old: dict, new: dict) -> list[dict]:
     """Every compared parameter that differs between two experiments, plus
-    changes in calibration data or training code."""
+    changes in calibration data or training code. Files are compared only when
+    both runs hashed them (tabular runs do not hash the FA files, audit M3), and
+    line endings are ignored (M2)."""
     out = [{"param": k, "label": label, "from": old["params"].get(k), "to": new["params"].get(k)}
            for k, label in COMPARED_PARAMS if not _same(old["params"].get(k), new["params"].get(k))]
-    if old.get("calibration_sha256") != new.get("calibration_sha256"):
+    old_cal, new_cal = _digests(old, "calibration_sha256", "data/processed/"), _digests(new, "calibration_sha256", "data/processed/")
+    if any(old_cal[f] != new_cal[f] for f in set(old_cal) & set(new_cal)):
         out.append({"param": "calibration", "label": "Calibration data (μ, Σ)", "from": "earlier files", "to": "different files"})
-    old_code, new_code = old.get("code", {}).get("code_sha256", {}), new.get("code", {}).get("code_sha256", {})
-    changed_files = sorted(f for f in set(old_code) | set(new_code) if old_code.get(f) != new_code.get(f))
+    old_code, new_code = _digests(old, "code_sha256"), _digests(new, "code_sha256")
+    changed_files = sorted(f for f in set(old_code) & set(new_code) if old_code[f] != new_code[f])
     if changed_files:
         out.append({"param": "code", "label": "Training code changed", "from": "", "to": ", ".join(changed_files)})
     return out
@@ -134,11 +169,23 @@ def build_families(runs: list[dict], reference_id: str | None) -> list[dict]:
     return out
 
 
+# Registry fields that describe a run. data.json freezes them at extraction, so
+# the registry's current values replace them at build time (audit M4).
+REGISTRY_RUN_FIELDS = ("title", "date", "git_ref", "scale", "what_changed", "pre_registered")
+
+
+def overlay_registry(run: dict, registry: dict) -> dict:
+    entry = next((r for r in registry["runs"] if r["id"] == run["run"]["id"]), None)
+    if entry is not None:
+        run["run"].update({k: entry[k] for k in REGISTRY_RUN_FIELDS if k in entry})
+    return run
+
+
 def build_report_data(run_id: str, registry: dict, reports_dir: Path = REPORTS) -> dict:
     entry = registry_entry(run_id, registry)
     prior_ids = comparison_runs(entry, registry)
-    current = load_run_data(run_id, reports_dir)
-    prior = [strip_seed_series(load_run_data(r, reports_dir)) for r in prior_ids]
+    current = overlay_registry(load_run_data(run_id, reports_dir), registry)
+    prior = [overlay_registry(strip_seed_series(load_run_data(r, reports_dir)), registry) for r in prior_ids]
     order = [r["id"] for r in registry["runs"]]
     runs = sorted(prior, key=lambda r: order.index(r["run"]["id"])) + [current]
     reference = registry.get("reference_run")

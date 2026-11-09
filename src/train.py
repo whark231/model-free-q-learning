@@ -71,6 +71,7 @@ from src.agent import TabularQAgent
 from src.environment import PROCESSED_DIR, ReturnSimulator, SeedPlan, load_calibration
 from src.fa_agent import LinearQAgent
 from src.features import quadratic_features, spline_additive_pairwise_features
+from src.hashing import file_sha256
 from src.rewards import episodic_mean_variance_reward
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -533,7 +534,9 @@ def _write_manifest(out_dir: Path, manifest: dict) -> None:
 
 
 def _hashes(root: Path, names) -> dict:
-    return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in names}
+    """Line-ending-normalized digests (src/hashing.py), so the same file gives
+    the same digest on Windows and on the Mac."""
+    return {name: file_sha256(root / name) for name in names}
 
 
 def _git_commit() -> str | None:

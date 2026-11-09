@@ -303,3 +303,76 @@ def test_older_report_data_read_as_tabular_so_comparisons_show_only_real_changes
     assert {k: loaded["params"][k] for k in build.AGENT_PARAM_DEFAULTS} == build.AGENT_PARAM_DEFAULTS
     new = _exp(alpha_rule=0.00032, **build.AGENT_PARAM_DEFAULTS)
     assert [c["param"] for c in build.param_changes(loaded, new)] == ["alpha_rule"]
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M2 to M5)
+# ---------------------------------------------------------------------------
+
+def test_file_digest_ignores_line_endings(tmp_path):
+    from src.hashing import digest_variants, file_sha256, matches, sha256_bytes
+    lf, crlf = tmp_path / "lf.csv", tmp_path / "crlf.csv"
+    lf.write_bytes(b"a,b\n1,2\n")
+    crlf.write_bytes(b"a,b\r\n1,2\r\n")
+    assert file_sha256(lf) == file_sha256(crlf) == sha256_bytes(b"a,b\n1,2\n")
+    # A digest stored from either form matches either file, and maps to the LF digest.
+    crlf_digest = sha256_bytes(b"a,b\r\n1,2\r\n")
+    assert matches(lf, crlf_digest) and matches(crlf, sha256_bytes(b"a,b\n1,2\n"))
+    assert digest_variants(lf.read_bytes())[crlf_digest] == file_sha256(lf)
+    assert not matches(lf, sha256_bytes(b"a,b\n1,3\n"))
+
+
+def test_training_manifests_hash_normalized_bytes(tmp_path):
+    from src.train import _hashes
+    (tmp_path / "x.py").write_bytes(b"print(1)\r\nprint(2)\r\n")
+    (tmp_path / "y.py").write_bytes(b"print(1)\nprint(2)\n")
+    assert _hashes(tmp_path, ["x.py"])["x.py"] == _hashes(tmp_path, ["y.py"])["y.py"]
+
+
+def test_param_changes_compares_only_files_hashed_on_both_sides():
+    old, new = _exp(), _exp()
+    new["code"]["code_sha256"] = {"src/train.py": "1", "src/fa_agent.py": "z", "src/features.py": "w"}
+    new["calibration_sha256"] = {"a": "x", "extra.csv": "q"}
+    assert build.param_changes(old, new) == []
+
+
+def test_param_changes_ignores_a_crlf_digest_of_the_same_committed_file():
+    import subprocess
+    from src.hashing import sha256_bytes
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True,
+                            cwd=extract.ROOT).stdout.strip()
+    text = subprocess.run(["git", "show", f"{commit}:src/rewards.py"], capture_output=True, check=True,
+                          cwd=extract.ROOT).stdout.replace(b"\r\n", b"\n")
+    lf_digest, crlf_digest = sha256_bytes(text), sha256_bytes(text.replace(b"\n", b"\r\n"))
+    mac, windows = _exp(), _exp()
+    mac["code"] = {"git_commit": commit, "code_sha256": {"src/rewards.py": lf_digest}}
+    windows["code"] = {"git_commit": commit + "-dirty", "code_sha256": {"src/rewards.py": crlf_digest}}
+    assert build.param_changes(mac, windows) == []
+    # A real difference still shows.
+    windows["code"]["code_sha256"]["src/rewards.py"] = sha256_bytes(text + b"# edit\n")
+    assert [c["param"] for c in build.param_changes(mac, windows)] == ["code"]
+
+
+def test_report_header_fields_come_from_the_registry():
+    run = {"run": {"id": "a", "title": "old title", "what_changed": "old", "git_ref": "tag-not-pushed"}}
+    registry = {"runs": [{"id": "a", "title": "new title", "what_changed": "new", "git_ref": "e13a9a6"}]}
+    build.overlay_registry(run, registry)
+    assert run["run"] == {"id": "a", "title": "new title", "what_changed": "new", "git_ref": "e13a9a6"}
+
+
+def test_extract_carries_the_q_fit_that_evaluate_reports(small_run):
+    root, results, exp = small_run
+    data = extract.extract_run({"id": "tiny", "results_dir": "results/tiny"}, root=root,
+                               processed_dir=extract.ROOT / "data/processed")
+    (e,) = data["experiments"]
+    summary = json.loads((results / exp.name / "evaluation" / "summary.json").read_text())
+    for mine, theirs in zip(e["seeds"], summary["per_seed"]):
+        assert mine["q_spearman_all"] == pytest.approx(theirs["q_fit_all"]["spearman"])
+        assert mine["q_pearson_all"] == pytest.approx(theirs["q_fit_all"]["pearson"])
+        assert mine["q_top10_recall_all"] == theirs["q_fit_all"]["top_k_recall"]
+        assert mine["q_spearman_visited"] == pytest.approx(theirs["q_fit_visited"]["spearman"])
+        assert mine["optimism_bps"] == pytest.approx(theirs["optimism_of_learned_bps"])
+        assert mine["settled_obs"] == theirs["settled_observations"]
+        assert mine["near_obs_episode"] == theirs["near_optimal_every_episode_observations"]
+    assert e["summary"]["q_spearman_all"]["median"] == pytest.approx(summary["q_fit"]["all"]["spearman"]["median"])
+    assert data["schema_version"] == 3

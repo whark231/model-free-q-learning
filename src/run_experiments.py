@@ -29,6 +29,7 @@ import argparse
 import json
 import platform
 import shutil
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -199,8 +200,12 @@ def _index_entry(experiment, summary: dict) -> dict:
         "folder": experiment.name,
         "discretization_gap_bps": summary["discretization_gap"]["ce_loss_bps"],
         "learning_gap_bps": learned["ce_loss_vs_best_discrete_bps"],
+        # Older summaries (before 2026-11-09) lack the fields below; .get keeps their index readable.
+        "total_gap_bps": learned.get("ce_loss_vs_continuous_bps"),
         "share_exactly_best_discrete": learned["share_exactly_best_discrete"],
         "convergence": {rule: conv[rule] for rule in conv["rules"]},
+        "settled": conv.get("settled"),
+        "q_spearman_all": summary.get("q_fit", {}).get("all", {}).get("spearman"),
     }
 
 
@@ -227,18 +232,34 @@ def _index_markdown(index: dict) -> str:
         f"Learning rate α: {s['alpha_rule']}; agent: {s.get('agent', 'tabular')}"
         f"{' (' + s['feature_map'] + ' features, l2 ' + format(s['l2'], 'g') + ')' if s.get('feature_map') else ''}.",
         "",
-        "Losses are certainty-equivalent, in basis points per year, against the best portfolio on that grid. "
-        "For each rule: the share of seeds that met it, and in brackets the median simulated days "
-        "(millions) among the seeds that did.",
+        "Losses are certainty-equivalent, in basis points per year. The learning gap is measured against the best "
+        "portfolio on that grid, the total gap against the continuous long-only optimum (discretization plus "
+        "learning, per seed). For each rule: the share of seeds that met it, and in brackets the median simulated "
+        "days (millions) among the seeds that did. The primary rule's count includes its K-episode waiting window. "
+        "Near-optimal is read at the 10,000-episode checkpoints; \"settled\" (post hoc, descriptive) is the first "
+        "checkpoint from which the final portfolio was greedy at every later checkpoint; a tabular seed always "
+        "settles by the last checkpoint, so that column gives the median and range in millions of days, not a share. Q fit is the median "
+        "Spearman correlation between the learned Q-values and every portfolio's true value.",
         "",
-        "| Experiment | γ | Grid | Discretization gap | Learning gap, median (range) | Exactly best | "
-        "Converged (primary rule) | Near-optimal for good | Folder |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Experiment | γ | Grid | Discretization gap | Learning gap, median (range) | Total gap, median (range) | "
+        "Exactly best | Converged (primary rule) | Settled (post hoc), median (range) | Near-optimal for good (checkpoints) | "
+        "Q fit | Folder |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for e in index["experiments"]:
         gap = e["learning_gap_bps"]
 
+        total = e.get("total_gap_bps")
+        total_text = "n/a" if total is None else f"{_fmt(total['median'])} ({_fmt(total['min'])} to {_fmt(total['max'])})"
+        spearman = e.get("q_spearman_all")
+        fit_text = "n/a" if not spearman or spearman["median"] is None else _fmt(spearman["median"], 3)
+        settled = (e.get("settled") or {}).get("observations")
+        settled_text = "n/a" if not settled or settled["median"] is None else \
+            f"{settled['median'] / 1e6:.1f}M ({settled['min'] / 1e6:.1f}M to {settled['max'] / 1e6:.1f}M)"
+
         def obs(rule):
+            if rule is None:
+                return "n/a"
             median = rule["observations"]["median"]
             when = "never" if median is None else f"{median / 1e6:.1f}M"
             return f"{rule['share_of_seeds']:.0%} ({when})"
@@ -246,8 +267,10 @@ def _index_markdown(index: dict) -> str:
         lines.append(
             f"| {e['name']} | {e['gamma']:g} | {e['increment']:.0%} ({e['n_actions']:,}) | "
             f"{_fmt(e['discretization_gap_bps'])} | {_fmt(gap['median'])} ({_fmt(gap['min'])} to {_fmt(gap['max'])}) | "
-            f"{e['share_exactly_best_discrete']:.0%} | {obs(e['convergence'][primary])} | "
+            f"{total_text} | "
+            f"{e['share_exactly_best_discrete']:.0%} | {obs(e['convergence'][primary])} | {settled_text} | "
             f"{obs(e['convergence']['near_optimal_for_good'])} | "
+            f"{fit_text} | "
             f"[{e['folder']}]({e['folder']}/evaluation/summary.json) |"
         )
     if index["comparison"]:
@@ -258,6 +281,8 @@ def _index_markdown(index: dict) -> str:
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):  # absent under Jupyter or a redirected stdout
+        sys.stdout.reconfigure(encoding="utf-8")  # γ in --dry-run output; Windows consoles default to cp1252 (audit M1)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--results-dir", type=Path, default=None,
                         help="default: results/ for the baseline, results/<run_id>/ with --run")

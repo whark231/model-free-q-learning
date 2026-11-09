@@ -470,3 +470,69 @@ def test_compare_refuses_experiments_that_differ_in_more_than_the_grid(tmp_path,
     dir_b, _ = train_with(tmp_path, [fixed(0)], name="b", increment=0.2, gamma=3.0)
     with pytest.raises(ValueError, match="gamma"):
         ev.compare_experiments([dir_a, dir_b], ["a", "b"], EVAL, tmp_path / "cmp")
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M2 and M10)
+# ---------------------------------------------------------------------------
+
+def test_settled_and_every_episode_near_optimal_on_a_known_switch(tmp_path, market):
+    mu, sigma, grid, values = market
+    best, worse = int(np.argmax(values)), int(np.argsort(values)[0])
+    config_k = ev.EvalConfig(n_eval_episodes=500, converge_k=200, dq_tol=1e-3, near_optimal_bps=1.0)
+    run_dir, _ = train_with(tmp_path, [lambda n: SwitchingAgent(n, worse, best, 1_200)], n_episodes=2_000)
+    summary = ev.evaluate_experiment(run_dir, config_k)
+    seed = summary["per_seed"][0]
+    # Checkpoints at 500, 1000, 1500, 2000: greedy is `worse` at 1000 and `best` from 1500.
+    assert seed["settled_episode"] == 1_500 and seed["settled_observations"] == 1_500 * 20
+    # Every episode: the greedy action is `best` from episode 1,200 exactly.
+    assert seed["near_optimal_every_episode_episode"] == 1_200
+    assert seed["near_optimal_every_episode_observations"] == 1_200 * 20
+    conv = summary["convergence"]
+    assert set(conv["descriptive_rules"]) == {"settled", "near_optimal_every_episode"}
+    assert conv["settled"]["share_of_seeds"] == 1.0 and conv["settled"]["observations"]["median"] == 30_000
+    assert "checkpoint" in conv["rules"]["near_optimal_for_good"]
+
+
+def test_total_gap_is_discretization_plus_learning_gap(tmp_path, market):
+    mu, sigma, grid, values = market
+    worse = int(np.argsort(values)[-10])
+    run_dir, _ = train_with(tmp_path, [fixed(worse), fixed(int(np.argmax(values)))])
+    summary = ev.evaluate_experiment(run_dir, EVAL)
+    w_cont = constrained_optimal_weights(mu, sigma, GAMMA)
+    u_cont = w_cont @ mu - 0.5 * GAMMA * w_cont @ sigma @ w_cont
+    disc = summary["discretization_gap"]["ce_loss_bps"]
+    totals = [s["ce_loss_vs_continuous_bps"] for s in summary["per_seed"]]
+    assert totals[0] == pytest.approx(252e4 * (u_cont - values[worse]))
+    for s, total in zip(summary["per_seed"], totals):
+        assert total == pytest.approx(disc + s["ce_loss_vs_best_discrete_bps"])
+    assert summary["learned"]["ce_loss_vs_continuous_bps"]["median"] == pytest.approx(np.median(totals))
+    with open(run_dir / "evaluation" / "per_seed.csv", newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert [float(r["ce_loss_vs_continuous_bps"]) for r in rows] == pytest.approx(totals)
+    assert [int(r["settled_observations"]) for r in rows] == [s["settled_observations"] for s in summary["per_seed"]]
+
+
+def test_summary_records_its_provenance(tmp_path, market):
+    from src.hashing import sha256_bytes
+    from src.train import REPO_ROOT
+    run_dir, _ = train_with(tmp_path, [fixed(0)])
+    prov = ev.evaluate_experiment(run_dir, EVAL)["provenance"]
+    assert set(prov["code_sha256"]) == {"src/evaluate.py", "src/config.py", "src/run_experiments.py", "src/hashing.py",
+                                         "src/benchmarks/mean_variance.py"}
+    raw = (REPO_ROOT / "src/evaluate.py").read_bytes().replace(b"\r\n", b"\n")
+    assert prov["code_sha256"]["src/evaluate.py"] == sha256_bytes(raw)
+    assert prov["numpy"] == np.__version__ and prov["matplotlib"] and "git_commit" in prov
+
+
+def test_a_calibration_hashed_with_crlf_line_endings_is_accepted(tmp_path, market):
+    """Manifests written on Windows before 2026-11-09 hold CRLF digests (audit M2)."""
+    from src.environment import PROCESSED_DIR
+    from src.hashing import sha256_bytes
+    run_dir, _ = train_with(tmp_path, [fixed(0)])
+    manifest = json.loads((run_dir / "manifest.json").read_text())
+    for name in manifest["calibration_sha256"]:
+        lf = (PROCESSED_DIR / name).read_bytes().replace(b"\r\n", b"\n")
+        manifest["calibration_sha256"][name] = sha256_bytes(lf.replace(b"\n", b"\r\n"))
+    (run_dir / "manifest.json").write_text(json.dumps(manifest))
+    assert ev.evaluate_experiment(run_dir, EVAL)["n_seeds"] == 1

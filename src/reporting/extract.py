@@ -23,7 +23,6 @@ Run from the repo root:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -33,8 +32,9 @@ from src.action_space.grid import generate_weight_grid
 from src.benchmarks.mean_variance import constrained_optimal_weights
 from src.data.universe import TICKERS
 from src.environment import PROCESSED_DIR, load_calibration
+from src.hashing import matches
 from src.evaluate import (exact_stats, first_for_good, first_greedy_stable, full_windows, greedy_stable_through_end,
-                          objective)
+                          near_optimal_every_episode, objective, q_fit, settled_from)
 from src.train import grid_fingerprint
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -42,7 +42,7 @@ REPORTS = ROOT / "reports"
 REGISTRY = REPORTS / "registry.json"
 BPS = 252 * 1e4            # daily objective difference -> bps per year
 MAX_POINTS = 650           # time-series points kept per curve (binned beyond this)
-SCHEMA_VERSION = 2   # 2: cross-seed medians computed before binning
+SCHEMA_VERSION = 3   # 2: cross-seed medians computed before binning; 3: Q-value fit per seed (audit M5)
 
 
 # ---------------------------------------------------------------------------
@@ -72,16 +72,6 @@ def tries_to_separate(sd_best: float, gap_daily: float) -> float:
     return float(8 * sd_best ** 2 / gap_daily ** 2)
 
 
-def settled_from(ckpt_episode: np.ndarray, ckpt_greedy: np.ndarray, final: int) -> int | None:
-    """First checkpoint from which the final action is greedy at every later
-    checkpoint, or None if it is not greedy at the final checkpoint.
-    Post-hoc and descriptive (RUN_ISSUES_2026-10-22.md Finding 1)."""
-    if len(ckpt_episode) == 0 or ckpt_greedy[-1] != final:
-        return None
-    bad = np.flatnonzero(ckpt_greedy != final)
-    return int(ckpt_episode[bad[-1] + 1]) if bad.size else int(ckpt_episode[0])
-
-
 def excursions(ch_ep, ch_act, final: int, after: int, n_episodes: int, loss_by_action) -> list[tuple[int, int, float]]:
     """Distinct excursions after episode `after`: maximal stretches during which
     the greedy action is not the final one. Returns (start, length, worst loss)."""
@@ -102,16 +92,6 @@ def excursions(ch_ep, ch_act, final: int, after: int, n_episodes: int, loss_by_a
     return out
 
 
-def near_optimal_every_episode(ch_ep, ch_act, loss_by_action, threshold: float):
-    """First episode after which every greedy action, brief switches included,
-    stays within `threshold` bps/yr of the best. None if never."""
-    over = np.flatnonzero(np.asarray(loss_by_action)[ch_act] > threshold)
-    if over.size == 0:
-        return int(ch_ep[0])
-    i = over[-1]
-    return int(ch_ep[i + 1]) if i + 1 < len(ch_ep) else None
-
-
 def bin_series(x: np.ndarray, ys: dict[str, np.ndarray], how: dict[str, str], max_points: int = MAX_POINTS):
     """Shorten aligned series to at most max_points by grouping consecutive
     points. `how` per series: 'max' keeps spikes (loss), 'mean' averages,
@@ -127,10 +107,6 @@ def bin_series(x: np.ndarray, ys: dict[str, np.ndarray], how: dict[str, str], ma
         f = {"max": np.max, "mean": np.mean, "last": lambda a: a[-1]}[how[k]]
         out[k] = np.array([f(v[a:b]) for a, b in zip(edges[:-1], edges[1:])])
     return xb, out
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _median(values):
@@ -152,9 +128,9 @@ def _spread(values) -> dict:
 
 def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.ndarray,
                        processed_dir: Path, keep_seed_series: bool = True) -> dict:
-    manifest = json.loads((exp_dir / "manifest.json").read_text())
+    manifest = json.loads((exp_dir / "manifest.json").read_text(encoding="utf-8"))
     for name, digest in manifest["calibration_sha256"].items():
-        if _sha256(processed_dir / name) != digest:
+        if not matches(processed_dir / name, digest):  # either line ending (src/hashing.py)
             raise ValueError(
                 f"{exp_dir.name}: {name} differs from the calibration this experiment was trained on. "
                 "Point --processed-dir at the calibration it used (for example a calibration-window run)."
@@ -206,6 +182,8 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         near_ck = first_for_good(ep, loss[greedy] <= near)
         near_ev = near_optimal_every_episode(ch_ep, ch_act, loss, near)
         stats = exact_stats(w, mu, sigma, gamma)
+        visited = d["final_visit_counts"] > 0
+        fit_all, fit_visited = q_fit(d["final_q"], u), q_fit(d["final_q"][visited], u[visited])
         obs = lambda e: None if e is None else int(e) * B
         seed = {
             "run": r,
@@ -234,6 +212,13 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
             "near_obs_ckpt": obs(near_ck),
             "near_obs_episode": obs(near_ev),
             "seconds": entry.get("seconds"),
+            # Q-value fit (evaluate.q_fit): learned Q against U(w) of every portfolio, and of those tried.
+            "q_pearson_all": fit_all["pearson"],
+            "q_spearman_all": fit_all["spearman"],
+            "q_top10_recall_all": fit_all["top_k_recall"],
+            "q_spearman_visited": fit_visited["spearman"],
+            "q_top10_recall_visited": fit_visited["top_k_recall"],
+            "optimism_bps": float((d["final_q"][final] - u[final]) * BPS),
         }
         if ep_grid is None:
             ep_grid = ep
@@ -292,6 +277,11 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         "regret_avg": _spread([s["regret_avg_bps"] for s in seeds]),
         "within_near_of_best": sum(s["loss_best"] <= near for s in seeds),
         "seconds_per_seed": _median([s["seconds"] for s in seeds]),
+        "q_spearman_all": _spread([s["q_spearman_all"] for s in seeds]),
+        "q_top10_recall_all": _spread([s["q_top10_recall_all"] for s in seeds]),
+        "q_spearman_visited": _spread([s["q_spearman_visited"] for s in seeds]),
+        "q_top10_recall_visited": _spread([s["q_top10_recall_visited"] for s in seeds]),
+        "optimism": _spread([s["optimism_bps"] for s in seeds]),
     }
     return {
         "name": exp_dir.name,

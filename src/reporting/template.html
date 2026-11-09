@@ -217,6 +217,8 @@ const S = (tag, a, p) => { const e = document.createElementNS(NS, tag); for (con
 const f = (x, d = 1) => x == null || Number.isNaN(x) ? "n/a" : Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const md = obs => obs == null ? "never" : f(obs / 1e6, 1) + "M";
 const pct = (x, d = 0) => f(x * 100, d) + "%";
+// Q-value fit exists from data.json schema 3 (audit M5); older runs show n/a.
+const qfit = (s, key, fmt) => s[key] && s[key].median != null ? `${fmt(s[key].median)} (${fmt(s[key].min)} to ${fmt(s[key].max)})` : "n/a";
 const median = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -398,6 +400,10 @@ function resultsSection() {
     ["Near-optimal for good, every episode", ...exps.map(e => `${e.summary.near_episode.n}/${e.summary.n_seeds} · ${md(e.summary.near_episode.median)}`)],
     ["|ΔQ| rule", ...exps.map(e => `${e.summary.dq.n}/${e.summary.n_seeds} · ${md(e.summary.dq.median)}`)],
     ["Average regret over training (bps/yr)", ...exps.map(e => f(e.summary.regret_avg.median))],
+    ["Q fit: Spearman, all portfolios, median (range)", ...exps.map(e => qfit(e.summary, "q_spearman_all", v => f(v, 3)))],
+    ["Q fit: top-10 recall, all portfolios, median (range)", ...exps.map(e => qfit(e.summary, "q_top10_recall_all", v => pct(v)))],
+    ["Q fit: Spearman, tried portfolios only", ...exps.map(e => qfit(e.summary, "q_spearman_visited", v => f(v, 3)))],
+    ["Optimism of the learned portfolio's Q (bps/yr)", ...exps.map(e => qfit(e.summary, "optimism", v => f(v)))],
   ], { left: [0] });
 }
 
@@ -503,6 +509,8 @@ function familyDetail(fam, note = "") {
     metric("Primary rule met (share)", e => e.summary.primary.n / e.summary.n_seeds, v => pct(v), false),
     metric("Near-optimal for good, checkpoints (share)", e => e.summary.near_ckpt.n / e.summary.n_seeds, v => pct(v), false),
     metric("Average regret (bps/yr)", e => e.summary.regret_avg.median, v => f(v), true),
+    metric("Q fit: Spearman, all, median", e => e.summary.q_spearman_all ? e.summary.q_spearman_all.median : null, v => f(v, 3), false),
+    metric("Q fit: top-10 recall, all, median", e => e.summary.q_top10_recall_all ? e.summary.q_top10_recall_all.median : null, v => pct(v), false),
     metric("Tries to separate top two", e => e.benchmarks.tries_to_separate_top_two, v => f(v, 0), true),
     metric("Random tries per portfolio", e => e.params.random_tries_per_portfolio, v => f(v, 0), false),
     metric("Seconds per seed", e => e.summary.seconds_per_seed, v => f(v, 0), true),
@@ -567,6 +575,7 @@ function notesSection() {
     "All gaps are exact values from the calibrated μ and Σ, which only evaluation code uses; the agent never sees them.",
     "Runs that share a master seed are paired: seed i draws from the same random streams. Treat differences between runs in a family as paired only when nothing but the parameter of interest changed.",
     "The pre-registered convergence rule restarts its clock on every brief excursion, so the post-hoc settled measure is reported beside it (RUN_ISSUES_2026-10-22.md Finding 1).",
+    "Q fit compares each seed's final Q-values with every portfolio's true expected reward U(w): Spearman rank correlation, the share of the true top 10 in the learned top 10, and how far the learned portfolio's Q overstates its U. Runs extracted before 2026-11-09 show n/a.",
   ];
   $("caveats").innerHTML = [...cav, ...std].map(c => `<li>${c}</li>`).join("");
   const idx = CUR.index || {};

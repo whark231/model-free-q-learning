@@ -35,6 +35,16 @@ The audit found no correctness bug in the core code or in the FA code. It did fi
 
 407 tests pass.
 
+## From Albert, 2026-11-09: audit fixes on `dev`
+
+**In plain terms:** the Albert-owned non-TC audit items (H3, M1 to M5, M10, L2, L4) are fixed in code and pushed to `dev`, and L8 is done for the runs whose logs are on the Mac; `AUDIT_2026-11-06.md` §3 marks each one. No reported number changed. Five things need you.
+
+1. **Your test fails on `dev`, before and after these changes.** `src/tests/test_tune_fa.py` line 235, `test_a_clear_winner_is_decided_on_three_seeds`, asserts `shortfall_seed_se_bps == 0.0` and gets 5.0e-15 (floating-point rounding of a standard error over three equal values). Proposed fix: `== pytest.approx(0.0, abs=1e-12)`. Not changed, since the file is yours.
+2. **L1 and L3 are yours and still open:** `generate_weight_grid` should raise when 1/increment is not an integer, and `requirements.txt` still says 244 tests and pins unused packages.
+3. **M1 is fixed in `run_experiments.py` and `evaluate.py` only.** `tc_sweep_report.py` still needs the same `sys.stdout.reconfigure(encoding="utf-8")` line; it was left alone because TC work is on hold.
+4. **After you pull, refresh your working tree once** so the new `.gitattributes` takes effect: `git rm --cached -r -q . ; git reset --hard` on a clean tree (commit or stash first). Text files then check out with LF, and `data/processed/` hashes the same on your machine as on the Mac. The code hashes line-ending-normalized bytes anyway (`src/hashing.py`), so nothing breaks if you skip this; and manifests you wrote on Windows before today are still accepted.
+5. **Re-evaluate the runs whose logs only you have** (`b63`, `eps-decay`, `tabular-const`, `fa-quadratic`), so their summaries and `INDEX.md` gain the total gap, the post-hoc settled measure and provenance (audit L8). Same commands as before, for example `python -m src.run_experiments --run b63 --results-dir results/b63`; finished training is skipped and only the evaluation is rewritten. Then `python -m src.reporting.extract b63` and `python -m src.reporting.build --all`. Every earlier number should come back identical; on the Mac the four re-evaluated runs did.
+
 ## Your next steps
 
 1. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.

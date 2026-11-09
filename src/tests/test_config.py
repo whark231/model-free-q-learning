@@ -480,3 +480,46 @@ def test_a_variant_passes_every_agent_setting_through_to_training(capsys, tmp_pa
     run_all(tmp_path, run=cfg.POST_HOC_RUNS["fa-spline"], dry_run=True)
     out = capsys.readouterr().out
     assert out.count("agent linear spline (l2=0), alpha 7.111111111111112e-06") == 3
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M1 and M10)
+# ---------------------------------------------------------------------------
+
+def test_index_shows_total_gap_settled_and_q_fit(tmp_path):
+    index = run_all(tmp_path, **SMALL)
+    markdown = (tmp_path / "INDEX.md").read_text(encoding="utf-8")
+    assert "Total gap, median (range)" in markdown and "Settled (post hoc), median (range)" in markdown
+    assert "Near-optimal for good (checkpoints)" in markdown and "| Q fit |" in markdown
+    for entry in index["experiments"]:
+        summary = json.loads((tmp_path / entry["name"] / "evaluation" / "summary.json").read_text())
+        assert entry["total_gap_bps"] == summary["learned"]["ce_loss_vs_continuous_bps"]
+        assert entry["settled"] == summary["convergence"]["settled"]
+        assert entry["q_spearman_all"] == summary["q_fit"]["all"]["spearman"]
+    comparison = json.loads((tmp_path / COMPARISON_NAME / "comparison.json").read_text())
+    assert "ce_loss_vs_continuous_bps" in comparison["20%"] and "settled" in comparison["20%"]
+
+
+def test_index_reads_summaries_written_before_the_new_fields(tmp_path):
+    from src.run_experiments import _index_entry, _index_markdown
+    run_all(tmp_path, **SMALL)
+    summary = json.loads((tmp_path / "baseline_g5_grid20" / "evaluation" / "summary.json").read_text())
+    del summary["learned"]["ce_loss_vs_continuous_bps"], summary["convergence"]["settled"], summary["q_fit"]
+    entry = _index_entry(cfg.experiments()[0], summary)
+    index = json.loads((tmp_path / "index.json").read_text())
+    index["experiments"] = [entry]
+    row = [line for line in _index_markdown(index).splitlines() if line.startswith("| baseline_g5_grid20")][0]
+    assert row.count("n/a") == 3
+
+
+def test_dry_run_prints_gamma_on_a_cp1252_console():
+    """Windows consoles default to cp1252, which has no γ (audit M1)."""
+    import os
+    import subprocess
+    import sys
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    for module in ("src.run_experiments", "src.evaluate"):
+        args = [sys.executable, "-m", module, "--help"] if module == "src.evaluate" else \
+               [sys.executable, "-m", module, "--run", "tabular-const", "--dry-run"]
+        done = subprocess.run(args, capture_output=True, env=env, cwd=train.REPO_ROOT)
+        assert done.returncode == 0, done.stderr.decode(errors="replace")

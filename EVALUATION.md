@@ -1,7 +1,7 @@
 # Parts IV and V: Evaluating the Learned Policy
 
 **Owner:** Albert · **Status:** built and tested on `dev`; rules and thresholds fixed 2026-10-16 (§7)
-**Code:** `src/evaluate.py` · **Tests:** `src/tests/test_evaluate.py` (31 tests on 2026-11-06)
+**Code:** `src/evaluate.py`, `src/hashing.py` · **Tests:** `src/tests/test_evaluate.py` (35 tests on 2026-11-09)
 **Date:** 2026-10-16, numpy 2.3.5, matplotlib 3.10.6
 
 ---
@@ -60,7 +60,7 @@ overwrite an earlier evaluation unless `--overwrite` is given.
 | `summary.json` | Everything below, machine-readable, with the settings used |
 | `weights.csv` | Benchmark weights, each seed's learned weights, absolute differences by asset |
 | `performance.csv` | Mean, volatility, U(w), CE loss; realized values and paired shortfalls with standard errors |
-| `per_seed.csv` | Learned action, losses, distances, regret, observations to each convergence rule |
+| `per_seed.csv` | Learned action, learning gap and total gap, distances, regret, observations to each convergence rule (pre-registered and post hoc) |
 | `weights_grouped_bar.png` | Median-loss seed vs. continuous optimum vs. best on the grid, with every seed's weights as dots |
 | `learning_curve.png` | Mean reward per window; CE loss of the current greedy portfolio |
 | `cumulative_regret.png` | Expected regret against the best grid action |
@@ -81,9 +81,13 @@ overwrite an earlier evaluation unless `--overwrite` is given.
 | CE loss vs. X | 252 × (U(X) − U(w)) × 10,000, in basis points per year |
 | Discretization gap | CE loss of w_disc vs. w*: the cost of the menu |
 | Learning gap | CE loss of the learned portfolio vs. w_disc: the cost of learning from noise |
+| Total gap | CE loss of the learned portfolio vs. w*. Equal to discretization gap plus learning gap, per seed (`ce_loss_vs_continuous_bps`; added 2026-11-09) |
 | Relative gap | (U_ref − U) / \|U_ref\|; reported as secondary, and `None` when \|U_ref\| < 1e-5 per day |
-| Expected regret | Sum over episodes of U(w_disc) − U(chosen action), computed from how often each action was chosen in each window |
-| Observations | Episodes × episode length B, in simulated days |
+| Expected regret | Sum over episodes of U(w_disc) − U(chosen action), computed from how often each action was chosen in each window. Units are daily objective units summed over episodes: divide by the number of episodes and multiply by 252 × 10,000 to get the average loss per episode in bps/yr |
+| Observations | Episodes × episode length B, in simulated days. For `greedy_stable` and `greedy_stable_through_end` the count includes the K-episode waiting window, so it is the point at which the rule could first be declared, not when the action was first picked |
+| Checkpoint | The end of each `log_every`-episode window (10,000 episodes in every run so far). Rules marked "checkpoint" are read only there, so a brief switch between two checkpoints is invisible to them |
+| Median (summary) | The usual median: with 10 seeds, the average of the 5th and 6th values. Every "median" in `summary.json`, `INDEX.md` and the reports means this |
+| Median seed (weights chart) | The upper median, the 6th of 10 seeds ranked by learning gap. A chart needs one real seed's weights, so the two middle seeds cannot be averaged |
 
 ### Convergence and optimality rules
 
@@ -91,14 +95,44 @@ overwrite an earlier evaluation unless `--overwrite` is given.
 |---|---|---|
 | `greedy_stable` | agent only | First episode at which the greedy action has been unchanged for K consecutive episodes |
 | `greedy_stable_through_end` | agent only | The final greedy action has been held for at least K episodes, counted from when it last changed |
-| `dq_below_tol_for_good` | agent only | First checkpoint from which every later full window had max \|change in Q\| below the tolerance. A short final window is ignored, because few updates make it look artificially calm |
-| `near_optimal_for_good` | benchmark (evaluation only) | First checkpoint from which the greedy portfolio's CE loss vs. w_disc stays at or below the near-optimal line |
+| `dq_below_tol_for_good` | agent only | Read at checkpoints. First checkpoint from which every later full window had max \|change in Q\| below the tolerance. A short final window is ignored, because few updates make it look artificially calm |
+| `near_optimal_for_good` | benchmark (evaluation only) | Read at checkpoints. First checkpoint from which the greedy portfolio's CE loss vs. w_disc stays at or below the near-optimal line |
 
 For each rule, the summary reports the share of seeds that met it and the
 median, minimum and maximum observations needed. That answers Part IV ("how
 many observations and episodes are required... how often convergence occurs
 across seeds") and the Part V requirement on "the number of observations needed
 to approach a clearly defined level of optimality."
+
+The two `greedy_stable` rules use the exact episode of every greedy change
+(`train.py` logs each one), so they are resolved to the episode.
+
+### Post-hoc convergence measures (added 2026-11-09)
+
+**In plain terms:** the primary rule asks for the final pick to be held for 10%
+of training, which a seed that settles late can miss even though it ends on the
+right portfolio. These two measures describe when each seed actually settled.
+They were defined after the baseline results were seen (`RUN_ISSUES_2026-10-22.md`
+Findings 1 and 2), so they are descriptive and never replace the
+pre-registered rules. `summary.json` lists them under
+`convergence.descriptive_rules`.
+
+| Measure | Definition |
+|---|---|
+| `settled` | First checkpoint from which the final greedy action is the greedy action at every later checkpoint. `None` if it is not greedy at the last checkpoint. No K window, so it can be met by a seed that fails `greedy_stable_through_end`. For a tabular agent the last checkpoint's greedy action is the final one by definition, so every seed settles (at the latest, at the last checkpoint): the share of seeds is always 100% and only the timing carries information. `INDEX.md` therefore shows the median and range, not a share. |
+| `near_optimal_every_episode` | First episode after which every greedy action, brief switches between checkpoints included, stays within the near-optimal line. The every-episode counterpart of `near_optimal_for_good`. A seed whose final greedy action is within the line always meets it, however late its last switch; read the episode, not only the share |
+
+### Provenance (added 2026-11-09)
+
+`summary.json` has a `provenance` block: the git commit the evaluation ran at
+(with `-dirty` if the working tree had changes), the SHA-256 of `evaluate.py`,
+`config.py`, `run_experiments.py`, `hashing.py` and the benchmark solver
+`benchmarks/mean_variance.py`, and the Python, numpy,
+scipy, matplotlib and pandas versions. Digests are over line-ending-normalized
+bytes (`src/hashing.py`), so the same file gives the same digest on Windows and
+on the Mac. Training manifests use the same digest from 2026-11-09;
+manifests written on Windows before then hold the CRLF digest, which
+`load_manifest` still accepts.
 
 ### Q-value fit (post hoc, added 2026-11-04)
 
@@ -180,6 +214,9 @@ against w_disc, with its standard error, is the reliable realized comparison.
 | CSV contents | Match the summary |
 | Refusals | Changed data, changed grid, partial experiment, overwrite, comparison of experiments differing in more than the grid |
 | Q-fit metrics (2026-11-04) | Hand examples; correlations match `scipy.stats.pearsonr` and `spearmanr` with ties; an agent holding Q = U scores 1, 1, 1 and optimism 0; Q = U + c gives optimism exactly c; a fixed agent's optimism rebuilt from its logged window rewards; CSV columns match the summary |
+| Post-hoc measures and total gap (2026-11-09) | An agent whose greedy action switches at episode 1,200 settles at checkpoint 1,500 and is near-optimal every episode from 1,200; total gap equals discretization plus learning gap per seed and matches an independent U(w*) − U(w) |
+| Line endings (2026-11-09) | LF and CRLF copies of a file get the same digest; a manifest whose calibration digests are the CRLF form is accepted |
+| Re-evaluating existing runs (2026-11-09) | `baseline-v1`, `n26m`, `all-three`, `grid10-robustness` and `fa-spline` re-evaluated: every earlier value in `summary.json`, `comparison.json` and the CSVs identical, figures byte-identical. The total gap matches `RUN_ISSUES_2026-10-22.md` Finding 3 (19.8, 14.3, 12.5 and 11.9 bps/yr medians) |
 | Re-evaluating existing runs (2026-11-04) | `b63` and `eps-decay` (6 experiments) re-evaluated with the new code: every earlier number in `summary.json`, `weights.csv` and `performance.csv` identical |
 | Mutation testing | 17 deliberate bugs injected; 16 caught. The survivor changes only which weights the bar chart draws, which no test inspects |
 
