@@ -1,6 +1,6 @@
 {
-  "written_utc": "2026-11-09T21:04:29+00:00",
-  "git_commit": "1e8f80f76d8c987e66b2c647e175aeaf358441e0-dirty",
+  "written_utc": "2026-11-10T00:41:58+00:00",
+  "git_commit": "badbf923f7f637757ac6c758ece64f6438824bea",
   "python": "3.13.9",
   "numpy": "2.3.5",
   "settings": {
@@ -120,6 +120,16 @@
           "n": 10
         }
       },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.8,
+        "observations": {
+          "mean": 81911250.0,
+          "median": 73060000.0,
+          "min": 44548000.0,
+          "max": 135912000.0,
+          "n": 8
+        }
+      },
       "q_spearman_all": {
         "mean": 0.9492002914479081,
         "median": 0.9504552742094159,
@@ -206,6 +216,16 @@
           "n": 10
         }
       },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.3,
+        "observations": {
+          "mean": 79301333.33333333,
+          "median": 73750000.0,
+          "min": 36448000.0,
+          "max": 127706000.0,
+          "n": 3
+        }
+      },
       "q_spearman_all": {
         "mean": 0.9437970238565274,
         "median": 0.94500223613923,
@@ -290,6 +310,16 @@
           "min": 93000000.0,
           "max": 229400000.0,
           "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.0,
+        "observations": {
+          "mean": null,
+          "median": null,
+          "min": null,
+          "max": null,
+          "n": 0
         }
       },
       "q_spearman_all": {

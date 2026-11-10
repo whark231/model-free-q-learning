@@ -1,6 +1,6 @@
 {
-  "written_utc": "2026-11-09T21:03:32+00:00",
-  "git_commit": "1e8f80f76d8c987e66b2c647e175aeaf358441e0-dirty",
+  "written_utc": "2026-11-10T00:41:11+00:00",
+  "git_commit": "badbf923f7f637757ac6c758ece64f6438824bea",
   "python": "3.13.9",
   "numpy": "2.3.5",
   "settings": {
@@ -116,6 +116,16 @@
           "n": 10
         }
       },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.9,
+        "observations": {
+          "mean": 467775483.0,
+          "median": 302402457.0,
+          "min": 129307626.0,
+          "max": 1168211268.0,
+          "n": 9
+        }
+      },
       "q_spearman_all": {
         "mean": 0.9712097541379441,
         "median": 0.9711178503017033,
@@ -202,6 +212,16 @@
           "n": 10
         }
       },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 298014444.0,
+          "median": 207211504.5,
+          "min": 62333523.0,
+          "max": 1116491481.0,
+          "n": 10
+        }
+      },
       "q_spearman_all": {
         "mean": 0.9448640862597182,
         "median": 0.9456513407930001,
@@ -285,6 +305,16 @@
           "median": 64260000.0,
           "min": 29610000.0,
           "max": 687330000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 412171439.4,
+          "median": 329789659.5,
+          "min": 121697415.0,
+          "max": 1095602130.0,
           "n": 10
         }
       },
