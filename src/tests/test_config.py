@@ -455,6 +455,24 @@ def test_fa_spline_uses_the_alpha_and_l2_chosen_on_six_seeds():
         assert tc.master_seed == 20261016 and tc.n_runs == 10 and tc.episode_length == 20
 
 
+def test_fa_spline_grid10_pairs_with_grid10_robustness_and_keeps_the_spline_alpha():
+    """EXPERIMENTS.md §8.8, registered 2026-11-10: the same seeds and training budget as
+    grid10-robustness, and fa-spline's agent settings unchanged (not re-tuned)."""
+    run, tab, spline = (cfg.POST_HOC_RUNS[k] for k in ("fa-spline-grid10", "grid10-robustness", "fa-spline"))
+    assert run.registered == "2026-11-10"
+    for field in ("episode_length", "n_episodes", "epsilon_at_halfway", "increment"):
+        assert getattr(run, field) == getattr(tab, field), field
+    for field in ("alpha_rule", "agent", "feature_map", "l2", "greedy_refresh_every"):
+        assert getattr(run, field) == getattr(spline, field), field
+    assert [e.name for e in cfg.experiments(run)] == [
+        "baseline_g5_grid10_B63_N26M_eps3_FAspline", "robust_g3_grid10_B63_N26M_eps3_FAspline",
+        "robust_g8_grid10_B63_N26M_eps3_FAspline"]
+    for experiment, twin in zip(cfg.experiments(run), cfg.experiments(tab)):
+        tc, ttc = cfg.train_config(experiment), cfg.train_config(twin)
+        assert (tc.gamma, tc.master_seed, tc.n_runs, tc.beta) == (ttc.gamma, ttc.master_seed, ttc.n_runs, ttc.beta)
+        assert tc.n_episodes % tc.greedy_refresh_every == 0 and cfg.LOG_EVERY % tc.greedy_refresh_every == 0
+
+
 def test_an_fa_variant_runs_end_to_end_and_records_its_agent(tmp_path):
     run = cfg.POST_HOC_RUNS["fa-quadratic"]
     index = run_all(tmp_path, run=run, n_episodes=1_000, n_runs=2, n_eval_episodes=200, log_every=500)

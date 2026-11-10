@@ -205,6 +205,21 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         alpha_rule=TUNED_ALPHA_SPLINE, agent="linear", feature_map="spline", l2=0.0,
         greedy_refresh_every=FA_GREEDY_REFRESH,
     ),
+    # Function approximation on the 10% grid (AUDIT_2026-11-06.md §6.3 C1; EXPERIMENTS.md §8.8). Same B,
+    # episodes, epsilon and seeds as grid10-robustness, so seeds pair with it; alpha and l2 as fa-spline's,
+    # not re-tuned for this grid or this B.
+    "fa-spline-grid10": RunVariant(
+        "fa-spline-grid10", "B63_N26M_eps3_FAspline", "2026-11-10",
+        "against grid10-robustness (same B, episodes, epsilon and seeds; paired, 2 SE): a higher median Spearman "
+        "correlation over all 43,758 portfolios at every γ, at least 0.9; at least 6 of 10 seeds meeting the primary "
+        "rule at every γ (a constant alpha settles the greedy portfolio, so this measures stability); at γ = 8, at "
+        "least 6 of 10 seeds holding at most 20% SPY and a larger mean learning gap, the 20% grid bias persisting; no "
+        "direction for the gap at γ = 5 and 3, top-10 recall, exactly-best share or regret; discretization gap "
+        "identical to grid10-robustness's",
+        episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.03, increment=0.1,
+        alpha_rule=TUNED_ALPHA_SPLINE, agent="linear", feature_map="spline", l2=0.0,
+        greedy_refresh_every=FA_GREEDY_REFRESH,
+    ),
 }
 
 
