@@ -17,7 +17,7 @@
 | **William** (`whark231` / `wharkpenn`) | More experienced in coding and the technical math. Leads RL implementation, optimization, benchmark derivations. |
 | **Claude** | Senior data scientist (Python + R). Works primarily alongside Albert. |
 
-The division of labor lives in `PROJECT_PROSPECTUS.md` §4. Follow it.
+The division of labor lives in `docs/PROJECT_PROSPECTUS.md` §4. Follow it.
 
 ## 2. Non-negotiables
 
@@ -26,7 +26,7 @@ Before planning or writing code, re-read:
 - `assignment.pdf` lives in the repo root. It is the grading contract: Parts I–VI
   and the five 20% evaluation buckets. Read it with `pypdf`; this machine has
   no `pdftotext`/poppler, so the Read tool cannot render it directly.
-- `PROJECT_PROSPECTUS.md` holds the team's plan, timeline, and task ownership.
+- `docs/PROJECT_PROSPECTUS.md` holds the team's plan, timeline, and task ownership.
 
 Never work from memory of these. Re-read them.
 
@@ -36,7 +36,7 @@ Never work from memory of these. Re-read them.
   convention. Never commit directly to `main`.
 - Never force-push. Never rebase shared branches. Never amend a commit that is
   already pushed.
-- Never edit a file that `PROJECT_PROSPECTUS.md` assigns to William without
+- Never edit a file that `docs/PROJECT_PROSPECTUS.md` assigns to William without
   flagging it first. Report the issue, propose the fix, let him apply it.
 - Commit only when Albert asks.
 
@@ -66,7 +66,7 @@ For **every** conflict:
    work.
 
 **Flagging is not fixing.** An issue reported in
-`REVIEW_NOTES_FOR_WILLIAM.md` stays outstanding in the code until someone
+`docs/notes/REVIEW_NOTES_FOR_WILLIAM.md` stays outstanding in the code until someone
 changes the code. Say which state a thing is in rather than letting "verified
 the fix works" read as "fixed."
 
@@ -173,21 +173,21 @@ taken and why.
 - Machine-readable logs (e.g. `data/processed/CLEANING_LOG.json`) alongside the
   prose, so report tables can be regenerated and audited.
 
-Existing docs:
+Existing docs (`docs/README.md` is the index; docs cite each other by file name):
 | File | Covers |
 |---|---|
-| `PROJECT_PROSPECTUS.md` | Plan, ownership, timeline (William) |
-| `DATA_CLEANING.md` | Part I data pipeline, decisions, assumptions (Albert) |
-| `ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
-| `EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
-| `EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
-| `REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
-| `NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps (William) |
-| `FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning (William) |
-| `TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations (Albert) |
-| `RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan |
-| `AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs |
-| `REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
+| `docs/PROJECT_PROSPECTUS.md` | Plan, ownership, timeline (William) |
+| `docs/methods/DATA_CLEANING.md` | Part I data pipeline, decisions, assumptions (Albert) |
+| `docs/methods/ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
+| `docs/methods/EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
+| `docs/methods/EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
+| `docs/notes/REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
+| `docs/notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps (William) |
+| `docs/methods/FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning (William) |
+| `docs/methods/TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations (Albert) |
+| `docs/reviews/RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan |
+| `docs/reviews/AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs |
+| `docs/reviews/REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
 | `reports/README.md` | Adding a run, extracting it, and building reports that compare runs (Albert) |
 | `CLAUDE.md` | This working agreement |
 
