@@ -2,13 +2,13 @@
 
 **From:** Albert, kept up to date by William
 **Date:** 2026-11-09
-**Status:** the required work (Parts I to VI) is done and independently re-checked. The three constant-learning-rate runs (`tabular-const`, `fa-quadratic`, `fa-spline`) are run and reported, with Q fit in every report. Every non-TC code issue from both audits is closed, Albert's on `dev` and William's on `feature/william-audit-fixes` (not yet merged). What stays open is listed below. Closed items are in `REVIEW_HISTORY.md`.
+**Status:** open items only. Closed items are in `REVIEW_HISTORY.md` and `AUDIT_2026-11-06.md` §2.
 
 ---
 
 ## TL;DR / In plain terms
 
-The code is in good shape: two audits found no correctness bug in the core or the FA code, and every code issue they raised outside transaction costs is fixed. What is left is decisions and writing. The transaction-cost agent scores like a random portfolio even with free trading, so the TC extension needs a design decision before any more TC runs; then pick the final runs and write the report, including the FA expectations that failed.
+What is left is decisions and writing. The transaction-cost agent scores like a random portfolio even with free trading, so the TC extension needs a design decision before any more TC runs; then pick the final runs and write the report, including the FA expectations that failed.
 
 **Key concepts to understand**
 
@@ -21,22 +21,6 @@ The code is in good shape: two audits found no correctness bug in the core or th
 - For the FA section: both FA models beat `tabular-const` at γ = 5 and 3 (paired −20.9 ± 9.8 and −99.2 ± 23.7 bps/yr for the quadratic) and rank the landscape better at every γ on Spearman, but neither beats `baseline-v1` reliably. `fa-spline` ranked the landscape better than the correctly specified quadratic, against our prediction. No "discovery" claim.
 
 ---
-
-## What's done
-
-| Component | Where | Evidence |
-|---|---|---|
-| Benchmarks, grid, reward, tabular agent | `src/benchmarks/`, `src/action_space/`, `src/rewards.py`, `src/agent.py` | `REVIEW_HISTORY.md` §1; re-derived in both audits |
-| Baseline and five tabular post-hoc runs | `results/`, `reports/` | `REVIEW_HISTORY.md` §8, `EXPERIMENTS.md` §7 |
-| FA agent, features, training path, Q-value fit metrics | `src/fa_agent.py`, `src/features.py`, `src/train.py`, `src/evaluate.py` | `FA_INTEGRATION_NOTES.md`; no bug found in either audit |
-| Step-size tuning | `src/tune_fa.py`, `results/tuning/` | `EXPERIMENTS.md` §8.1 |
-| `tabular-const`, `fa-quadratic`, `fa-spline` run and reported | `results/<run>/`, `reports/<run>/` | `EXPERIMENTS.md` §8.7 |
-| Two whole-project audits | `AUDIT_2026-11-06.md` | Independent reviewers; §4 and §8.4 list what was verified |
-| Albert's audit fixes, 2026-11-09 | `dev` | `AUDIT_2026-11-06.md` §2.1, §8.3 |
-| Every item Albert left for William, 2026-11-09: the rounding test, L1, L3, the `.gitattributes` refresh, re-evaluation and re-extraction of `b63`, `eps-decay`, `tabular-const`, `fa-quadratic` (L8, F-M3), the prospectus status (F-M11) | `feature/william-audit-fixes` | `AUDIT_2026-11-06.md` §2.2, `REVIEW_HISTORY.md` §9; no reported value changed |
-| `tune_fa --summarize` byte-stable (F-L12, FA part); every non-TC output written with LF (a bug found while closing F-M3) | `feature/william-audit-fixes` | Tests fail without each fix; `NEXT_STEPS_FOR_ALBERT.md` explains the LF bug for Albert |
-
-442 tests pass on 2026-11-09 (Windows, Python 3.10).
 
 ## Still open
 
@@ -64,7 +48,7 @@ The code is in good shape: two audits found no correctness bug in the core or th
 
 **TC redesign** (step 2 above).
 
-**Final runs.** `AUDIT_2026-11-06.md` §6. R0 (the Q-fit re-evaluations) is done; next a TC option, then C1 to C3, P1 and P2 as time allows.
+**Final runs.** `AUDIT_2026-11-06.md` §6. A TC option first, then C1 to C3, P1 and P2 as time allows.
 
 **Merging `dev` into `main`** (F-M1).
 
