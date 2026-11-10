@@ -83,8 +83,7 @@ CODE_FILES = (
     "src/rewards.py",
     "src/action_space/grid.py",
     "src/hashing.py",
-    "src/config.py",
-)
+)  # not config.py: it changes whenever a run is registered, and the settings are in the manifest
 FA_CODE_FILES = ("src/fa_agent.py", "src/features.py")  # hashed only for function-approximation runs
 
 # Feature maps a function-approximation run can name in TrainConfig.feature_map.
@@ -552,7 +551,9 @@ def _version(module: str) -> str | None:
 
 
 def _git_commit() -> str | None:
-    """HEAD of the repo this file lives in, with -dirty if tracked files differ.
+    """HEAD of the repo this file lives in, with -dirty if tracked code or data
+    differ. results/ and reports/ are excluded, since a batch rewrites them as
+    it goes and would mark every later experiment dirty.
     code_sha256 in the manifest identifies the exact code either way."""
     try:
         def git(*args):
@@ -560,7 +561,7 @@ def _git_commit() -> str | None:
                 ["git", *args], capture_output=True, text=True, check=True, cwd=REPO_ROOT
             ).stdout.strip()
 
-        dirty = git("status", "--porcelain", "--untracked-files=no")
+        dirty = git("status", "--porcelain", "--untracked-files=no", "--", ".", ":!results", ":!reports")
         return git("rev-parse", "HEAD") + ("-dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return None

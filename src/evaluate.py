@@ -543,6 +543,8 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
                         processed_dir: Path = PROCESSED_DIR, overwrite: bool = False) -> dict:
     """Part V and Part IV: convergence under two or more grid resolutions.
     Refuses unless the experiments differ only in the grid increment."""
+    if len(run_dirs) > len(RESOLUTION_COLORS):  # checked before any evaluation work (audit F-L4)
+        raise ValueError(f"at most {len(RESOLUTION_COLORS)} grids per comparison plot (audit F-L4)")
     configs = [json.loads((Path(d) / "manifest.json").read_text(encoding="utf-8"))["config"] for d in run_dirs]
     base = {k: v for k, v in configs[0].items() if k != "increment"}
     for label, cfg in zip(labels, configs):
@@ -752,7 +754,8 @@ def _plot_comparison(path, curves, threshold):
         ax.plot(obs / 1e6, loss, color=hue, linewidth=2, label=f"{label} grid, vs best on that grid")
         ax.plot(obs / 1e6, loss + disc, color=hue, linewidth=1.5, linestyle=(0, (4, 2)),
                 label=f"{label} grid, vs continuous optimum")
-    ax.axhline(threshold, color=INK_2, linewidth=1, linestyle="--", label=f"Near-optimal line ({threshold:g} bps/yr)")
+    ax.axhline(threshold, color=INK_2, linewidth=1, linestyle="--",
+               label=f"Near-optimal line ({threshold:g} bps/yr, for the solid lines)")
     _style(ax, "Convergence by grid resolution (median across seeds)", "Simulated days (millions)",
            "CE loss (bps/yr)")
     _clip_top(ax, [loss + disc for _, loss, disc in curves.values()], threshold)

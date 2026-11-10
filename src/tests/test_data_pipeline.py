@@ -305,6 +305,10 @@ def test_extend_rescales_appended_adjusted_prices_onto_the_existing_basis():
     assert joined.pct_change().iloc[2:].tolist() == pytest.approx(fresh["Adj Close"].pct_change().iloc[2:].tolist())
     assert appended["Close"].tolist() == [102.0, 103.0]          # unadjusted prices untouched
     assert rescale_appended(existing, fresh, fresh.iloc[:0])[1] is None
+    broken = fresh.copy()
+    broken.loc[dates[1], "Adj Close"] = float("nan")
+    with pytest.raises(ValueError, match="cannot rescale"):
+        rescale_appended(existing, broken, broken.loc[dates[2:]])
 
 
 def test_the_sample_end_is_pinned_to_the_committed_calibration():

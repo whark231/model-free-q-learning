@@ -44,6 +44,7 @@ import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
 import yfinance as yf
@@ -84,6 +85,8 @@ def rescale_appended(existing: pd.DataFrame, fresh: pd.DataFrame, appended: pd.D
         return appended, None
     last = shared.max()
     factor = float(existing.loc[last, column] / fresh.loc[last, column])
+    if not (np.isfinite(factor) and factor > 0):
+        raise ValueError(f"cannot rescale {column} at {last.date()}: existing / fresh = {factor}; nothing was written")
     out = appended.copy()
     out[column] = out[column] * factor
     return out, factor

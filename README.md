@@ -41,7 +41,7 @@ From the repo root:
 ```bash
 python -m pytest src/tests -q          # see Requirements for the one known failure
 python -m src.data.clean               # rebuild data/processed/ from the committed raw data
-python -m src.run_experiments          # baseline-v1: train and evaluate every experiment
+python -m src.run_experiments --results-dir results/repro   # baseline-v1: train and evaluate into a new folder
 ```
 
 A fresh clone has each run's manifest and summaries but not its training

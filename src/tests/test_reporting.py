@@ -399,3 +399,6 @@ def test_the_comparison_plot_refuses_more_grids_than_colours(tmp_path):
     curves = {str(i): (np.arange(3.0), np.zeros(3), 1.0) for i in range(len(ev.RESOLUTION_COLORS) + 1)}
     with pytest.raises(ValueError, match="at most"):
         ev._plot_comparison(tmp_path / "x.png", curves, 25.0)
+    # compare_experiments refuses before reading or evaluating anything
+    with pytest.raises(ValueError, match="at most"):
+        ev.compare_experiments([tmp_path / "missing"] * 3, ["a", "b", "c"], None, tmp_path / "out")

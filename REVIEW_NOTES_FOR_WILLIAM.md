@@ -53,7 +53,7 @@ The audit found no correctness bug in the core code or in the FA code. It did fi
 2. **Update the prospectus status** (F-M11). It still lists M10, M1, M2 and the Q-fit re-evaluation as open. Not changed, since the file is yours.
 3. **Merging `dev` into `main`** (F-M1). `main`, GitHub's default branch, is about 50 commits behind, so a plain clone gets the old README. Proposed: one PR from `dev` to `main` once you have pulled and agree.
 
-Also changed in shared code, all backward compatible: new manifests record scipy and pandas versions and hash `src/hashing.py` and `src/config.py`; evaluation provenance hashes `src/environment.py` and `src/action_space/grid.py`; a results folder whose manifest is committed but whose `.npz` logs are missing is now refused with a pointer to `--results-dir results/repro`.
+Also changed in shared code, all backward compatible: new manifests record scipy and pandas versions and hash `src/hashing.py`; `-dirty` in a recorded commit now ignores changes under `results/` and `reports/`; evaluation provenance hashes `src/environment.py` and `src/action_space/grid.py`; a results folder whose manifest is committed but whose `.npz` logs are missing is now refused with a pointer to `--results-dir results/repro`.
 
 ## Your next steps
 
