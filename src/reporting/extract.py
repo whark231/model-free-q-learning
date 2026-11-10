@@ -429,7 +429,7 @@ def main() -> None:
     data = extract_run(entry, processed_dir=args.processed_dir)
     out = REPORTS / args.run_id / "data.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+    out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8", newline="\n")
     print(f"wrote {out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.2f} MB, {len(data['experiments'])} experiments)")
 
 

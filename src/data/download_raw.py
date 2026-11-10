@@ -310,7 +310,7 @@ def main() -> None:
                         f"{revision['old']:.6f} -> {revision['new']:.6f}"
                     )
 
-    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n")
+    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"\nmanifest -> {MANIFEST_PATH}")
 
 

@@ -210,7 +210,7 @@
           "Post hoc: designed after the baseline-v1 results were seen. α was tuned on separate seeds (master seed 20261103) at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.3). γ = 3 and 8 use the γ = 5 value untuned.",
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
-          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit. The report's results table shows them; it reads n/a until this run's data.json is re-extracted with the current extract step.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit and are shown in the report's results table (data.json re-extracted 2026-11-09).",
           "Against baseline-v1 the report flags src/agent.py and src/train.py as changed training code. They really changed between baseline-v1's commit 80a6e9c and bc311a3, but not in tabular behaviour. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }
@@ -245,7 +245,7 @@
           "Besides the features, one mechanical difference from tabular-const remains: the FA agent refreshes its greedy portfolio every 100 updates, tabular-const every episode. Both break ties at random when acting.",
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
-          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit. The report's results table shows them; it reads n/a until this run's data.json is re-extracted with the current extract step.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit and are shown in the report's results table (data.json re-extracted 2026-11-09).",
           "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const nothing is flagged; both trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }

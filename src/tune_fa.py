@@ -198,7 +198,7 @@ def run_candidate(candidate: dict, seed: int, n_episodes: int, out_dir: Path) ->
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(record, indent=2) + "\n")
+    tmp.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
     os.replace(tmp, path)  # a record is either complete or absent
     return record
 
@@ -321,7 +321,9 @@ def summarize(out_dir: Path, n_eval: int) -> dict:
         return sorted(ids, key=lambda i: (-rows[i][key], rows[i]["l2"], -rows[i]["fraction"]))
 
     rows = {}
-    for cand_id in complete:
+    # `complete` is a set of strings, whose order changes with Python's hash
+    # seed; sorting keeps fa_tuning.json byte-stable across runs (audit F-L12).
+    for cand_id in sorted(complete):
         r0 = by_id[cand_id][0]
         c, per_seed = score(cand_id, base_seeds)
         rows[cand_id] = {
@@ -393,7 +395,7 @@ def summarize(out_dir: Path, n_eval: int) -> dict:
         "chosen": chosen,
         "candidates": rows,
     }
-    (Path(out_dir) / "fa_tuning.json").write_text(json.dumps(summary, indent=2) + "\n")
+    (Path(out_dir) / "fa_tuning.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     return summary
 
 

@@ -1,6 +1,6 @@
 {
-  "written_utc": "2026-11-06T10:10:15+00:00",
-  "git_commit": "bc311a387bd18ee8ab98b4e5415e49bd9e7497f0",
+  "written_utc": "2026-11-10T02:06:11+00:00",
+  "git_commit": "3322e03b04b837f6a9cff1a0485a7cc1704039e7",
   "python": "3.10.2",
   "numpy": "2.2.6",
   "settings": {
@@ -60,6 +60,13 @@
         "max": 29.396796947933417,
         "n": 10
       },
+      "total_gap_bps": {
+        "mean": 28.363745158133412,
+        "median": 28.363745158133412,
+        "min": 21.591172452106054,
+        "max": 35.136317864160766,
+        "n": 10
+      },
       "share_exactly_best_discrete": 0.0,
       "convergence": {
         "greedy_stable": {
@@ -102,6 +109,33 @@
             "n": 5
           }
         }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 241680000.0,
+          "median": 248500000.0,
+          "min": 183600000.0,
+          "max": 260000000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.5,
+        "observations": {
+          "mean": 251004400.0,
+          "median": 257786000.0,
+          "min": 238512000.0,
+          "max": 259808000.0,
+          "n": 5
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9144755845952682,
+        "median": 0.9147185195853126,
+        "min": 0.908824355710555,
+        "max": 0.9201834014701686,
+        "n": 10
       }
     },
     {
@@ -120,6 +154,13 @@
         "median": 0.0,
         "min": 0.0,
         "max": 20.01753318946271,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 10.48122776498034,
+        "median": 2.4742144891952553,
+        "min": 2.4742144891952553,
+        "max": 22.491747678657966,
         "n": 10
       },
       "share_exactly_best_discrete": 0.6,
@@ -164,6 +205,33 @@
             "n": 10
           }
         }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 249640000.0,
+          "median": 254000000.0,
+          "min": 217800000.0,
+          "max": 260000000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 240690800.0,
+          "median": 242821000.0,
+          "min": 194330000.0,
+          "max": 259806000.0,
+          "n": 10
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.8542733091282688,
+        "median": 0.8537458495704491,
+        "min": 0.8430340255007239,
+        "max": 0.8762568206918738,
+        "n": 10
       }
     },
     {
@@ -182,6 +250,13 @@
         "median": 55.680940086978595,
         "min": 55.680940086978595,
         "max": 70.78553231539321,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 64.83535814290187,
+        "median": 61.814439697218944,
+        "min": 61.814439697218944,
+        "max": 76.91903192563356,
         "n": 10
       },
       "share_exactly_best_discrete": 0.0,
@@ -226,6 +301,33 @@
             "n": 0
           }
         }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 155140000.0,
+          "median": 140100000.0,
+          "min": 90200000.0,
+          "max": 231400000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.0,
+        "observations": {
+          "mean": null,
+          "median": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9513505534517774,
+        "median": 0.9511512306072452,
+        "min": 0.9491083161209606,
+        "max": 0.9543000387716054,
+        "n": 10
       }
     }
   ],

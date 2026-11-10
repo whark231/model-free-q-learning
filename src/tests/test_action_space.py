@@ -98,3 +98,19 @@ def test_two_asset_grid_matches_hand_trace():
     expected = {(0.0, 1.0), (0.5, 0.5), (1.0, 0.0)}
     actual = {tuple(row) for row in grid}
     assert actual == expected
+
+
+@pytest.mark.parametrize("increment", [0.3, 0.15, 0.4, 1.5, 0.0, -0.2, float("nan"), float("inf")])
+def test_an_increment_that_does_not_divide_one_is_refused(increment):
+    """1/0.3 used to round to 3 and silently build a one-third grid of 165
+    portfolios (AUDIT_2026-11-06.md L1). Every such increment must raise."""
+    with pytest.raises(ValueError):
+        generate_weight_grid(9, increment=increment)
+
+
+@pytest.mark.parametrize("increment,units", [(1.0, 1), (0.5, 2), (0.25, 4), (0.2, 5), (0.1, 10), (0.05, 20)])
+def test_every_whole_unit_increment_is_accepted(increment, units):
+    """The guard must not reject an increment whose float 1/increment is a
+    whole number up to rounding, including the assignment's 5% grid."""
+    grid = generate_weight_grid(3, increment=increment)
+    assert len(grid) == (units + 1) * (units + 2) // 2   # C(units + 2, 2) for 3 assets

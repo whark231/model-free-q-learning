@@ -81,7 +81,7 @@ def check_results_dir(results_dir: Path, settings: dict) -> None:
             )
     else:
         results_dir.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def training_status(run_dir: Path, train_cfg) -> str:
@@ -189,8 +189,8 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int | No
         "experiments": entries,
         "comparison": {"folder": COMPARISON_NAME, "results": comparison} if comparison else None,
     }
-    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
-    (results_dir / "INDEX.md").write_text(_index_markdown(index), encoding="utf-8")
+    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8", newline="\n")
+    (results_dir / "INDEX.md").write_text(_index_markdown(index), encoding="utf-8", newline="\n")
     return index
 
 

@@ -530,7 +530,7 @@ def _evaluate(run_dir, config, out_dir, processed_dir, overwrite, allow_partial)
             f"{TOP_K}; optimism is 252 * (Qhat - U) of the learned portfolio in bps/yr. Evaluation only",
         },
     }
-    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     _write_tables(out_dir, summary)
     _plot_weights(out_dir / "weights_grouped_bar.png", summary, median_seed)
     _plot_learning(out_dir / "learning_curve.png", curves, u_disc, u_cont, config.near_optimal_bps)
@@ -573,7 +573,7 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
             **{rule: conv[rule] for rule in conv["rules"]},
             **{rule: conv[rule] for rule in conv["descriptive_rules"]},
         }
-    (out_dir / "comparison.json").write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "comparison.json").write_text(json.dumps(results, indent=2) + "\n", encoding="utf-8", newline="\n")
     _plot_comparison(out_dir / "convergence_by_resolution.png", curves, config.near_optimal_bps)
     return results
 

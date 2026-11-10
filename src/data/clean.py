@@ -540,7 +540,7 @@ def main() -> None:
     log["outputs"] = sorted(p.name for p in PROCESSED_DIR.glob("*.csv"))
     log["library_versions"] = {"python": platform.python_version(), "numpy": np.__version__,
                                "pandas": pd.__version__}  # CLAUDE.md §6 (audit F-L14)
-    (PROCESSED_DIR / "CLEANING_LOG.json").write_text(json.dumps(log, indent=2) + "\n")
+    (PROCESSED_DIR / "CLEANING_LOG.json").write_text(json.dumps(log, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     print(
         f"\nfinal sample: {len(excess)} daily observations, "
