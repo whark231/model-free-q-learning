@@ -29,7 +29,7 @@ import argparse
 import json
 import platform
 import shutil
-from dataclasses import asdict
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,7 +37,7 @@ import numpy as np
 
 from src import config as cfg
 from src.evaluate import compare_experiments, evaluate_experiment
-from src.train import _git_commit, run_experiment
+from src.train import FA_FIELD_DEFAULTS, _git_commit, config_record, run_experiment
 
 COMPARISON_NAME = "comparison_g5_grid20_vs_grid25"
 
@@ -61,8 +61,10 @@ def batch_settings(n_episodes: int, n_runs: int, n_eval_episodes: int, log_every
         settings.update({
             "episode_length": run.episode_length, "beta": cfg.beta_for(n_episodes, run.epsilon_at_halfway),
             "increments": [run.increment], "post_hoc_run": run.run_id,
-            "epsilon_at_halfway": run.epsilon_at_halfway,
+            "epsilon_at_halfway": run.epsilon_at_halfway, "alpha_rule": run.alpha_rule,
         })
+        if run.agent != "tabular":  # tabular variants keep the keys their committed settings.json files have
+            settings.update({k: getattr(run, k) for k in ("agent", "feature_map", "l2", "greedy_refresh_every")})
     return settings
 
 
@@ -79,7 +81,7 @@ def check_results_dir(results_dir: Path, settings: dict) -> None:
             )
     else:
         results_dir.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        path.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def training_status(run_dir: Path, train_cfg) -> str:
@@ -90,8 +92,12 @@ def training_status(run_dir: Path, train_cfg) -> str:
             raise ValueError(f"{run_dir} has files but no manifest; delete that folder and run again")
         return "new"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    wanted = json.loads(json.dumps(asdict(train_cfg)))
-    diff = sorted(k for k in wanted if manifest["config"].get(k) != wanted[k])
+    wanted = json.loads(json.dumps(config_record(train_cfg)))  # tabular: same keys as baseline-v1's manifests
+    have = manifest["config"]
+    # Compare every key on either side; a missing function-approximation key
+    # means its tabular default, so a tabular config never matches an FA folder.
+    diff = sorted(k for k in set(wanted) | set(have)
+                  if have.get(k, FA_FIELD_DEFAULTS.get(k)) != wanted.get(k, FA_FIELD_DEFAULTS.get(k)))
     if diff:
         raise ValueError(f"{run_dir} was trained with different settings ({', '.join(diff)}); nothing was changed")
     done, expected = len(manifest["runs"]), manifest["config"]["n_runs"]
@@ -99,6 +105,16 @@ def training_status(run_dir: Path, train_cfg) -> str:
         raise ValueError(
             f"{run_dir} is partly trained ({done} of {expected} runs). Delete that one folder and run again; "
             "other experiments are unaffected"
+        )
+    files = [r.get("file", f"run_{r.get('run', i):03d}.npz") for i, r in enumerate(manifest["runs"])]
+    missing = [f for f in files if not (run_dir / f).exists()]
+    if missing:
+        # Manifests and evaluations are committed; the training logs are not. A
+        # fresh clone therefore has "finished" folders without logs (audit F-H1).
+        raise FileNotFoundError(
+            f"{run_dir} has a committed manifest but not its training logs ({len(missing)} of {expected} .npz "
+            "files missing, e.g. " + missing[0] + "). To reproduce, train into a new folder, for example "
+            "--results-dir results/repro, and compare with the committed summaries. Nothing was changed"
         )
     return "finished"
 
@@ -122,9 +138,11 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int | No
     plan = [(e, cfg.train_config(e, n_episodes, n_runs, log_every)) for e in selected]
     if dry_run:
         for e, tc in plan:
+            agent = "tabular" if tc.agent == "tabular" else f"linear {tc.feature_map} (l2={tc.l2:g})"
             print(f"{e.name}: gamma={tc.gamma}, grid={tc.increment}, {tc.n_runs} runs x {tc.n_episodes:,} "
                   f"episodes x B={tc.episode_length}; epsilon {e.epsilon_at_halfway:g} at halfway "
-                  f"(beta={tc.beta:.4g}); K={eval_cfg.converge_k:,}; {e.purpose}")
+                  f"(beta={tc.beta:.4g}); agent {agent}, alpha {tc.alpha_rule}; K={eval_cfg.converge_k:,}; "
+                  f"{e.purpose}")
         return {"planned": [e.name for e, _ in plan]}
 
     settings = batch_settings(n_episodes, n_runs, n_eval_episodes, log_every, run)
@@ -171,8 +189,8 @@ def run_all(results_dir: Path = Path("results"), only=None, n_episodes: int | No
         "experiments": entries,
         "comparison": {"folder": COMPARISON_NAME, "results": comparison} if comparison else None,
     }
-    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8")
-    (results_dir / "INDEX.md").write_text(_index_markdown(index), encoding="utf-8")
+    (results_dir / "index.json").write_text(json.dumps(index, indent=2) + "\n", encoding="utf-8", newline="\n")
+    (results_dir / "INDEX.md").write_text(_index_markdown(index), encoding="utf-8", newline="\n")
     return index
 
 
@@ -192,8 +210,13 @@ def _index_entry(experiment, summary: dict) -> dict:
         "folder": experiment.name,
         "discretization_gap_bps": summary["discretization_gap"]["ce_loss_bps"],
         "learning_gap_bps": learned["ce_loss_vs_best_discrete_bps"],
+        # Older summaries (before 2026-11-09) lack the fields below; .get keeps their index readable.
+        "total_gap_bps": learned.get("ce_loss_vs_continuous_bps"),
         "share_exactly_best_discrete": learned["share_exactly_best_discrete"],
         "convergence": {rule: conv[rule] for rule in conv["rules"]},
+        "settled": conv.get("settled"),
+        "near_optimal_every_episode": conv.get("near_optimal_every_episode"),
+        "q_spearman_all": summary.get("q_fit", {}).get("all", {}).get("spearman"),
     }
 
 
@@ -211,25 +234,44 @@ def _index_markdown(index: dict) -> str:
         f"{'Full-scale settings.' if index['full_scale'] else '**Reduced settings: a pipeline check, not report results.**'}",
         "",
         *([f"**Post-hoc run `{index['post_hoc_run']['run_id']}`**, registered {index['post_hoc_run']['registered']} "
-           f"after the baseline results were seen (EXPERIMENTS.md §7). Expected beforehand: "
+           f"after the baseline results were seen (EXPERIMENTS.md §7 and §8). Expected beforehand: "
            f"{index['post_hoc_run']['expected']}", ""] if index["post_hoc_run"] else []),
         f"γ ∈ {s['gammas']} (baseline {s['gamma_baseline']:g}), B = {s['episode_length']}, "
         f"{s['n_runs']} seeds × {s['n_episodes']:,} episodes, master seed {s['master_seed']}, "
         f"K = {s['convergence_k']:,} episodes (convergence rule: `{primary}`), ΔQ tolerance {s['dq_tol']:g}, "
-        f"near-optimal line {s['near_optimal_bps']:g} bps/yr, {s['n_eval_episodes']:,} evaluation episodes.",
+        f"near-optimal line {s['near_optimal_bps']:g} bps/yr, {s['n_eval_episodes']:,} evaluation episodes. "
+        f"Learning rate α: {s['alpha_rule']}; agent: {s.get('agent', 'tabular')}"
+        f"{' (' + s['feature_map'] + ' features, l2 ' + format(s['l2'], 'g') + ')' if s.get('feature_map') else ''}.",
         "",
-        "Losses are certainty-equivalent, in basis points per year, against the best portfolio on that grid. "
-        "For each rule: the share of seeds that met it, and in brackets the median simulated days "
-        "(millions) among the seeds that did.",
+        "Losses are certainty-equivalent, in basis points per year. The learning gap is measured against the best "
+        "portfolio on that grid, the total gap against the continuous long-only optimum (discretization plus "
+        "learning, per seed). For each rule: the share of seeds that met it, and in brackets the median simulated "
+        "days (millions) among the seeds that did. The primary rule's count includes its K-episode waiting window. "
+        "Simulated days = episodes x B. Near-optimal for good is read at the 10,000-episode checkpoints; the "
+        "every-episode version (post hoc) also counts brief switches between checkpoints, so it is later. \"settled\" (post hoc, descriptive) is the first "
+        "checkpoint from which the final portfolio was greedy at every later checkpoint; a tabular seed always "
+        "settles by the last checkpoint, so that column gives the median and range in millions of days, not a share. Q fit is the median "
+        "Spearman correlation between the learned Q-values and every portfolio's true value.",
         "",
-        "| Experiment | γ | Grid | Discretization gap | Learning gap, median (range) | Exactly best | "
-        "Converged (primary rule) | Near-optimal for good | Folder |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| Experiment | γ | Grid | Discretization gap | Learning gap, median (range) | Total gap, median (range) | "
+        "Exactly best | Converged (primary rule) | Settled (post hoc), median (range) | Near-optimal for good (checkpoints) | Near-optimal every episode (post hoc) | "
+        "Q fit | Folder |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for e in index["experiments"]:
         gap = e["learning_gap_bps"]
 
+        total = e.get("total_gap_bps")
+        total_text = "n/a" if total is None else f"{_fmt(total['median'])} ({_fmt(total['min'])} to {_fmt(total['max'])})"
+        spearman = e.get("q_spearman_all")
+        fit_text = "n/a" if not spearman or spearman["median"] is None else _fmt(spearman["median"], 3)
+        settled = (e.get("settled") or {}).get("observations")
+        settled_text = "n/a" if not settled or settled["median"] is None else \
+            f"{settled['median'] / 1e6:.1f}M ({settled['min'] / 1e6:.1f}M to {settled['max'] / 1e6:.1f}M)"
+
         def obs(rule):
+            if rule is None:
+                return "n/a"
             median = rule["observations"]["median"]
             when = "never" if median is None else f"{median / 1e6:.1f}M"
             return f"{rule['share_of_seeds']:.0%} ({when})"
@@ -237,8 +279,10 @@ def _index_markdown(index: dict) -> str:
         lines.append(
             f"| {e['name']} | {e['gamma']:g} | {e['increment']:.0%} ({e['n_actions']:,}) | "
             f"{_fmt(e['discretization_gap_bps'])} | {_fmt(gap['median'])} ({_fmt(gap['min'])} to {_fmt(gap['max'])}) | "
-            f"{e['share_exactly_best_discrete']:.0%} | {obs(e['convergence'][primary])} | "
-            f"{obs(e['convergence']['near_optimal_for_good'])} | "
+            f"{total_text} | "
+            f"{e['share_exactly_best_discrete']:.0%} | {obs(e['convergence'][primary])} | {settled_text} | "
+            f"{obs(e['convergence']['near_optimal_for_good'])} | {obs(e.get('near_optimal_every_episode'))} | "
+            f"{fit_text} | "
             f"[{e['folder']}]({e['folder']}/evaluation/summary.json) |"
         )
     if index["comparison"]:
@@ -249,6 +293,8 @@ def _index_markdown(index: dict) -> str:
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):  # absent under Jupyter or a redirected stdout
+        sys.stdout.reconfigure(encoding="utf-8")  # γ in --dry-run output; Windows consoles default to cp1252 (audit M1)
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--results-dir", type=Path, default=None,
                         help="default: results/ for the baseline, results/<run_id>/ with --run")

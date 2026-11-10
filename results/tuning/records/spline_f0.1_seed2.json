@@ -1,0 +1,33 @@
+{
+  "id": "spline_f0.1",
+  "model": "spline",
+  "fraction": 0.1,
+  "l2": 0.0,
+  "seed": 2,
+  "alpha": 0.0044444444444444444,
+  "status": "ok",
+  "final_action": 845,
+  "final_q_of_action": -0.0002927532819525909,
+  "visits_of_action": 43143,
+  "seconds": 992.4665383000392,
+  "config": {
+    "gamma": 5.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "master_seed": 20261103,
+    "n_runs": 6,
+    "beta": 7.084877209212449e-07,
+    "increment": 0.2,
+    "alpha_rule": 0.0044444444444444444,
+    "epsilon0": 1.0,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "block_size": 10000,
+    "agent": "linear",
+    "feature_map": "spline",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "git_commit": "530cd91796db5e19ccb7b7488c0ccfe2d2055f21"
+}

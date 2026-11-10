@@ -17,6 +17,7 @@ import src.config as cfg
 import src.train as train
 from src.action_space.grid import generate_weight_grid
 from src.run_experiments import COMPARISON_NAME, run_all
+from src.train import config_record
 
 # ---------------------------------------------------------------------------
 # Decisions of 2026-10-16, pinned
@@ -244,6 +245,24 @@ VARIANT = cfg.RunVariant("test-variant", "T", "2026-10-27", "a smaller learning 
                          episode_length=5, epsilon_at_halfway=0.1, increment=0.25)
 
 
+def test_a_tabular_config_does_not_match_a_function_approximation_folder(tmp_path):
+    """training_status compares every key on either side, so an FA folder
+    (extra keys) is never taken as a finished tabular run, even with the same
+    constant alpha."""
+    from src.run_experiments import training_status
+    from src.train import TrainConfig
+    common = dict(gamma=5.0, episode_length=20, n_episodes=1_000, master_seed=1, n_runs=1, beta=0.0,
+                  increment=0.25, alpha_rule=0.1)
+    fa = TrainConfig(**common, agent="linear", feature_map="quadratic", greedy_refresh_every=10, log_every=500)
+    run_dir = tmp_path / "fa"
+    run_dir.mkdir()
+    (run_dir / "manifest.json").write_text(json.dumps({"config": config_record(fa), "runs": [{}]}))
+    (run_dir / "run_000.npz").write_bytes(b"")
+    with pytest.raises(ValueError, match="different settings"):
+        training_status(run_dir, TrainConfig(**common, log_every=500))
+    assert training_status(run_dir, fa) == "finished"
+
+
 def test_baseline_settings_still_match_the_committed_baseline_v1_run():
     """Re-derived from the files the 2026-10-22 run wrote, not from config.py."""
     from src.run_experiments import batch_settings
@@ -251,7 +270,7 @@ def test_baseline_settings_still_match_the_committed_baseline_v1_run():
     assert batch_settings(cfg.N_EPISODES, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY) == committed
     for experiment in cfg.experiments():
         manifest = json.loads((REPO / "results" / experiment.name / "manifest.json").read_text())
-        assert json.loads(json.dumps(cfg.train_config(experiment).__dict__)) == manifest["config"], experiment.name
+        assert json.loads(json.dumps(config_record(cfg.train_config(experiment)))) == manifest["config"], experiment.name
 
 
 def test_a_variant_changes_only_its_own_settings():
@@ -380,3 +399,141 @@ def test_grid10_near_ties_quoted_in_experiments_md():
         loss = 252e4 * (lambda v: v.max() - v)(objective(generate_weight_grid(9, 0.1), mu, sigma, gamma))
         assert round(np.sort(loss)[1], 2) == second_gap
         assert int((loss <= 25).sum()) == within25
+
+
+# ---------------------------------------------------------------------------
+# Constant-learning-rate runs (EXPERIMENTS.md §8, registered 2026-11-05)
+# ---------------------------------------------------------------------------
+
+TUNING = json.loads((REPO / "results" / "tuning" / "fa_tuning.json").read_text())
+
+
+def test_every_committed_post_hoc_settings_file_still_matches_its_variant():
+    """Adding agent fields must not make finished post-hoc folders look different."""
+    from src.run_experiments import batch_settings
+    for run_id in ("b63", "n26m", "eps-decay", "all-three", "grid10-robustness"):
+        run = cfg.POST_HOC_RUNS[run_id]
+        committed = json.loads((REPO / "results" / run_id / "settings.json").read_text())
+        assert batch_settings(run.n_episodes, cfg.N_RUNS, cfg.N_EVAL_EPISODES, cfg.LOG_EVERY, run) == committed, run_id
+
+
+def test_tabular_const_changes_only_the_learning_rate_to_the_tuned_value():
+    run = cfg.POST_HOC_RUNS["tabular-const"]
+    assert run.changes() == {"alpha_rule": ("sample_average", TUNING["chosen"]["tabular"]["alpha"])}
+    assert run.registered == "2026-11-05"
+    assert [e.name for e in cfg.experiments(run)] == [
+        "baseline_g5_grid20_TABconst", "robust_g3_grid20_TABconst", "robust_g8_grid20_TABconst"]
+    for experiment in cfg.experiments(run):
+        record = config_record(cfg.train_config(experiment))
+        assert record["alpha_rule"] == 0.00032 and "agent" not in record  # a tabular manifest
+        assert record["master_seed"] == 20261016 and record["n_runs"] == 10  # the reported seeds, not tuning's
+
+
+def test_fa_quadratic_uses_the_tuned_alpha_and_the_reported_settings():
+    run = cfg.POST_HOC_RUNS["fa-quadratic"]
+    chosen = TUNING["chosen"]["quadratic"]
+    assert run.changes() == {"alpha_rule": ("sample_average", chosen["alpha"]), "agent": ("tabular", "linear"),
+                             "feature_map": (None, "quadratic"), "greedy_refresh_every": (1, 100)}
+    assert run.l2 == chosen["l2"] == 0.0
+    for experiment, gamma in zip(cfg.experiments(run), (5.0, 3.0, 8.0)):
+        tc = cfg.train_config(experiment)
+        assert (tc.agent, tc.feature_map, tc.alpha_rule, tc.greedy_refresh_every) == ("linear", "quadratic", 0.00032, 100)
+        assert (tc.gamma, tc.episode_length, tc.n_episodes, tc.increment) == (gamma, 20, 13_000_000, 0.2)
+        assert tc.master_seed == 20261016 and tc.beta == cfg.beta_for(13_000_000)
+        assert tc.n_episodes % tc.greedy_refresh_every == 0 and cfg.LOG_EVERY % tc.greedy_refresh_every == 0
+
+
+def test_fa_spline_uses_the_alpha_and_l2_chosen_on_six_seeds():
+    run = cfg.POST_HOC_RUNS["fa-spline"]
+    chosen = TUNING["chosen"]["spline"]
+    assert chosen["decided_on_seeds"] == 6 and chosen["close_call"]
+    assert (run.alpha_rule, run.l2) == (chosen["alpha"], chosen["l2"]) == (cfg.TUNED_ALPHA_SPLINE, 0.0)
+    assert run.alpha_rule == pytest.approx(1.6e-4 * 2 / 45)  # the fraction of the spline bound
+    for experiment in cfg.experiments(run):
+        tc = cfg.train_config(experiment)
+        assert (tc.agent, tc.feature_map, tc.greedy_refresh_every) == ("linear", "spline", 100)
+        assert tc.master_seed == 20261016 and tc.n_runs == 10 and tc.episode_length == 20
+
+
+def test_an_fa_variant_runs_end_to_end_and_records_its_agent(tmp_path):
+    run = cfg.POST_HOC_RUNS["fa-quadratic"]
+    index = run_all(tmp_path, run=run, n_episodes=1_000, n_runs=2, n_eval_episodes=200, log_every=500)
+    settings = json.loads((tmp_path / "settings.json").read_text())
+    assert (settings["agent"], settings["feature_map"], settings["alpha_rule"]) == ("linear", "quadratic", 0.00032)
+    assert settings["greedy_refresh_every"] == 100 and settings["l2"] == 0.0
+    for e in index["experiments"]:
+        manifest = json.loads((tmp_path / e["name"] / "manifest.json").read_text())
+        assert manifest["config"]["agent"] == "linear" and manifest["n_features"] == 45
+    # The tabular-const folder refuses FA settings and the other way round.
+    with pytest.raises(ValueError, match="different settings"):
+        run_all(tmp_path, run=cfg.POST_HOC_RUNS["tabular-const"], n_episodes=1_000, n_runs=2,
+                n_eval_episodes=200, log_every=500)
+
+
+def test_a_variant_passes_every_agent_setting_through_to_training(capsys, tmp_path):
+    """Every registered l2 is 0, so a made-up variant checks l2 (and the rest) reach TrainConfig."""
+    run = cfg.RunVariant("x", "X", "2026-11-05", "x", alpha_rule=1e-5, agent="linear", feature_map="spline",
+                         l2=1e-3, greedy_refresh_every=50)
+    for experiment in cfg.experiments(run):
+        tc = cfg.train_config(experiment)
+        assert (tc.alpha_rule, tc.agent, tc.feature_map, tc.l2, tc.greedy_refresh_every) == \
+            (1e-5, "linear", "spline", 1e-3, 50)
+    run_all(tmp_path, run=cfg.POST_HOC_RUNS["fa-spline"], dry_run=True)
+    out = capsys.readouterr().out
+    assert out.count("agent linear spline (l2=0), alpha 7.111111111111112e-06") == 3
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M1 and M10)
+# ---------------------------------------------------------------------------
+
+def test_index_shows_total_gap_settled_and_q_fit(tmp_path):
+    index = run_all(tmp_path, **SMALL)
+    markdown = (tmp_path / "INDEX.md").read_text(encoding="utf-8")
+    assert "Total gap, median (range)" in markdown and "Settled (post hoc), median (range)" in markdown
+    assert "Near-optimal for good (checkpoints)" in markdown and "| Q fit |" in markdown
+    for entry in index["experiments"]:
+        summary = json.loads((tmp_path / entry["name"] / "evaluation" / "summary.json").read_text())
+        assert entry["total_gap_bps"] == summary["learned"]["ce_loss_vs_continuous_bps"]
+        assert entry["settled"] == summary["convergence"]["settled"]
+        assert entry["q_spearman_all"] == summary["q_fit"]["all"]["spearman"]
+    comparison = json.loads((tmp_path / COMPARISON_NAME / "comparison.json").read_text())
+    assert "ce_loss_vs_continuous_bps" in comparison["20%"] and "settled" in comparison["20%"]
+
+
+def test_index_reads_summaries_written_before_the_new_fields(tmp_path):
+    from src.run_experiments import _index_entry, _index_markdown
+    run_all(tmp_path, **SMALL)
+    summary = json.loads((tmp_path / "baseline_g5_grid20" / "evaluation" / "summary.json").read_text())
+    del summary["learned"]["ce_loss_vs_continuous_bps"], summary["convergence"]["settled"], summary["q_fit"]
+    entry = _index_entry(cfg.experiments()[0], summary)
+    index = json.loads((tmp_path / "index.json").read_text())
+    index["experiments"] = [entry]
+    row = [line for line in _index_markdown(index).splitlines() if line.startswith("| baseline_g5_grid20")][0]
+    assert row.count("n/a") == 3
+
+
+def test_dry_run_prints_gamma_on_a_cp1252_console():
+    """Windows consoles default to cp1252, which has no γ (audit M1)."""
+    import os
+    import subprocess
+    import sys
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    for module in ("src.run_experiments", "src.evaluate"):
+        args = [sys.executable, "-m", module, "--help"] if module == "src.evaluate" else \
+               [sys.executable, "-m", module, "--run", "tabular-const", "--dry-run"]
+        done = subprocess.run(args, capture_output=True, env=env, cwd=train.REPO_ROOT)
+        assert done.returncode == 0, done.stderr.decode(errors="replace")
+
+
+def test_a_committed_manifest_without_its_logs_is_refused_clearly(tmp_path):
+    """A fresh clone has committed manifests but no .npz logs (audit F-H1)."""
+    from src.run_experiments import training_status
+    experiment = cfg.experiments()[0]
+    run_all(tmp_path, only=[experiment.name], **SMALL)
+    run_dir = tmp_path / experiment.name
+    (run_dir / "run_000.npz").unlink()
+    train_cfg = cfg.train_config(experiment, SMALL["n_episodes"], SMALL["n_runs"], SMALL["log_every"])
+    with pytest.raises(FileNotFoundError, match="--results-dir results/repro"):
+        training_status(run_dir, train_cfg)
+    assert (run_dir / "manifest.json").exists()  # nothing deleted

@@ -53,6 +53,18 @@ class FixedAgent:
         return self._n.copy()
 
 
+class OracleAgent(FixedAgent):
+    """Holds `action` but reports `q` as its Q-values, unchanged by training:
+    a known Q-table for the Q-fit metrics."""
+
+    def __init__(self, n_actions, action, q):
+        super().__init__(n_actions, action)
+        self._q = np.asarray(q, dtype=float).copy()
+
+    def update(self, action, reward):
+        self._n[action] += 1
+
+
 class SwitchingAgent(FixedAgent):
     """Greedy (and chosen) action is `first` until `switch_at` updates, then
     `second`: a known, non-constant greedy path."""
@@ -163,6 +175,43 @@ def test_realized_stats_by_direct_computation():
     assert out["shortfall_vs_best_discrete_se"] == pytest.approx((ref_rewards - rewards).std(ddof=1) / 20)
 
 
+def test_q_fit_by_hand():
+    true_q = np.array([5.0, 4.0, 3.0, 2.0, 1.0, 0.0])
+    q_hat = np.array([5.0, 4.0, 0.0, 2.0, 1.0, 3.0])  # portfolio 2 underrated, 5 overrated
+    assert ev.q_fit(q_hat, true_q, k=2)["top_k_recall"] == 1.0
+    assert ev.q_fit(q_hat, true_q, k=3)["top_k_recall"] == pytest.approx(2 / 3)  # {0,1,5} vs {0,1,2}
+    perfect = ev.q_fit(2 * true_q + 1, true_q, k=3)
+    assert perfect["pearson"] == pytest.approx(1.0) and perfect["spearman"] == pytest.approx(1.0)
+    assert perfect["top_k_recall"] == 1.0 and perfect["n_portfolios"] == 6
+    reversed_ = ev.q_fit(-true_q, true_q, k=3)
+    assert reversed_["pearson"] == pytest.approx(-1.0) and reversed_["spearman"] == pytest.approx(-1.0)
+    assert reversed_["top_k_recall"] == 0.0
+
+
+def test_q_fit_matches_scipy_including_ties():
+    from scipy.stats import pearsonr, spearmanr
+    rng = np.random.default_rng(3)
+    true_q = rng.normal(size=300)
+    q_hat = np.round(true_q + rng.normal(scale=0.5, size=300), 1)  # rounding creates ties
+    q_hat[:40] = 0.0  # a block of never-visited portfolios
+    fit = ev.q_fit(q_hat, true_q)
+    assert fit["pearson"] == pytest.approx(pearsonr(q_hat, true_q)[0])
+    assert fit["spearman"] == pytest.approx(spearmanr(q_hat, true_q)[0])
+    learned_top = set(sorted(range(300), key=lambda i: (-q_hat[i], i))[:10])
+    true_top = set(sorted(range(300), key=lambda i: -true_q[i])[:10])
+    assert fit["top_k_recall"] == len(learned_top & true_top) / 10
+
+
+def test_q_fit_edge_cases():
+    flat = ev.q_fit(np.zeros(5), np.arange(5.0), k=2)  # nothing learned yet
+    assert flat["pearson"] is None and flat["spearman"] is None
+    assert flat["top_k_recall"] == 0.0  # ties go to indices 0 and 1, the true worst two
+    single = ev.q_fit([1.0], [2.0])
+    assert single["pearson"] is None and single["top_k"] == 1 and single["top_k_recall"] == 1.0
+    empty = ev.q_fit([], [])
+    assert empty["n_portfolios"] == 0 and empty["top_k_recall"] is None and empty["pearson"] is None
+
+
 @pytest.mark.parametrize("bad", [dict(n_eval_episodes=1), dict(converge_k=0), dict(dq_tol=0.0), dict(near_optimal_bps=-1.0)])
 def test_eval_config_rejects_invalid_settings(bad):
     settings = dict(n_eval_episodes=10, converge_k=10, dq_tol=1e-3, near_optimal_bps=25.0)
@@ -208,6 +257,55 @@ def test_losses_distances_and_regret_for_a_suboptimal_agent(tmp_path, market):
     np.testing.assert_allclose(seed["abs_diff_vs_best_discrete"], np.abs(grid[worse] - grid[best]))
     assert seed["final_cumulative_regret"] == pytest.approx(config.n_episodes * (values[best] - values[worse]))
     assert seed["visits_of_learned_action"] == config.n_episodes
+
+
+def test_q_fit_of_an_agent_that_knows_every_true_value(tmp_path, market):
+    mu, sigma, grid, values = market
+    best = int(np.argmax(values))
+    run_dir, _ = train_with(tmp_path, [lambda n: OracleAgent(n, best, values)])
+    summary = ev.evaluate_experiment(run_dir, EVAL)
+    seed = summary["per_seed"][0]
+    assert seed["q_fit_all"]["pearson"] == pytest.approx(1.0)
+    assert seed["q_fit_all"]["spearman"] == pytest.approx(1.0)
+    assert seed["q_fit_all"]["top_k_recall"] == 1.0
+    assert seed["q_fit_all"]["n_portfolios"] == grid.shape[0]
+    assert seed["q_fit_visited"]["n_portfolios"] == 1 and seed["q_fit_visited"]["pearson"] is None
+    assert seed["optimism_of_learned_bps"] == pytest.approx(0.0, abs=1e-9)
+    assert summary["q_fit"]["all"]["pearson"]["median"] == pytest.approx(1.0)
+    assert summary["q_fit"]["all"]["n_portfolios"]["median"] == grid.shape[0]
+    assert summary["q_fit"]["visited"]["n_portfolios"]["median"] == 1  # only the held portfolio was tried
+    assert summary["q_fit"]["visited"]["pearson"]["n"] == 0  # undefined for one portfolio, skipped in the spread
+    assert summary["q_fit"]["all"]["top_k"]["median"] == ev.TOP_K
+
+
+@pytest.mark.parametrize("shift", [3e-5, -2e-5])
+def test_q_fit_and_optimism_of_an_agent_with_shifted_values(tmp_path, market, shift):
+    """Q = U + c for every portfolio: perfect ranking, optimism exactly c,
+    with its sign kept in the per-seed value and in the summary spread."""
+    mu, sigma, grid, values = market
+    best = int(np.argmax(values))
+    run_dir, _ = train_with(tmp_path, [lambda n: OracleAgent(n, best, values + shift)])
+    summary = ev.evaluate_experiment(run_dir, EVAL)
+    seed = summary["per_seed"][0]
+    assert seed["q_fit_all"]["spearman"] == pytest.approx(1.0)
+    assert seed["optimism_of_learned_bps"] == pytest.approx(252e4 * shift)
+    assert summary["q_fit"]["optimism_of_learned_bps"]["min"] == pytest.approx(252e4 * shift)
+
+
+def test_optimism_is_the_training_mean_reward_minus_the_true_value(tmp_path, market):
+    """FixedAgent's Q is the plain mean of its training rewards. With equal
+    windows, that is the mean of the logged window means, rebuilt here from
+    the logs rather than from final_q."""
+    mu, sigma, grid, values = market
+    worse = int(np.argsort(values)[-10])
+    run_dir, config = train_with(tmp_path, [fixed(worse)])
+    seed = ev.evaluate_experiment(run_dir, EVAL)["per_seed"][0]
+    with np.load(run_dir / "run_000.npz") as logs:
+        mean_reward = logs["checkpoint_mean_reward"].mean()
+    assert config.n_episodes % config.log_every == 0
+    assert seed["optimism_of_learned_bps"] == pytest.approx(252e4 * (mean_reward - values[worse]))
+    # Every other portfolio sits at Q = -1, so all of them tie; the visited set is one portfolio.
+    assert seed["q_fit_visited"]["n_portfolios"] == 1
 
 
 def test_each_seed_is_reported_and_the_mean_of_weights_is_descriptive_only(tmp_path, market):
@@ -293,6 +391,11 @@ def test_csv_tables_match_the_summary(tmp_path, market):
     with open(out / "per_seed.csv") as f:
         per_seed = list(csv.DictReader(f))
     assert [int(r["learned_action"]) for r in per_seed] == picks
+    for row, s in zip(per_seed, summary["per_seed"]):
+        assert float(row["q_pearson_all"]) == pytest.approx(s["q_fit_all"]["pearson"])
+        assert float(row["q_top_k_recall_all"]) == s["q_fit_all"]["top_k_recall"]
+        assert row["q_pearson_visited"] == ""  # one visited portfolio: undefined, written as blank
+        assert float(row["optimism_of_learned_bps"]) == pytest.approx(s["optimism_of_learned_bps"])
     with open(out / "performance.csv") as f:
         perf = {r["portfolio"]: r for r in csv.DictReader(f)}
     assert set(perf) == {"continuous", "best_discrete", "equal_weight", "learned_run_0", "learned_run_1"}
@@ -357,6 +460,8 @@ def test_compare_two_resolutions(tmp_path, market):
     assert results["25%"]["ce_loss_vs_best_discrete_bps"]["median"] == 0.0
     assert results["20%"]["ce_loss_vs_best_discrete_bps"]["median"] == pytest.approx(252e4 * (values20.max() - values20[worse20]))
     assert results["20%"]["greedy_stable"]["share_of_seeds"] == 1.0
+    assert results["25%"]["q_fit"]["all"]["n_portfolios"]["median"] == 495
+    assert results["20%"]["q_fit"]["all"]["n_portfolios"]["median"] == 1287
     assert (tmp_path / "cmp" / "convergence_by_resolution.png").stat().st_size > 0
 
 
@@ -365,3 +470,70 @@ def test_compare_refuses_experiments_that_differ_in_more_than_the_grid(tmp_path,
     dir_b, _ = train_with(tmp_path, [fixed(0)], name="b", increment=0.2, gamma=3.0)
     with pytest.raises(ValueError, match="gamma"):
         ev.compare_experiments([dir_a, dir_b], ["a", "b"], EVAL, tmp_path / "cmp")
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M2 and M10)
+# ---------------------------------------------------------------------------
+
+def test_settled_and_every_episode_near_optimal_on_a_known_switch(tmp_path, market):
+    mu, sigma, grid, values = market
+    best, worse = int(np.argmax(values)), int(np.argsort(values)[0])
+    config_k = ev.EvalConfig(n_eval_episodes=500, converge_k=200, dq_tol=1e-3, near_optimal_bps=1.0)
+    run_dir, _ = train_with(tmp_path, [lambda n: SwitchingAgent(n, worse, best, 1_200)], n_episodes=2_000)
+    summary = ev.evaluate_experiment(run_dir, config_k)
+    seed = summary["per_seed"][0]
+    # Checkpoints at 500, 1000, 1500, 2000: greedy is `worse` at 1000 and `best` from 1500.
+    assert seed["settled_episode"] == 1_500 and seed["settled_observations"] == 1_500 * 20
+    # Every episode: the greedy action is `best` from episode 1,200 exactly.
+    assert seed["near_optimal_every_episode_episode"] == 1_200
+    assert seed["near_optimal_every_episode_observations"] == 1_200 * 20
+    conv = summary["convergence"]
+    assert set(conv["descriptive_rules"]) == {"settled", "near_optimal_every_episode"}
+    assert conv["settled"]["share_of_seeds"] == 1.0 and conv["settled"]["observations"]["median"] == 30_000
+    assert "checkpoint" in conv["rules"]["near_optimal_for_good"]
+
+
+def test_total_gap_is_discretization_plus_learning_gap(tmp_path, market):
+    mu, sigma, grid, values = market
+    worse = int(np.argsort(values)[-10])
+    run_dir, _ = train_with(tmp_path, [fixed(worse), fixed(int(np.argmax(values)))])
+    summary = ev.evaluate_experiment(run_dir, EVAL)
+    w_cont = constrained_optimal_weights(mu, sigma, GAMMA)
+    u_cont = w_cont @ mu - 0.5 * GAMMA * w_cont @ sigma @ w_cont
+    disc = summary["discretization_gap"]["ce_loss_bps"]
+    totals = [s["ce_loss_vs_continuous_bps"] for s in summary["per_seed"]]
+    assert totals[0] == pytest.approx(252e4 * (u_cont - values[worse]))
+    for s, total in zip(summary["per_seed"], totals):
+        assert total == pytest.approx(disc + s["ce_loss_vs_best_discrete_bps"])
+    assert summary["learned"]["ce_loss_vs_continuous_bps"]["median"] == pytest.approx(np.median(totals))
+    with open(run_dir / "evaluation" / "per_seed.csv", newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert [float(r["ce_loss_vs_continuous_bps"]) for r in rows] == pytest.approx(totals)
+    assert [int(r["settled_observations"]) for r in rows] == [s["settled_observations"] for s in summary["per_seed"]]
+
+
+def test_summary_records_its_provenance(tmp_path, market):
+    from src.hashing import sha256_bytes
+    from src.train import REPO_ROOT
+    run_dir, _ = train_with(tmp_path, [fixed(0)])
+    prov = ev.evaluate_experiment(run_dir, EVAL)["provenance"]
+    assert set(prov["code_sha256"]) == {"src/evaluate.py", "src/config.py", "src/run_experiments.py", "src/hashing.py",
+                                         "src/benchmarks/mean_variance.py", "src/environment.py",
+                                         "src/action_space/grid.py"}
+    raw = (REPO_ROOT / "src/evaluate.py").read_bytes().replace(b"\r\n", b"\n")
+    assert prov["code_sha256"]["src/evaluate.py"] == sha256_bytes(raw)
+    assert prov["numpy"] == np.__version__ and prov["matplotlib"] and "git_commit" in prov
+
+
+def test_a_calibration_hashed_with_crlf_line_endings_is_accepted(tmp_path, market):
+    """Manifests written on Windows before 2026-11-09 hold CRLF digests (audit M2)."""
+    from src.environment import PROCESSED_DIR
+    from src.hashing import sha256_bytes
+    run_dir, _ = train_with(tmp_path, [fixed(0)])
+    manifest = json.loads((run_dir / "manifest.json").read_text())
+    for name in manifest["calibration_sha256"]:
+        lf = (PROCESSED_DIR / name).read_bytes().replace(b"\r\n", b"\n")
+        manifest["calibration_sha256"][name] = sha256_bytes(lf.replace(b"\n", b"\r\n"))
+    (run_dir / "manifest.json").write_text(json.dumps(manifest))
+    assert ev.evaluate_experiment(run_dir, EVAL)["n_seeds"] == 1

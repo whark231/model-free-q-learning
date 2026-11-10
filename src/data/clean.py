@@ -16,6 +16,7 @@ Usage:
 
 import argparse
 import json
+import platform
 import shutil
 from pathlib import Path
 
@@ -500,8 +501,8 @@ def main() -> None:
         "--end",
         default=DEFAULT_SAMPLE_END,
         help=(
-            "Optional YYYY-MM-DD cap on the sample end. Omit to use everything "
-            "the risk-free file supports."
+            "YYYY-MM-DD cap on the sample end. Defaults to the pinned "
+            "calibration end in src/data/universe.py."
         ),
     )
     args = parser.parse_args()
@@ -528,16 +529,18 @@ def main() -> None:
     covariance = excess.cov()
     covariance_diagnostics(covariance, log)
 
-    prices.to_csv(PROCESSED_DIR / "adj_close.csv")
-    returns.to_csv(PROCESSED_DIR / "returns_simple.csv")
-    rf_aligned.to_csv(PROCESSED_DIR / "rf_daily.csv")
-    excess.to_csv(PROCESSED_DIR / "excess_returns.csv")
-    stats.to_csv(PROCESSED_DIR / "summary_statistics.csv")
-    correlation.to_csv(PROCESSED_DIR / "correlation_matrix.csv")
-    covariance.to_csv(PROCESSED_DIR / "covariance_daily.csv")
+    prices.to_csv(PROCESSED_DIR / "adj_close.csv", lineterminator="\n")
+    returns.to_csv(PROCESSED_DIR / "returns_simple.csv", lineterminator="\n")
+    rf_aligned.to_csv(PROCESSED_DIR / "rf_daily.csv", lineterminator="\n")
+    excess.to_csv(PROCESSED_DIR / "excess_returns.csv", lineterminator="\n")
+    stats.to_csv(PROCESSED_DIR / "summary_statistics.csv", lineterminator="\n")
+    correlation.to_csv(PROCESSED_DIR / "correlation_matrix.csv", lineterminator="\n")
+    covariance.to_csv(PROCESSED_DIR / "covariance_daily.csv", lineterminator="\n")
 
     log["outputs"] = sorted(p.name for p in PROCESSED_DIR.glob("*.csv"))
-    (PROCESSED_DIR / "CLEANING_LOG.json").write_text(json.dumps(log, indent=2) + "\n")
+    log["library_versions"] = {"python": platform.python_version(), "numpy": np.__version__,
+                               "pandas": pd.__version__}  # CLAUDE.md §6 (audit F-L14)
+    (PROCESSED_DIR / "CLEANING_LOG.json").write_text(json.dumps(log, indent=2) + "\n", encoding="utf-8", newline="\n")
 
     print(
         f"\nfinal sample: {len(excess)} daily observations, "

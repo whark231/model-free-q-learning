@@ -288,3 +288,34 @@ def test_adjustment_and_split_conventions_were_verified(log):
         assert abs(check["close_ratio"] - 1.0) < 0.2, (
             "Close jumped by roughly the split ratio, so it is NOT split-adjusted"
         )
+
+
+def test_extend_rescales_appended_adjusted_prices_onto_the_existing_basis():
+    """A fresh pull restates history after a distribution; the return across
+    the join must equal the fresh series' return (audit F-M9)."""
+    import pandas as pd
+    from src.data.download_raw import rescale_appended
+    dates = pd.to_datetime(["2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07"])
+    fresh = pd.DataFrame({"Close": [100.0, 101.0, 102.0, 103.0], "Adj Close": [98.0, 99.0, 100.0, 101.0]}, index=dates)
+    existing = pd.DataFrame({"Close": [100.0, 101.0], "Adj Close": [99.0, 100.0]}, index=dates[:2])
+    appended, factor = rescale_appended(existing, fresh, fresh.loc[dates[2:]])
+    assert factor == pytest.approx(100.0 / 99.0)
+    joined = pd.concat([existing, appended])["Adj Close"]
+    # Returns from the join onward follow the fresh series; earlier ones keep the old basis.
+    assert joined.pct_change().iloc[2:].tolist() == pytest.approx(fresh["Adj Close"].pct_change().iloc[2:].tolist())
+    assert appended["Close"].tolist() == [102.0, 103.0]          # unadjusted prices untouched
+    assert rescale_appended(existing, fresh, fresh.iloc[:0])[1] is None
+    broken = fresh.copy()
+    broken.loc[dates[1], "Adj Close"] = float("nan")
+    with pytest.raises(ValueError, match="cannot rescale"):
+        rescale_appended(existing, broken, broken.loc[dates[2:]])
+
+
+def test_the_sample_end_is_pinned_to_the_committed_calibration():
+    """A data refresh must not move mu and Sigma silently (audit F-M8)."""
+    from src.data.universe import DEFAULT_SAMPLE_END
+    from src.environment import PROCESSED_DIR
+    import pandas as pd
+    assert DEFAULT_SAMPLE_END == "2026-07-31"
+    excess = pd.read_csv(PROCESSED_DIR / "excess_returns.csv", index_col=0, parse_dates=True)
+    assert str(excess.index.max().date()) == DEFAULT_SAMPLE_END

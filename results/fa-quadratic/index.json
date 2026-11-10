@@ -1,0 +1,335 @@
+{
+  "written_utc": "2026-11-10T02:06:11+00:00",
+  "git_commit": "3322e03b04b837f6a9cff1a0485a7cc1704039e7",
+  "python": "3.10.2",
+  "numpy": "2.2.6",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 7.084877209212449e-07,
+    "alpha_rule": 0.00032,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 1300000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.2
+    ],
+    "post_hoc_run": "fa-quadratic",
+    "epsilon_at_halfway": 0.01,
+    "agent": "linear",
+    "feature_map": "quadratic",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "fa-quadratic",
+    "registered": "2026-11-05",
+    "expected": "a smaller mean learning gap than tabular-const at every \u03b3, and a higher median Spearman correlation and top-10 recall over all portfolios; against baseline-v1 no direction is predicted. Reference model, never the discovery result"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid20_FAquad",
+      "purpose": "post-hoc run fa-quadratic: a smaller mean learning gap than tabular-const at every \u03b3, and a higher median Spearman correlation and top-10 recall over all portfolios; against baseline-v1 no direction is predicted. Reference model, never the discovery result",
+      "gamma": 5.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "baseline_g5_grid20_FAquad",
+      "discretization_gap_bps": 5.7395209162273515,
+      "learning_gap_bps": {
+        "mean": 22.624224241906056,
+        "median": 22.62422424190606,
+        "min": 15.851651535878704,
+        "max": 29.396796947933417,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 28.363745158133412,
+        "median": 28.363745158133412,
+        "min": 21.591172452106054,
+        "max": 35.136317864160766,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.7,
+          "observations": {
+            "mean": 190992857.14285713,
+            "median": 180156000.0,
+            "min": 140532000.0,
+            "max": 255750000.0,
+            "n": 7
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.2,
+          "observations": {
+            "mean": 243115000.0,
+            "median": 243115000.0,
+            "min": 230480000.0,
+            "max": 255750000.0,
+            "n": 2
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.5,
+          "observations": {
+            "mean": 250000000.0,
+            "median": 257800000.0,
+            "min": 233000000.0,
+            "max": 260000000.0,
+            "n": 5
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 241680000.0,
+          "median": 248500000.0,
+          "min": 183600000.0,
+          "max": 260000000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.5,
+        "observations": {
+          "mean": 251004400.0,
+          "median": 257786000.0,
+          "min": 238512000.0,
+          "max": 259808000.0,
+          "n": 5
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9144755845952682,
+        "median": 0.9147185195853126,
+        "min": 0.908824355710555,
+        "max": 0.9201834014701686,
+        "n": 10
+      }
+    },
+    {
+      "name": "robust_g3_grid20_FAquad",
+      "purpose": "post-hoc run fa-quadratic: a smaller mean learning gap than tabular-const at every \u03b3, and a higher median Spearman correlation and top-10 recall over all portfolios; against baseline-v1 no direction is predicted. Reference model, never the discovery result",
+      "gamma": 3.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g3_grid20_FAquad",
+      "discretization_gap_bps": 2.4742144891952553,
+      "learning_gap_bps": {
+        "mean": 8.007013275785084,
+        "median": 0.0,
+        "min": 0.0,
+        "max": 20.01753318946271,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 10.48122776498034,
+        "median": 2.4742144891952553,
+        "min": 2.4742144891952553,
+        "max": 22.491747678657966,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.6,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.3,
+          "observations": {
+            "mean": 220742000.0,
+            "median": 227062000.0,
+            "min": 194194000.0,
+            "max": 240970000.0,
+            "n": 3
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 173500000.0,
+            "median": 135100000.0,
+            "min": 84800000.0,
+            "max": 260000000.0,
+            "n": 10
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 249640000.0,
+          "median": 254000000.0,
+          "min": 217800000.0,
+          "max": 260000000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 240690800.0,
+          "median": 242821000.0,
+          "min": 194330000.0,
+          "max": 259806000.0,
+          "n": 10
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.8542733091282688,
+        "median": 0.8537458495704491,
+        "min": 0.8430340255007239,
+        "max": 0.8762568206918738,
+        "n": 10
+      }
+    },
+    {
+      "name": "robust_g8_grid20_FAquad",
+      "purpose": "post-hoc run fa-quadratic: a smaller mean learning gap than tabular-const at every \u03b3, and a higher median Spearman correlation and top-10 recall over all portfolios; against baseline-v1 no direction is predicted. Reference model, never the discovery result",
+      "gamma": 8.0,
+      "increment": 0.2,
+      "n_actions": 1287,
+      "n_episodes": 13000000,
+      "n_runs": 10,
+      "converge_k": 1300000,
+      "folder": "robust_g8_grid20_FAquad",
+      "discretization_gap_bps": 6.13349961024035,
+      "learning_gap_bps": {
+        "mean": 58.70185853266152,
+        "median": 55.680940086978595,
+        "min": 55.680940086978595,
+        "max": 70.78553231539321,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 64.83535814290187,
+        "median": 61.814439697218944,
+        "min": 61.814439697218944,
+        "max": 76.91903192563356,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 183467400.0,
+            "median": 169762000.0,
+            "min": 138506000.0,
+            "max": 257206000.0,
+            "n": 10
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.9,
+          "observations": {
+            "mean": 234465111.1111111,
+            "median": 246058000.0,
+            "min": 177828000.0,
+            "max": 257206000.0,
+            "n": 9
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 200000.0,
+            "median": 200000.0,
+            "min": 200000.0,
+            "max": 200000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 155140000.0,
+          "median": 140100000.0,
+          "min": 90200000.0,
+          "max": 231400000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.0,
+        "observations": {
+          "mean": null,
+          "median": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9513505534517774,
+        "median": 0.9511512306072452,
+        "min": 0.9491083161209606,
+        "max": 0.9543000387716054,
+        "n": 10
+      }
+    }
+  ],
+  "comparison": null
+}

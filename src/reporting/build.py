@@ -15,9 +15,11 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import sys
 from pathlib import Path
 
-from src.reporting.extract import REPORTS, ROOT, load_registry, registry_entry
+from src.reporting.extract import (REPORTS, ROOT, SCHEMA_VERSION, canonical_digests, load_registry,
+                                  registry_entry)
 
 TEMPLATE = Path(__file__).resolve().parent / "template.html"
 PLACEHOLDER = "/*__REPORT_DATA__*/null"
@@ -37,6 +39,10 @@ COMPARED_PARAMS = [
     ("epsilon_final", "ε at the end"),
     ("random_tries_per_portfolio", "Random exploration tries per portfolio"),
     ("alpha_rule", "Learning rate rule"),
+    ("agent", "Agent"),
+    ("feature_map", "Feature map (function approximation)"),
+    ("l2", "l2 penalty"),
+    ("greedy_refresh_every", "Greedy refresh (updates)"),
     ("q_init", "Q initialization"),
     ("discount", "Discount ρ"),
     ("log_every", "Checkpoint interval (episodes)"),
@@ -56,15 +62,24 @@ def _same(a, b) -> bool:
     return a == b
 
 
+def _digests(exp: dict, key: str, prefix: str = "") -> dict:
+    commit = exp.get("code", {}).get("git_commit")
+    stored = exp.get(key, {}) if key == "calibration_sha256" else exp.get("code", {}).get(key, {})
+    return canonical_digests(stored, prefix, commit)
+
+
 def param_changes(old: dict, new: dict) -> list[dict]:
     """Every compared parameter that differs between two experiments, plus
-    changes in calibration data or training code."""
+    changes in calibration data or training code. Files are compared only when
+    both runs hashed them (tabular runs do not hash the FA files, audit M3), and
+    line endings are ignored (M2)."""
     out = [{"param": k, "label": label, "from": old["params"].get(k), "to": new["params"].get(k)}
            for k, label in COMPARED_PARAMS if not _same(old["params"].get(k), new["params"].get(k))]
-    if old.get("calibration_sha256") != new.get("calibration_sha256"):
+    old_cal, new_cal = _digests(old, "calibration_sha256", "data/processed/"), _digests(new, "calibration_sha256", "data/processed/")
+    if any(old_cal[f] != new_cal[f] for f in set(old_cal) & set(new_cal)):
         out.append({"param": "calibration", "label": "Calibration data (μ, Σ)", "from": "earlier files", "to": "different files"})
-    old_code, new_code = old.get("code", {}).get("code_sha256", {}), new.get("code", {}).get("code_sha256", {})
-    changed_files = sorted(f for f in set(old_code) | set(new_code) if old_code.get(f) != new_code.get(f))
+    old_code, new_code = _digests(old, "code_sha256"), _digests(new, "code_sha256")
+    changed_files = sorted(f for f in set(old_code) & set(new_code) if old_code[f] != new_code[f])
     if changed_files:
         out.append({"param": "code", "label": "Training code changed", "from": "", "to": ", ".join(changed_files)})
     return out
@@ -79,12 +94,27 @@ def comparison_runs(entry: dict, registry: dict) -> list[str]:
     return ids[: ids.index(entry["id"])]
 
 
+# Runs extracted before the agent fields existed (2026-11-05) were all tabular.
+AGENT_PARAM_DEFAULTS = {"agent": "tabular", "feature_map": None, "l2": 0.0, "greedy_refresh_every": 1}
+
+
 def load_run_data(run_id: str, reports_dir: Path = REPORTS) -> dict:
+    """A run's data.json. Older files lack the agent fields; they get the
+    tabular defaults, so comparisons do not show changes that never happened."""
     path = reports_dir / run_id / "data.json"
     if not path.exists():
         raise FileNotFoundError(f"{path} is missing; run `python -m src.reporting.extract {run_id}` on the machine "
                                 "that holds that run's training logs")
-    return json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("schema_version", 1) < SCHEMA_VERSION:
+        # Fields added since are shown as n/a; re-extract on the machine with the logs (audit F-M3).
+        print(f"note: {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path} is schema "
+              f"{data.get('schema_version')} (current {SCHEMA_VERSION}); newer fields show as n/a until "
+              f"`python -m src.reporting.extract {run_id}` is re-run", file=sys.stderr)
+    for exp in data.get("experiments", []):
+        for key, value in AGENT_PARAM_DEFAULTS.items():
+            exp.get("params", {}).setdefault(key, value)
+    return data
 
 
 def strip_seed_series(run: dict) -> dict:
@@ -120,11 +150,23 @@ def build_families(runs: list[dict], reference_id: str | None) -> list[dict]:
     return out
 
 
+# Registry fields that describe a run. data.json freezes them at extraction, so
+# the registry's current values replace them at build time (audit M4).
+REGISTRY_RUN_FIELDS = ("title", "date", "git_ref", "scale", "what_changed", "pre_registered")
+
+
+def overlay_registry(run: dict, registry: dict) -> dict:
+    entry = next((r for r in registry["runs"] if r["id"] == run["run"]["id"]), None)
+    if entry is not None:
+        run["run"].update({k: entry[k] for k in REGISTRY_RUN_FIELDS if k in entry})
+    return run
+
+
 def build_report_data(run_id: str, registry: dict, reports_dir: Path = REPORTS) -> dict:
     entry = registry_entry(run_id, registry)
     prior_ids = comparison_runs(entry, registry)
-    current = load_run_data(run_id, reports_dir)
-    prior = [strip_seed_series(load_run_data(r, reports_dir)) for r in prior_ids]
+    current = overlay_registry(load_run_data(run_id, reports_dir), registry)
+    prior = [overlay_registry(strip_seed_series(load_run_data(r, reports_dir)), registry) for r in prior_ids]
     order = [r["id"] for r in registry["runs"]]
     runs = sorted(prior, key=lambda r: order.index(r["run"]["id"])) + [current]
     reference = registry.get("reference_run")
@@ -148,7 +190,7 @@ def write_report(run_id: str, registry: dict, reports_dir: Path = REPORTS, templ
     # Escape every "<" so no registry text can close the script or open an HTML comment inside it.
     payload = json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")
     out = reports_dir / run_id / "report.html"
-    out.write_text(html.replace(PLACEHOLDER, payload), encoding="utf-8")
+    out.write_text(html.replace(PLACEHOLDER, payload), encoding="utf-8", newline="\n")
     return out
 
 

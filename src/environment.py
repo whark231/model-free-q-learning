@@ -44,13 +44,13 @@ import pandas as pd
 
 from src.data.universe import TICKERS
 
-PROCESSED_DIR = Path("data/processed")
+PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data/processed"  # not the working directory (audit F-L1)
 
-# src.rewards.episodic_mean_variance_reward uses a ddof=1 variance, which is NaN
-# for a one-day batch. NaN in a Q-table is worse than a crash, because np.argmax
-# treats NaN as the maximum and that action would become the permanent greedy
-# choice. The one-period quadratic reward the assignment also permits would need
-# this lowered to 1, with the guard moved into the reward function instead.
+# src.rewards.episodic_mean_variance_reward uses a ddof=1 variance, which needs
+# at least two days; it raises ValueError for a one-day batch (it used to return
+# NaN). Refusing short episodes here as well stops a run before training starts.
+# The one-period quadratic reward the assignment also permits would need this
+# lowered to 1.
 MIN_EPISODE_LENGTH = 2
 
 # SeedSequence spawn-key layout used by SeedPlan. Every key starts with

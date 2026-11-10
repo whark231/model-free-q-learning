@@ -1,0 +1,1263 @@
+{
+  "run_dir": "results/fa-spline/robust_g3_grid20_FAspline",
+  "provenance": {
+    "git_commit": "badbf923f7f637757ac6c758ece64f6438824bea",
+    "code_sha256": {
+      "src/evaluate.py": "1c34136fb22c087d67033d894dea706b8476a8866146721f4d773d4bd0e95187",
+      "src/config.py": "0a320757f1c0d7321be2310e72396269d0479241791c2351accb8c0cdfec3ba1",
+      "src/run_experiments.py": "e1a2f54aeea42cade430d723d91e594c02edfd099bbb13156e446a64caafcdda",
+      "src/hashing.py": "1d8566c33dc3039008526f2b2dde28e01322e200a4806ec14f3129bb516c1f13",
+      "src/benchmarks/mean_variance.py": "0e17e87e99d71b682af46ff7767ca5e2c290fdc5ed8e3b078e7c5b930abd51b0",
+      "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2",
+      "src/action_space/grid.py": "1e610e2d670e9116cfdf19af82197e4a05eb85be6806e14f8bfc55936b2e579e"
+    },
+    "python": "3.13.9",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3",
+    "matplotlib": "3.10.6",
+    "pandas": "2.3.3"
+  },
+  "eval_config": {
+    "n_eval_episodes": 10000,
+    "converge_k": 1300000,
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0
+  },
+  "training_config": {
+    "gamma": 3.0,
+    "episode_length": 20,
+    "n_episodes": 13000000,
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "beta": 7.084877209212449e-07,
+    "increment": 0.2,
+    "alpha_rule": 7.111111111111112e-06,
+    "epsilon0": 1.0,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "block_size": 10000,
+    "agent": "linear",
+    "feature_map": "spline",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "n_seeds": 10,
+  "n_actions": 1287,
+  "tickers": [
+    "SPY",
+    "EFA",
+    "EEM",
+    "IEF",
+    "LQD",
+    "TIP",
+    "GLD",
+    "VNQ",
+    "DBC"
+  ],
+  "benchmarks": {
+    "continuous": {
+      "weights": [
+        0.5501873229092187,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.0,
+        0.44981267709078104,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "exact": {
+        "mean_annual": 0.10000262715722603,
+        "vol_annual": 0.13885892698671803,
+        "objective_daily": 0.0002820631934578254
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.09524641389766751,
+        "vol_annual": 0.13901802725806078,
+        "objective_daily": 0.00026300524461019166,
+        "objective_se": 1.9711683472586264e-05,
+        "shortfall_vs_best_discrete_daily": -6.462911684983298e-07,
+        "shortfall_vs_best_discrete_se": 1.8018442413571967e-06
+      }
+    },
+    "best_discrete": {
+      "weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "exact": {
+        "mean_annual": 0.10074299583745815,
+        "vol_annual": 0.14121022752148774,
+        "objective_daily": 0.00028108136231132
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.09607225444975444,
+        "vol_annual": 0.14136718122416292,
+        "objective_daily": 0.0002623589534416933,
+        "objective_se": 2.0036054313656663e-05,
+        "shortfall_vs_best_discrete_daily": 0.0,
+        "shortfall_vs_best_discrete_se": 0.0
+      }
+    },
+    "equal_weight": {
+      "weights": [
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111,
+        0.1111111111111111
+      ],
+      "exact": {
+        "mean_annual": 0.05621406598052788,
+        "vol_annual": 0.11705664905430689,
+        "objective_daily": 0.00014151062439997277
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.05198604665281057,
+        "vol_annual": 0.11711576106240962,
+        "objective_daily": 0.0001246699696763375,
+        "objective_se": 1.653731822520533e-05,
+        "shortfall_vs_best_discrete_daily": 0.00013768898376535579,
+        "shortfall_vs_best_discrete_se": 8.285649131022155e-06
+      }
+    }
+  },
+  "discretization_gap": {
+    "ce_loss_bps": 2.4742144891934794,
+    "relative": 0.0034808906985311933,
+    "l1_continuous_vs_best_discrete": 0.0996253541815626
+  },
+  "learned": {
+    "ce_loss_vs_best_discrete_bps": {
+      "mean": 45.399184893914985,
+      "median": 62.29028733851743,
+      "min": 0.0,
+      "max": 68.27689986169338,
+      "n": 10
+    },
+    "ce_loss_vs_continuous_bps": {
+      "mean": 47.87339938310847,
+      "median": 64.76450182771092,
+      "min": 2.4742144891934794,
+      "max": 70.75111435088687,
+      "n": 10
+    },
+    "relative_learning_gap": {
+      "mean": 0.06409371796456471,
+      "median": 0.08794025967505312,
+      "min": 0.0,
+      "max": 0.09639204698181156,
+      "n": 10
+    },
+    "relative_gap_unreliable": false,
+    "objective_daily": {
+      "mean": 0.0002630658127502427,
+      "median": 0.0002563629943198448,
+      "min": 0.0002539873544296958,
+      "max": 0.00028108136231132,
+      "n": 10
+    },
+    "mean_annual": {
+      "mean": 0.08857243173374744,
+      "median": 0.08375373447221664,
+      "min": 0.08280232860693605,
+      "max": 0.10074299583745815,
+      "n": 10
+    },
+    "vol_annual": {
+      "mean": 0.12115186932228061,
+      "median": 0.11386303912467684,
+      "min": 0.11013625834858543,
+      "max": 0.14121022752148774,
+      "n": 10
+    },
+    "l1_to_continuous": {
+      "mean": 0.30988760625446876,
+      "median": 0.3999999999999999,
+      "min": 0.0996253541815626,
+      "max": 0.39999999999999997,
+      "n": 10
+    },
+    "euclidean_to_continuous": {
+      "mean": 0.19965093280165297,
+      "median": 0.2550245767795495,
+      "min": 0.07044576351989429,
+      "max": 0.2550245767795495,
+      "n": 10
+    },
+    "share_exactly_best_discrete": 0.3,
+    "median_seed_run": 0,
+    "mean_of_seed_weights_descriptive_only": [
+      0.4600000000000001,
+      0.0,
+      0.0,
+      0.04,
+      0.04,
+      0.06000000000000001,
+      0.39999999999999997,
+      0.0,
+      0.0
+    ]
+  },
+  "q_fit": {
+    "all": {
+      "pearson": {
+        "mean": 0.9421933916078788,
+        "median": 0.9449669156410904,
+        "min": 0.9127378683215485,
+        "max": 0.9560779367063867,
+        "n": 10
+      },
+      "spearman": {
+        "mean": 0.9437970238565274,
+        "median": 0.94500223613923,
+        "min": 0.9152009720844666,
+        "max": 0.9607234393393025,
+        "n": 10
+      },
+      "top_k_recall": {
+        "mean": 0.6699999999999999,
+        "median": 0.6499999999999999,
+        "min": 0.5,
+        "max": 0.9,
+        "n": 10
+      },
+      "top_k": {
+        "mean": 10.0,
+        "median": 10.0,
+        "min": 10.0,
+        "max": 10.0,
+        "n": 10
+      },
+      "n_portfolios": {
+        "mean": 1287.0,
+        "median": 1287.0,
+        "min": 1287.0,
+        "max": 1287.0,
+        "n": 10
+      }
+    },
+    "visited": {
+      "pearson": {
+        "mean": 0.9421933916078788,
+        "median": 0.9449669156410904,
+        "min": 0.9127378683215485,
+        "max": 0.9560779367063867,
+        "n": 10
+      },
+      "spearman": {
+        "mean": 0.9437970238565274,
+        "median": 0.94500223613923,
+        "min": 0.9152009720844666,
+        "max": 0.9607234393393025,
+        "n": 10
+      },
+      "top_k_recall": {
+        "mean": 0.6699999999999999,
+        "median": 0.6499999999999999,
+        "min": 0.5,
+        "max": 0.9,
+        "n": 10
+      },
+      "top_k": {
+        "mean": 10.0,
+        "median": 10.0,
+        "min": 10.0,
+        "max": 10.0,
+        "n": 10
+      },
+      "n_portfolios": {
+        "mean": 1287.0,
+        "median": 1287.0,
+        "min": 1287.0,
+        "max": 1287.0,
+        "n": 10
+      }
+    },
+    "optimism_of_learned_bps": {
+      "mean": -12.407739123255293,
+      "median": -10.240120568168024,
+      "min": -110.73766954291828,
+      "max": 39.37345326279008,
+      "n": 10
+    }
+  },
+  "convergence": {
+    "rules": {
+      "greedy_stable": "greedy action unchanged for 1300000 episodes (first time)",
+      "greedy_stable_through_end": "the final greedy action held for at least 1300000 episodes",
+      "dq_below_tol_for_good": "max |change in Q| below 1e-05 in every full 10000-episode window from then on",
+      "near_optimal_for_good": "greedy action within 25.0 bps/yr (CE) of the best grid action at every 10000-episode checkpoint from then on"
+    },
+    "greedy_stable": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 103955600.0,
+        "median": 106014000.0,
+        "min": 49880000.0,
+        "max": 178780000.0,
+        "n": 10
+      }
+    },
+    "greedy_stable_through_end": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 160663600.0,
+        "median": 142308000.0,
+        "min": 62448000.0,
+        "max": 258860000.0,
+        "n": 10
+      }
+    },
+    "dq_below_tol_for_good": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 200000.0,
+        "median": 200000.0,
+        "min": 200000.0,
+        "max": 200000.0,
+        "n": 10
+      }
+    },
+    "near_optimal_for_good": {
+      "share_of_seeds": 0.3,
+      "observations": {
+        "mean": 41800000.0,
+        "median": 36400000.0,
+        "min": 24000000.0,
+        "max": 65000000.0,
+        "n": 3
+      }
+    },
+    "descriptive_rules": {
+      "settled": "the final greedy action is greedy at every 10000-episode checkpoint from then on",
+      "near_optimal_every_episode": "every greedy action, brief switches included, within 25.0 bps/yr (CE) of the best grid action from then on"
+    },
+    "settled": {
+      "share_of_seeds": 1.0,
+      "observations": {
+        "mean": 119440000.0,
+        "median": 102000000.0,
+        "min": 24000000.0,
+        "max": 233000000.0,
+        "n": 10
+      }
+    },
+    "near_optimal_every_episode": {
+      "share_of_seeds": 0.3,
+      "observations": {
+        "mean": 79301333.33333333,
+        "median": 73750000.0,
+        "min": 36448000.0,
+        "max": 127706000.0,
+        "n": 3
+      }
+    }
+  },
+  "per_seed": [
+    {
+      "run": 0,
+      "learned_action": 1147,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 9871847,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08463173422207183,
+        "vol_annual": 0.11556274078688898,
+        "objective_daily": 0.00025634767315398923
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.08072967568067689,
+        "vol_annual": 0.11569015494543611,
+        "objective_daily": 0.0002407271275967414,
+        "objective_se": 1.6374341439172525e-05,
+        "shortfall_vs_best_discrete_daily": 2.1631825844951896e-05,
+        "shortfall_vs_best_discrete_se": 5.515097461880748e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 62.3288966764736,
+      "ce_loss_vs_continuous_bps": 64.80311116566708,
+      "relative_learning_gap": 0.08799476761442568,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.2,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999997,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 523.8866197901059,
+      "greedy_stable_episode": 5980300,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 5980300,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 4690000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9127378683215485,
+        "spearman": 0.9152009720844666,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9127378683215485,
+        "spearman": 0.9152009720844666,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "optimism_of_learned_bps": 32.06042182722024,
+      "greedy_stable_observations": 119606000,
+      "greedy_stable_through_end_observations": 119606000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 93800000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 1,
+      "learned_action": 1137,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 9176428,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08287573472236144,
+        "vol_annual": 0.1121633374624647,
+        "objective_daily": 0.0002539873544296958
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.07892393536112396,
+        "vol_annual": 0.11227783833599655,
+        "objective_daily": 0.00023820126414087316,
+        "objective_se": 1.591440038327183e-05,
+        "shortfall_vs_best_discrete_daily": 2.415768930082017e-05,
+        "shortfall_vs_best_discrete_se": 5.878580825867618e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 68.27689986169338,
+      "ce_loss_vs_continuous_bps": 70.75111435088687,
+      "relative_learning_gap": 0.09639204698181156,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.2,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999997,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 516.1426846955601,
+      "greedy_stable_episode": 4211400,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 6545500,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 5250000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9429045399614518,
+        "spearman": 0.9390267079596987,
+        "top_k": 10,
+        "top_k_recall": 0.7
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9429045399614518,
+        "spearman": 0.9390267079596987,
+        "top_k": 10,
+        "top_k_recall": 0.7
+      },
+      "optimism_of_learned_bps": -110.73766954291828,
+      "greedy_stable_observations": 84228000,
+      "greedy_stable_through_end_observations": 130910000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 105000000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 2,
+      "learned_action": 1247,
+      "learned_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 10154193,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.10074299583745815,
+        "vol_annual": 0.14121022752148774,
+        "objective_daily": 0.00028108136231132
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.09607225444975444,
+        "vol_annual": 0.14136718122416292,
+        "objective_daily": 0.0002623589534416933,
+        "objective_se": 2.0036054313656663e-05,
+        "shortfall_vs_best_discrete_daily": 0.0,
+        "shortfall_vs_best_discrete_se": 0.0
+      },
+      "ce_loss_vs_best_discrete_bps": 0.0,
+      "ce_loss_vs_continuous_bps": 2.4742144891934794,
+      "relative_learning_gap": 0.0,
+      "is_best_discrete": true,
+      "abs_diff_vs_continuous": [
+        0.0498126770907813,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.0996253541815626,
+      "euclidean_to_continuous": 0.07044576351989429,
+      "l1_to_best_discrete": 0.0,
+      "final_cumulative_regret": 287.669646853789,
+      "greedy_stable_episode": 4621100,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 7685300,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": 3250000,
+      "settled_episode": 3250000,
+      "near_optimal_every_episode_episode": 6385300,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9542259654719942,
+        "spearman": 0.9607234393393025,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9542259654719942,
+        "spearman": 0.9607234393393025,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "optimism_of_learned_bps": -29.589049380876414,
+      "greedy_stable_observations": 92422000,
+      "greedy_stable_through_end_observations": 153706000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": 65000000,
+      "settled_observations": 65000000,
+      "near_optimal_every_episode_observations": 127706000
+    },
+    {
+      "run": 3,
+      "learned_action": 1247,
+      "learned_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 11574267,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.10074299583745815,
+        "vol_annual": 0.14121022752148774,
+        "objective_daily": 0.00028108136231132
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.09607225444975444,
+        "vol_annual": 0.14136718122416292,
+        "objective_daily": 0.0002623589534416933,
+        "objective_se": 2.0036054313656663e-05,
+        "shortfall_vs_best_discrete_daily": 0.0,
+        "shortfall_vs_best_discrete_se": 0.0
+      },
+      "ce_loss_vs_best_discrete_bps": 0.0,
+      "ce_loss_vs_continuous_bps": 2.4742144891934794,
+      "relative_learning_gap": 0.0,
+      "is_best_discrete": true,
+      "abs_diff_vs_continuous": [
+        0.0498126770907813,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.0996253541815626,
+      "euclidean_to_continuous": 0.07044576351989429,
+      "l1_to_best_discrete": 0.0,
+      "final_cumulative_regret": 252.26304757741423,
+      "greedy_stable_episode": 2494000,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 4987500,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": 1200000,
+      "settled_episode": 1200000,
+      "near_optimal_every_episode_episode": 3687500,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.943913049544869,
+        "spearman": 0.9395059940397692,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.943913049544869,
+        "spearman": 0.9395059940397692,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "optimism_of_learned_bps": 16.410002700315523,
+      "greedy_stable_observations": 49880000,
+      "greedy_stable_through_end_observations": 99750000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": 24000000,
+      "settled_observations": 24000000,
+      "near_optimal_every_episode_observations": 73750000
+    },
+    {
+      "run": 4,
+      "learned_action": 1147,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 4568696,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08463173422207183,
+        "vol_annual": 0.11556274078688898,
+        "objective_daily": 0.00025634767315398923
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.08072967568067689,
+        "vol_annual": 0.11569015494543611,
+        "objective_daily": 0.0002407271275967414,
+        "objective_se": 1.6374341439172525e-05,
+        "shortfall_vs_best_discrete_daily": 2.1631825844951896e-05,
+        "shortfall_vs_best_discrete_se": 5.515097461880748e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 62.3288966764736,
+      "ce_loss_vs_continuous_bps": 64.80311116566708,
+      "relative_learning_gap": 0.08799476761442568,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.2,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999997,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 413.262651542724,
+      "greedy_stable_episode": 7489100,
+      "greedy_stable_action_is_final": false,
+      "greedy_stable_through_end_episode": 10650500,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 9360000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9560779367063867,
+        "spearman": 0.9593139465848912,
+        "top_k": 10,
+        "top_k_recall": 0.7
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9560779367063867,
+        "spearman": 0.9593139465848912,
+        "top_k": 10,
+        "top_k_recall": 0.7
+      },
+      "optimism_of_learned_bps": -32.722824317085994,
+      "greedy_stable_observations": 149782000,
+      "greedy_stable_through_end_observations": 213010000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 187200000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 5,
+      "learned_action": 1162,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 4356755,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08280232860693605,
+        "vol_annual": 0.11013625834858543,
+        "objective_daily": 0.0002563783154857004
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.07895040818276192,
+        "vol_annual": 0.11024854609076994,
+        "objective_daily": 0.00024098871013094686,
+        "objective_se": 1.5619404247410026e-05,
+        "shortfall_vs_best_discrete_daily": 2.1370243310746446e-05,
+        "shortfall_vs_best_discrete_se": 6.276934894586987e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 62.25167800056127,
+      "ce_loss_vs_continuous_bps": 64.72589248975474,
+      "relative_learning_gap": 0.08788575173568056,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999986,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 489.81087363950803,
+      "greedy_stable_episode": 8939000,
+      "greedy_stable_action_is_final": false,
+      "greedy_stable_through_end_episode": 12943000,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 11650000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9460207817373117,
+        "spearman": 0.9449496904700098,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9460207817373117,
+        "spearman": 0.9449496904700098,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "optimism_of_learned_bps": 39.37345326279008,
+      "greedy_stable_observations": 178780000,
+      "greedy_stable_through_end_observations": 258860000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 233000000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 6,
+      "learned_action": 1247,
+      "learned_weights": [
+        0.6,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 11224437,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.10074299583745815,
+        "vol_annual": 0.14121022752148774,
+        "objective_daily": 0.00028108136231132
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.09607225444975444,
+        "vol_annual": 0.14136718122416292,
+        "objective_daily": 0.0002623589534416933,
+        "objective_se": 2.0036054313656663e-05,
+        "shortfall_vs_best_discrete_daily": 0.0,
+        "shortfall_vs_best_discrete_se": 0.0
+      },
+      "ce_loss_vs_best_discrete_bps": 0.0,
+      "ce_loss_vs_continuous_bps": 2.4742144891934794,
+      "relative_learning_gap": 0.0,
+      "is_best_discrete": true,
+      "abs_diff_vs_continuous": [
+        0.0498126770907813,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.0996253541815626,
+      "euclidean_to_continuous": 0.07044576351989429,
+      "l1_to_best_discrete": 0.0,
+      "final_cumulative_regret": 260.86968884675963,
+      "greedy_stable_episode": 3122400,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 3122400,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": 1820000,
+      "settled_episode": 1820000,
+      "near_optimal_every_episode_episode": 1822400,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9466829283688593,
+        "spearman": 0.9536408325373097,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9466829283688593,
+        "spearman": 0.9536408325373097,
+        "top_k": 10,
+        "top_k_recall": 0.9
+      },
+      "optimism_of_learned_bps": -13.196893036736949,
+      "greedy_stable_observations": 62448000,
+      "greedy_stable_through_end_observations": 62448000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": 36400000,
+      "settled_observations": 36400000,
+      "near_optimal_every_episode_observations": 36448000
+    },
+    {
+      "run": 7,
+      "learned_action": 1137,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 7360643,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08287573472236144,
+        "vol_annual": 0.1121633374624647,
+        "objective_daily": 0.0002539873544296958
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.07892393536112396,
+        "vol_annual": 0.11227783833599655,
+        "objective_daily": 0.00023820126414087316,
+        "objective_se": 1.591440038327183e-05,
+        "shortfall_vs_best_discrete_daily": 2.415768930082017e-05,
+        "shortfall_vs_best_discrete_se": 5.878580825867618e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 68.27689986169338,
+      "ce_loss_vs_continuous_bps": 70.75111435088687,
+      "relative_learning_gap": 0.09639204698181156,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.2,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999997,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 539.1477134357258,
+      "greedy_stable_episode": 6207800,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 12782200,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 10180000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9423827004150073,
+        "spearman": 0.9450547818084502,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9423827004150073,
+        "spearman": 0.9450547818084502,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "optimism_of_learned_bps": -7.283348099599101,
+      "greedy_stable_observations": 124156000,
+      "greedy_stable_through_end_observations": 255644000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 203600000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 8,
+      "learned_action": 1162,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 6512779,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08280232860693605,
+        "vol_annual": 0.11013625834858543,
+        "objective_daily": 0.0002563783154857004
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.07895040818276192,
+        "vol_annual": 0.11024854609076994,
+        "objective_daily": 0.00024098871013094686,
+        "objective_se": 1.5619404247410026e-05,
+        "shortfall_vs_best_discrete_daily": 2.1370243310746446e-05,
+        "shortfall_vs_best_discrete_se": 6.276934894586987e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 62.25167800056127,
+      "ce_loss_vs_continuous_bps": 64.72589248975474,
+      "relative_learning_gap": 0.08788575173568056,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999986,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 421.03545332146734,
+      "greedy_stable_episode": 2667400,
+      "greedy_stable_action_is_final": false,
+      "greedy_stable_through_end_episode": 9389800,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 7370000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.9233333928001555,
+        "spearman": 0.9278410187193743,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.9233333928001555,
+        "spearman": 0.9278410187193743,
+        "top_k": 10,
+        "top_k_recall": 0.5
+      },
+      "optimism_of_learned_bps": 9.04647145887866,
+      "greedy_stable_observations": 53348000,
+      "greedy_stable_through_end_observations": 187796000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 147400000,
+      "near_optimal_every_episode_observations": null
+    },
+    {
+      "run": 9,
+      "learned_action": 1137,
+      "learned_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "visits_of_learned_action": 9528823,
+      "final_epsilon": 9.999999999999991e-05,
+      "exact": {
+        "mean_annual": 0.08287573472236144,
+        "vol_annual": 0.1121633374624647,
+        "objective_daily": 0.0002539873544296958
+      },
+      "evaluation_sample": {
+        "mean_annual": 0.07892393536112396,
+        "vol_annual": 0.11227783833599655,
+        "objective_daily": 0.00023820126414087316,
+        "objective_se": 1.591440038327183e-05,
+        "shortfall_vs_best_discrete_daily": 2.415768930082017e-05,
+        "shortfall_vs_best_discrete_se": 5.878580825867618e-06
+      },
+      "ce_loss_vs_best_discrete_bps": 68.27689986169338,
+      "ce_loss_vs_continuous_bps": 70.75111435088687,
+      "relative_learning_gap": 0.09639204698181156,
+      "is_best_discrete": false,
+      "abs_diff_vs_continuous": [
+        0.15018732290921866,
+        2.7710693928834998e-17,
+        8.064725934716641e-17,
+        6.461008712827261e-17,
+        0.0,
+        0.2,
+        0.04981267709078102,
+        0.0,
+        1.1410625530869663e-16
+      ],
+      "abs_diff_vs_best_discrete": [
+        0.19999999999999996,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "l1_to_continuous": 0.39999999999999997,
+      "euclidean_to_continuous": 0.2550245767795495,
+      "l1_to_best_discrete": 0.39999999999999997,
+      "final_cumulative_regret": 524.9345552113546,
+      "greedy_stable_episode": 6245300,
+      "greedy_stable_action_is_final": true,
+      "greedy_stable_through_end_episode": 6245300,
+      "dq_below_tol_for_good_episode": 10000,
+      "near_optimal_for_good_episode": null,
+      "settled_episode": 4950000,
+      "near_optimal_every_episode_episode": null,
+      "q_fit_all": {
+        "n_portfolios": 1287,
+        "pearson": 0.953654752751205,
+        "spearman": 0.9527128550220038,
+        "top_k": 10,
+        "top_k_recall": 0.6
+      },
+      "q_fit_visited": {
+        "n_portfolios": 1287,
+        "pearson": 0.953654752751205,
+        "spearman": 0.9527128550220038,
+        "top_k": 10,
+        "top_k_recall": 0.6
+      },
+      "optimism_of_learned_bps": -27.43795610454069,
+      "greedy_stable_observations": 124906000,
+      "greedy_stable_through_end_observations": 124906000,
+      "dq_below_tol_for_good_observations": 200000,
+      "near_optimal_for_good_observations": null,
+      "settled_observations": 99000000,
+      "near_optimal_every_episode_observations": null
+    }
+  ],
+  "notes": {
+    "primary_gap": "certainty-equivalent loss, 252 * (U_best - U) in basis points per year",
+    "relative_gap": "(U_best - U) / |U_best|; None when |U_best| < 1e-5 per day",
+    "evaluation_sample": "10000 episodes x 20 days from SeedPlan's evaluation stream; exact values are primary, realized values a check",
+    "mean_of_seed_weights": "average of the seeds' weights; not a portfolio any seed holds, so never compared with the benchmarks",
+    "regret_units": "daily objective units summed over episodes; divide by the episode count and multiply by 252 * 1e4 for the average loss per episode in bps/yr",
+    "total_gap": "ce_loss_vs_continuous_bps: discretization gap plus learning gap, per seed",
+    "median_seed": "the weights chart's median seed is the upper median (6th of 10 by learning gap); summary medians average the two middle seeds",
+    "observations": "simulated days = episodes x B; greedy_stable_through_end includes its K-episode waiting window",
+    "q_fit": "final Q-values vs the true expected reward U(w) of every portfolio (all) or of those the agent tried (visited); top-10 recall is the share of the true top 10 in the learned top 10; optimism is 252 * (Qhat - U) of the learned portfolio in bps/yr. Evaluation only"
+  }
+}

@@ -182,6 +182,11 @@ Existing docs:
 | `EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
 | `EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
 | `REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
+| `NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps (William) |
+| `FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning (William) |
+| `TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations (Albert) |
+| `RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan |
+| `AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs |
 | `REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
 | `reports/README.md` | Adding a run, extracting it, and building reports that compare runs (Albert) |
 | `CLAUDE.md` | This working agreement |

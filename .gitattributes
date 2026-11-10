@@ -1,0 +1,10 @@
+# Check text files out with LF on every machine, so a file has the same
+# bytes, and the same SHA-256, on Windows and on the Mac (AUDIT_2026-11-06.md
+# M2). Code also hashes line-ending-normalized bytes (src/hashing.py), so this
+# file is a second line of defence, not the only one.
+* text=auto eol=lf
+
+# The raw downloads are immutable (DATA_CLEANING.md). This one was committed
+# with CRLF line endings, so it is kept byte for byte and never converted. The
+# other raw files were committed with LF and need no exception.
+data/raw/risk_free/F-F_Research_Data_Factors_daily.csv -text

@@ -1,0 +1,254 @@
+{
+  "config": {
+    "gamma": 5.0,
+    "episode_length": 63,
+    "n_episodes": 26000000,
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "beta": 2.6973522287076783e-07,
+    "increment": 0.1,
+    "alpha_rule": "sample_average",
+    "epsilon0": 1.0,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "block_size": 10000
+  },
+  "seed_plan": {
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+    "streams": {
+      "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+      "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+      "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+    },
+    "numpy_version": "2.3.5"
+  },
+  "n_actions": 43758,
+  "grid_sha256": "bf28b186ec9b4d82a7e7efd90d7170022e2477c2684cb7db21d35a16583598b3",
+  "calibration_sha256": {
+    "summary_statistics.csv": "7f6608cdeb5c505e645a9f688c84a1f99de51ab3f56ec06e4a8f02b161a6eab9",
+    "covariance_daily.csv": "f95eecc418bf0937071109234818d96a3c2d0ae33d5c909ede1b1b337ad1bfe2"
+  },
+  "code_sha256": {
+    "src/train.py": "c653fe12c554a75e561fd0718a6dd516641bbecd909ab763457a767f65bda151",
+    "src/agent.py": "19151a9b9ff744fb50b41b062dcb1535931a46a7ea50d1cb1749aaabfc7907b6",
+    "src/environment.py": "f794a81a1c8fc7eb824a15283f2171e6a499e4c46e11708989bf119af6757765",
+    "src/rewards.py": "b6b5fbece06f860d970317241c404856db3cf7e947b9cd2fcef17e52e64de786",
+    "src/action_space/grid.py": "1e610e2d670e9116cfdf19af82197e4a05eb85be6806e14f8bfc55936b2e579e"
+  },
+  "git_commit": "e13a9a6d1f63788d80a8f0d93168d3f3142df38f",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "log_schema": {
+    "checkpoint_*": "one row per log_every episodes; the last row covers the final, possibly shorter, window",
+    "checkpoint_next_epsilon": "agent.epsilon after this many episodes, the rate for the next episode; epsilon0 * exp(-beta * episodes done) for TabularQAgent",
+    "greedy_change_*": "episode number and new logged greedy action at every change; first entry is episode 0",
+    "logged_greedy": "lowest-index argmax of the Q-values; logging only",
+    "observations": "episodes x episode_length simulated days"
+  },
+  "runs": [
+    {
+      "run": 0,
+      "file": "run_000.npz",
+      "seconds": 3048.73,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 41035,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.1,
+        0.1,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 183978
+    },
+    {
+      "run": 1,
+      "file": "run_001.npz",
+      "seconds": 2815.8,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 41105,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 182974
+    },
+    {
+      "run": 2,
+      "file": "run_002.npz",
+      "seconds": 2777.95,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 40909,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 189276
+    },
+    {
+      "run": 3,
+      "file": "run_003.npz",
+      "seconds": 2712.33,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 40859,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.5,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 189578
+    },
+    {
+      "run": 4,
+      "file": "run_004.npz",
+      "seconds": 2735.38,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 42516,
+      "final_greedy_weights": [
+        0.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 191277
+    },
+    {
+      "run": 5,
+      "file": "run_005.npz",
+      "seconds": 2677.49,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 41105,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 179158
+    },
+    {
+      "run": 6,
+      "file": "run_006.npz",
+      "seconds": 2767.18,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 41135,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.2,
+        0.1,
+        0.0,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 193349
+    },
+    {
+      "run": 7,
+      "file": "run_007.npz",
+      "seconds": 2732.88,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 40985,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.5,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 192189
+    },
+    {
+      "run": 8,
+      "file": "run_008.npz",
+      "seconds": 2737.61,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 40985,
+      "final_greedy_weights": [
+        0.4,
+        0.0,
+        0.0,
+        0.1,
+        0.0,
+        0.0,
+        0.5,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 186672
+    },
+    {
+      "run": 9,
+      "file": "run_009.npz",
+      "seconds": 2708.82,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 42676,
+      "final_greedy_weights": [
+        0.5,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.0,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 181624
+    }
+  ],
+  "agent_class": "src.agent.TabularQAgent"
+}

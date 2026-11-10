@@ -46,6 +46,35 @@ def test_settled_from_is_first_checkpoint_after_the_last_disagreement():
     assert extract.settled_from(ckpt, np.array([7, 7, 7, 7, 7]), final=7) == 10
 
 
+@pytest.mark.parametrize("greedy", [[1, 7, 2], [1, 2, 3], []])
+def test_settled_from_is_missing_when_the_final_policy_did_not_settle(greedy):
+    assert extract.settled_from(np.arange(len(greedy)), np.array(greedy), final=7) is None
+
+
+def test_fa_tied_final_policy_agrees_across_training_evaluation_and_reporting(tmp_path):
+    from src.train import TrainConfig
+    from src.evaluate import EvalConfig
+    tc = TrainConfig(gamma=5, episode_length=20, n_episodes=1, master_seed=2, n_runs=1,
+                     beta=0.001, log_every=1, agent="linear", feature_map="quadratic", alpha_rule=0.1)
+    manifest = run_experiment(tc, tmp_path)
+    with np.load(tmp_path / "run_000.npz") as logs:
+        final = int(np.argmax(logs["final_q"]))
+        cached = int(logs["checkpoint_greedy"][-1])
+        assert cached != final  # real calibration and seed reproduce the review finding
+        assert logs["final_q"][cached] == logs["final_q"][final]
+        assert int(logs["final_greedy"]) == final
+    assert manifest["runs"][0]["final_greedy_action"] == final
+    summary = evaluate_experiment(tmp_path, EvalConfig(100, 1, 1e-5, 25))
+    mu, sigma = load_calibration()
+    report = extract.extract_experiment(tmp_path, {"near_optimal_bps": 25, "dq_tol": 1e-5},
+                                        mu, sigma, extract.PROCESSED_DIR)
+    assert summary["per_seed"][0]["learned_action"] == report["seeds"][0]["action"] == final
+    assert report["seeds"][0]["settled_obs"] is None
+    assert report["summary"]["settled"]["n"] == 0
+    assert report["seeds"][0]["primary_obs"] is None
+    assert summary["per_seed"][0]["greedy_stable_through_end_episode"] is None
+
+
 def test_excursions_count_a_hop_between_two_wrong_actions_once():
     loss = np.array([0.0, 50.0, 300.0, 20.0])
     ch_ep = np.array([0, 100, 200, 205, 210, 400, 403])
@@ -241,3 +270,168 @@ def test_long_run_extracts_with_binning_and_medians_taken_before_binning(long_ru
     for s in e["seeds"]:
         assert len(s["series"]["loss"]) == extract.MAX_POINTS
         assert s["settled_obs"] % 60 == 0
+
+
+def test_the_settings_table_records_the_agent(tmp_path):
+    """FA manifests carry agent fields; tabular ones leave them out and read as tabular."""
+    from src.train import TrainConfig
+    common = dict(gamma=5, episode_length=20, n_episodes=200, master_seed=2, n_runs=1, beta=0.001,
+                  log_every=100, increment=0.25)
+    mu, sigma = load_calibration()
+    run_experiment(TrainConfig(**common, agent="linear", feature_map="spline", alpha_rule=1e-3, l2=1e-4,
+                               greedy_refresh_every=100), tmp_path / "fa")
+    run_experiment(TrainConfig(**common), tmp_path / "tab")
+    settings = {"near_optimal_bps": 25, "dq_tol": 1e-5}
+    fa = extract.extract_experiment(tmp_path / "fa", settings, mu, sigma, extract.PROCESSED_DIR)["params"]
+    tab = extract.extract_experiment(tmp_path / "tab", settings, mu, sigma, extract.PROCESSED_DIR)["params"]
+    assert (fa["agent"], fa["feature_map"], fa["l2"], fa["greedy_refresh_every"], fa["alpha_rule"]) == \
+        ("linear", "spline", 1e-4, 100, 1e-3)
+    assert (tab["agent"], tab["feature_map"], tab["l2"], tab["greedy_refresh_every"], tab["alpha_rule"]) == \
+        ("tabular", None, 0.0, 1, "sample_average")
+    assert {"agent", "feature_map", "l2", "greedy_refresh_every"} <= {k for k, _ in build.COMPARED_PARAMS}
+
+
+def test_older_report_data_read_as_tabular_so_comparisons_show_only_real_changes(tmp_path):
+    """data.json files extracted before the agent fields existed must not
+    make a constant-alpha tabular run look like it changed the agent."""
+    old = _exp(alpha_rule="sample_average")
+    for key in build.AGENT_PARAM_DEFAULTS:
+        del old["params"][key]
+    (tmp_path / "old").mkdir()
+    (tmp_path / "old" / "data.json").write_text(json.dumps({"experiments": [old]}))
+    loaded = build.load_run_data("old", tmp_path)["experiments"][0]
+    assert {k: loaded["params"][k] for k in build.AGENT_PARAM_DEFAULTS} == build.AGENT_PARAM_DEFAULTS
+    new = _exp(alpha_rule=0.00032, **build.AGENT_PARAM_DEFAULTS)
+    assert [c["param"] for c in build.param_changes(loaded, new)] == ["alpha_rule"]
+
+
+# ---------------------------------------------------------------------------
+# Audit fixes, 2026-11-09 (AUDIT_2026-11-06.md M2 to M5)
+# ---------------------------------------------------------------------------
+
+def test_file_digest_ignores_line_endings(tmp_path):
+    from src.hashing import digest_variants, file_sha256, matches, sha256_bytes
+    lf, crlf = tmp_path / "lf.csv", tmp_path / "crlf.csv"
+    lf.write_bytes(b"a,b\n1,2\n")
+    crlf.write_bytes(b"a,b\r\n1,2\r\n")
+    assert file_sha256(lf) == file_sha256(crlf) == sha256_bytes(b"a,b\n1,2\n")
+    # A digest stored from either form matches either file, and maps to the LF digest.
+    crlf_digest = sha256_bytes(b"a,b\r\n1,2\r\n")
+    assert matches(lf, crlf_digest) and matches(crlf, sha256_bytes(b"a,b\n1,2\n"))
+    assert digest_variants(lf.read_bytes())[crlf_digest] == file_sha256(lf)
+    assert not matches(lf, sha256_bytes(b"a,b\n1,3\n"))
+
+
+def test_training_manifests_hash_normalized_bytes(tmp_path):
+    from src.train import _hashes
+    (tmp_path / "x.py").write_bytes(b"print(1)\r\nprint(2)\r\n")
+    (tmp_path / "y.py").write_bytes(b"print(1)\nprint(2)\n")
+    assert _hashes(tmp_path, ["x.py"])["x.py"] == _hashes(tmp_path, ["y.py"])["y.py"]
+
+
+def test_param_changes_compares_only_files_hashed_on_both_sides():
+    old, new = _exp(), _exp()
+    new["code"]["code_sha256"] = {"src/train.py": "1", "src/fa_agent.py": "z", "src/features.py": "w"}
+    new["calibration_sha256"] = {"a": "x", "extra.csv": "q"}
+    assert build.param_changes(old, new) == []
+
+
+def test_param_changes_ignores_a_crlf_digest_of_the_same_committed_file():
+    import subprocess
+    from src.hashing import sha256_bytes
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True,
+                            cwd=extract.ROOT).stdout.strip()
+    text = subprocess.run(["git", "show", f"{commit}:src/rewards.py"], capture_output=True, check=True,
+                          cwd=extract.ROOT).stdout.replace(b"\r\n", b"\n")
+    lf_digest, crlf_digest = sha256_bytes(text), sha256_bytes(text.replace(b"\n", b"\r\n"))
+    mac, windows = _exp(), _exp()
+    mac["code"] = {"git_commit": commit, "code_sha256": {"src/rewards.py": lf_digest}}
+    windows["code"] = {"git_commit": commit + "-dirty", "code_sha256": {"src/rewards.py": crlf_digest}}
+    assert build.param_changes(mac, windows) == []
+    # A real difference still shows.
+    windows["code"]["code_sha256"]["src/rewards.py"] = sha256_bytes(text + b"# edit\n")
+    assert [c["param"] for c in build.param_changes(mac, windows)] == ["code"]
+
+
+def test_report_header_fields_come_from_the_registry():
+    run = {"run": {"id": "a", "title": "old title", "what_changed": "old", "git_ref": "tag-not-pushed"}}
+    registry = {"runs": [{"id": "a", "title": "new title", "what_changed": "new", "git_ref": "e13a9a6"}]}
+    build.overlay_registry(run, registry)
+    assert run["run"] == {"id": "a", "title": "new title", "what_changed": "new", "git_ref": "e13a9a6"}
+
+
+def test_extract_carries_the_q_fit_that_evaluate_reports(small_run):
+    root, results, exp = small_run
+    data = extract.extract_run({"id": "tiny", "results_dir": "results/tiny"}, root=root,
+                               processed_dir=extract.ROOT / "data/processed")
+    (e,) = data["experiments"]
+    summary = json.loads((results / exp.name / "evaluation" / "summary.json").read_text())
+    for mine, theirs in zip(e["seeds"], summary["per_seed"]):
+        assert mine["q_spearman_all"] == pytest.approx(theirs["q_fit_all"]["spearman"])
+        assert mine["q_pearson_all"] == pytest.approx(theirs["q_fit_all"]["pearson"])
+        assert mine["q_top10_recall_all"] == theirs["q_fit_all"]["top_k_recall"]
+        assert mine["q_spearman_visited"] == pytest.approx(theirs["q_fit_visited"]["spearman"])
+        assert mine["optimism_bps"] == pytest.approx(theirs["optimism_of_learned_bps"])
+        assert mine["settled_obs"] == theirs["settled_observations"]
+        assert mine["near_obs_episode"] == theirs["near_optimal_every_episode_observations"]
+    assert e["summary"]["q_spearman_all"]["median"] == pytest.approx(summary["q_fit"]["all"]["spearman"]["median"])
+    assert data["schema_version"] == 3
+
+
+def test_every_registered_report_builds_from_committed_data(tmp_path):
+    """A broken registry or data.json fails here, not at report time (audit L6, F-L5).
+    Builds into a copy, then checks the committed report.html is current."""
+    import shutil
+    registry = extract.load_registry()
+    reports = tmp_path / "reports"
+    for entry in registry["runs"]:
+        (reports / entry["id"]).mkdir(parents=True)
+        shutil.copy(extract.REPORTS / entry["id"] / "data.json", reports / entry["id"] / "data.json")
+    for entry in registry["runs"]:
+        out = build.write_report(entry["id"], registry, reports_dir=reports)
+        committed = extract.REPORTS / entry["id"] / "report.html"
+        assert out.read_bytes() == committed.read_bytes(), f"{committed} is out of date; run src.reporting.build --all"
+
+
+def test_the_comparison_plot_refuses_more_grids_than_colours(tmp_path):
+    import numpy as np
+    from src import evaluate as ev
+    curves = {str(i): (np.arange(3.0), np.zeros(3), 1.0) for i in range(len(ev.RESOLUTION_COLORS) + 1)}
+    with pytest.raises(ValueError, match="at most"):
+        ev._plot_comparison(tmp_path / "x.png", curves, 25.0)
+    # compare_experiments refuses before reading or evaluating anything
+    with pytest.raises(ValueError, match="at most"):
+        ev.compare_experiments([tmp_path / "missing"] * 3, ["a", "b", "c"], None, tmp_path / "out")
+
+
+def test_every_text_writer_pins_lf_line_endings():
+    """Path.write_text without newline= writes CRLF on Windows, so a report or
+    summary rebuilt there no longer matches the committed LF bytes and
+    test_every_registered_report_builds_from_committed_data fails after a
+    fresh checkout (found 2026-11-09). A source check, so it fails on every
+    machine, the Mac included. The transaction-cost files are on hold
+    (AUDIT_2026-11-06.md) and exempt until the redesign."""
+    import ast
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1]
+    exempt = {"tc_sweep_report.py", "transaction_costs.py"}
+    missing = []
+    for path in sorted(src.rglob("*.py")):
+        if "tests" in path.parts or path.name in exempt:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "write_text"
+                    and not any(k.arg == "newline" for k in node.keywords)):
+                missing.append(f"{path.relative_to(src)}:{node.lineno}")
+    assert not missing, f"write_text without a newline argument: {missing}"
+
+
+def test_a_built_report_has_lf_line_endings(tmp_path):
+    import shutil
+    registry = extract.load_registry()
+    run_id = registry["runs"][0]["id"]
+    (tmp_path / run_id).mkdir()
+    shutil.copy(extract.REPORTS / run_id / "data.json", tmp_path / run_id / "data.json")
+    out = build.write_report(run_id, registry, reports_dir=tmp_path)
+    assert b"\r\n" not in out.read_bytes()

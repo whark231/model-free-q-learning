@@ -36,10 +36,13 @@
       "scale": "full",
       "pre_registered": false,
       "what_changed": "ε at halfway 1% -> 3% (β 7.08e-7 -> 5.39e-7) for all three γ on the 20% grid; everything else as baseline-v1. Chosen after the baseline results were seen (EXPERIMENTS.md §7.5).",
+      "compare_with": [
+        "baseline-v1"
+      ],
       "notes": {
         "tldr": [
-          "All three experiments trained 10 seeds each with ε falling to 3% at halfway instead of 1%, with no crashes. At γ = 5 the result is about the same as the baseline: mean learning gap 17.6 to 16.1 bps/yr, 4 of 10 seeds exactly best against 3, while training regret rose from 65.5 to 77.3 bps/yr per episode.",
-          "At γ = 3 it did better: 8 of 10 seeds exactly best against 5, mean gap 30.6 to 4.0 bps/yr, worst seed 81.1 to 20.0. At γ = 8 the gap was unchanged (median 5.7) and regret rose most, 77.0 to 99.2."
+          "All three experiments trained 10 seeds each with ε falling to 3% at halfway instead of 1%, with no crashes. At γ = 5 the result is about the same as the baseline: mean learning gap 17.6 to 16.1 bps/yr, 4 of 10 seeds exactly best against 3, while median training regret across seeds rose from 65.5 to 77.3 bps/yr per episode.",
+          "At γ = 3 it did better: 8 of 10 seeds exactly best against 5, mean gap 30.6 to 4.0 bps/yr, worst seed 81.1 to 20.0. At γ = 8 the gap was unchanged (median 5.7) and median regret rose most, 77.0 to 99.2."
         ],
         "takeaways": [
           "At γ = 5 and 8 this matches the expectation registered on 2026-10-27: gap and exact-best share unchanged within noise, regret higher (+11.8 bps/yr at γ = 5 against the +15 expected). γ = 3 improved more than expected; on 10 seeds, 8 of 10 against 5 of 10 is not a significant difference, so treat it as a possible effect, not a finding.",
@@ -51,6 +54,235 @@
           "Medians on 10 seeds move in discrete steps between the top few portfolios, so a median of 0.0 at γ = 3 means at least half the seeds found the best portfolio, not that the gap is gone."
         ]
       }
+    },
+    {
+      "id": "b63",
+      "title": "Longer episodes (B = 63)",
+      "date": "2026-10-28",
+      "results_dir": "results/b63",
+      "git_ref": "b63",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Episode length B = 20 -> 63 for all three γ on the 20% grid; everything else as baseline-v1. Chosen after the baseline results were seen (EXPERIMENTS.md §7.3).",
+      "compare_with": [
+        "baseline-v1"
+      ],
+      "notes": {
+        "tldr": [
+          "All three experiments trained 10 seeds each at B = 63 with no crashes. Longer episodes cut the learning gap at γ = 5: median 14.1 to 0.0 bps/yr, mean 17.6 to 5.1, and 6 of 10 seeds found the exact best portfolio against 3 of 10.",
+          "At γ = 3 and 8 the median gap and exact-best share did not change (10.0 and 5.7 bps/yr, 5 of 10), but the worst seed improved at every γ: 47.3 to 15.9 at γ = 5, 81.1 to 20.0 at γ = 3, 53.1 to 29.5 at γ = 8."
+        ],
+        "takeaways": [
+          "This matches the expectation registered on 2026-10-27 (smaller learning gap at every γ) on the mean and the worst seed. The γ = 5 jump in exact-best share is larger than expected but rests on 10 seeds, so treat it as within noise of the surrogate's prediction.",
+          "Median training regret per episode fell or held (γ = 5: 65.5 to 51.2 bps/yr), and the pre-registered rule was met earlier in episodes at every γ (γ = 5 median 9.25M to 6.90M episodes). Counted in simulated days it looks later (185M to 435M), because each episode now holds 63 days."
+        ],
+        "caveats": [
+          "Post hoc: B = 63 was chosen after the baseline results were seen. Report it as a sensitivity check, not as a replacement for baseline-v1.",
+          "Only B changed, so differences can be attributed to episode length. Seeds share the master seed with baseline-v1, so exploration draws match, but each episode draws 63 days instead of 20, so the return paths are not paired.",
+          "Medians on 10 seeds move in discrete steps between the top few portfolios (0, 10.5, 12.3, 15.9 bps/yr at γ = 5), so a median of 0.0 means at least half the seeds found the best portfolio, not that the gap is gone."
+        ]
+      }
+    },
+    {
+      "id": "all-three",
+      "title": "B = 63, 26M episodes and ε = 3% at halfway together",
+      "date": "2026-10-28",
+      "results_dir": "results/all-three",
+      "git_ref": "81814e6",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc run 4 (EXPERIMENTS.md §7.6). Episode length B = 20 -> 63, training episodes 13M -> 26M per seed (K 1.3M -> 2.6M), ε at halfway 1% -> 3% of the new budget, for all γ on the 20% grid; everything else as baseline-v1. Trained at commit 81814e6, whose src/train.py and src/agent.py differ from baseline-v1's training commit 80a6e9c in behaviour-equivalent ways.",
+      "compare_with": [
+        "baseline-v1"
+      ],
+      "notes": {
+        "tldr": [
+          "All 30 seeds finished with no errors. With 63-day episodes, twice the budget and slower ε decay together, the median learning gap against the best grid portfolio falls from 14.1 to 6.2 bps/yr at γ = 5, from 10.0 to 0.0 at γ = 3 and from 5.7 to 0.0 at γ = 8.",
+          "The agent ends on exactly the best grid portfolio in 5, 8 and 9 seeds of 10 at γ = 5, 3 and 8, against 3, 5 and 5 in baseline-v1."
+        ],
+        "takeaways": [
+          "The worst seed improves most: the largest learning gap drops from 47.3 to 29.4 (γ = 5), 81.1 to 20.0 (γ = 3) and 53.1 to 11.5 (γ = 8) bps/yr. At γ = 5 the five seeds that miss the best portfolio sit one 20% move away from it (four at 12.3, one at 29.4 bps/yr), so the top portfolios remain hard to tell apart there.",
+          "Three settings changed at once, so this run cannot say which one did the work. Runs b63, n26m and eps-decay each change one setting and are needed to split the improvement.",
+          "Mean training regret rose from 68.2 to 73.5 bps/yr at γ = 5 and from 80.8 to 90.5 at γ = 8, and fell from 77.8 to 67.7 at γ = 3 (medians rose at all three γ). The slower ε decay is the most likely cause of the rise, since B alone does not change the expected regret per episode, but this run cannot isolate it."
+        ],
+        "caveats": [
+          "Post hoc: designed after the baseline-v1 results were seen (EXPERIMENTS.md §7.6). The expected direction was written on 2026-10-27, before this run.",
+          "Every seed meets the pre-registered convergence rule (8 or 9 of 10 in baseline-v1), but K doubled to 2.6M episodes with the budget, so the shares are not directly comparable. Measured in episodes the median seed met the rule at 11.2M (γ = 5), 5.9M (γ = 3) and 8.2M (γ = 8), against 9.3M, 9.6M and 7.7M in the baseline; as a share of each run's budget that is 43%, 23% and 32%, against 71%, 74% and 59%.",
+          "The post-hoc 'settled' measure puts the median seed at 2.0M (γ = 5), 1.0M (γ = 3) and 1.0M (γ = 8) episodes, against 2.35M, 1.32M and 1.40M in the baseline. One γ = 8 seed settled late, at 10.9M episodes. Day counts in this report are simulated days (episodes × 63), so compare them with baseline-v1 in episodes or as a share of budget.",
+          "Seeds share master seed 20261016 with baseline-v1, but with B = 63 each seed's simulated returns differ entirely from the baseline's, so seed i here is not paired with seed i there.",
+          "Evaluation-sample statistics (sample mean, volatility, objective) use 10,000 episodes of length 63, so they differ from baseline-v1's even for the same portfolio. Learning and discretization gaps come from μ and Σ exactly and are comparable.",
+          "When these notes were written (2026-10-28) only baseline-v1 was registered on this branch; n26m had run on its own branch, and b63 and eps-decay had not run. No git tag was created. Training logs (run_*.npz, about 177 MB) stay on Albert's machine."
+        ]
+      }
+    },
+    {
+      "id": "n26m",
+      "title": "Double training budget (26M episodes)",
+      "date": "2026-10-28",
+      "results_dir": "results/n26m",
+      "git_ref": "81814e6",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Training episodes per seed 13M -> 26M for all γ on the 20% grid. ε still reaches 1% at halfway (β halves) and K stays 10% of the budget (2.6M). Every other setting as baseline-v1. src/train.py and src/agent.py changed in logging and speed only (behaviour-equivalent; see the diff 80a6e9c..81814e6). Settings and expected direction registered in EXPERIMENTS.md §7.4 on 2026-10-27, after the baseline results were seen.",
+      "compare_with": [
+        "baseline-v1"
+      ],
+      "notes": {
+        "tldr": [
+          "All 30 seeds (3 γ × 10) trained 26M episodes with no crashes, at 634 to 748 s per seed. Fewer seeds ended far from the best grid portfolio: 0, 1 and 1 seeds above 25 bps/yr at γ = 5, 3 and 8, against 3, 4 and 3 in baseline-v1. The largest learning gap fell from 47.3 to 15.9 bps/yr at γ = 5, 81.1 to 62.3 at γ = 3 and 53.1 to 27.2 at γ = 8.",
+          "Medians moved in both directions: 14.1 to 10.5 bps/yr at γ = 5, 5.7 to 0.0 at γ = 8, and 10.0 to 20.0 at γ = 3. Exactly-best shares were 30% at γ = 5 (unchanged), 40% at γ = 3 (was 50%) and 70% at γ = 8 (was 50%)."
+        ],
+        "takeaways": [
+          "Partly matches the direction written down before the run (EXPERIMENTS.md §7.4): the mean learning gap fell at every γ (17.6 to 8.3, 30.6 to 16.2, 13.0 to 5.0 bps/yr), but the median rose at γ = 3, and the exactly-best share rose only at γ = 8, against the expected small rise at every γ. These are 10 unpaired seeds per run, and no formal test is part of this report.",
+          "The extra budget does not separate the top few portfolios, which needs about 0.5M to 1.1M visits each depending on γ, against about 2,200 random tries per portfolio here.",
+          "Average training regret was lower than the expected 'about unchanged': means of 58.9, 64.3 and 72.4 bps/yr against 68.2, 77.8 and 80.8 at γ = 5, 3 and 8."
+        ],
+        "caveats": [
+          "Post hoc: the run was designed after the baseline results were seen. Report it as the Part VI training-budget robustness check.",
+          "Both runs use master seed 20261016, so seed r sees the same simulated returns for its first 13M episodes, but β differs and the agent's choices diverge within the first few thousand episodes. Seeds are compared as unpaired samples.",
+          "K doubles to 2.6M episodes, so the primary convergence rule is stricter in absolute terms than in baseline-v1. Its share (80%, 90%, 90%) is not directly comparable.",
+          "Code commit 81814e6 (run/n26m); no tag was created. The 30 training logs (run_*.npz, about 145 MB) stay on Albert's Mac."
+        ]
+      }
+    },
+    {
+      "id": "grid10-robustness",
+      "title": "10% grid at run all-three's settings",
+      "date": "2026-10-29",
+      "results_dir": "results/grid10-robustness",
+      "git_ref": "e13a9a6",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc run 5 (EXPERIMENTS.md §7.7), the Part VI action-space check. Grid 20% (1,287 portfolios) -> 10% (43,758) at run all-three's settings: B = 63, 26M episodes per seed (K = 2.6M), ε 3% at halfway, γ = 3, 5, 8, 10 seeds, master seed 20261016. Against all-three only the grid changes; against baseline-v1 four settings change. Trained at commit e13a9a6 (tag grid10-robustness), whose src/ is identical to 81814e6, the commit all-three trained at.",
+      "compare_with": [
+        "baseline-v1",
+        "eps-decay",
+        "b63",
+        "all-three",
+        "n26m"
+      ],
+      "notes": {
+        "tldr": [
+          "All 30 seeds (3 γ × 10) trained 26M episodes on the 10% grid (43,758 portfolios) with no crashes, at 2,677 to 3,075 s per seed, with the three γ run in parallel. The finer grid lowered the discretization gap only at γ = 5 (5.7 to 1.3 bps/yr); at γ = 3 and 8 the best portfolio is the same as on the 20% grid (2.5 and 6.1 bps/yr).",
+          "Against run all-three, which differs only in the grid, the mean learning gap rose at every γ: 7.9 to 11.7 bps/yr at γ = 5, 4.0 to 22.0 at γ = 3 and 1.1 to 5.8 at γ = 8. Seeds that found the exactly-best portfolio fell from 5, 8 and 9 of 10 to 0, 4 and 1. No seed met the pre-registered convergence rule, against 10 of 10 in all-three."
+        ],
+        "takeaways": [
+          "Total loss against the continuous optimum (discretization plus learning gap), seed by seed against all-three: at γ = 5 no detectable net change (mean 13.6 to 13.0 bps/yr, paired mean difference −0.6, SE 3.7; lower in 5 seeds, equal in 1, higher in 4). Worse at γ = 3 (mean 6.5 to 24.5, paired difference +18.0, SE 7.5; lower 1, equal 3, higher 6) and at γ = 8 (mean 7.3 to 11.9, paired difference +4.6, SE 1.6; lower 1, equal 1, higher 8). At this budget the 4.4 bps/yr the finer grid offers at γ = 5 does not show up in what the agent learns.",
+          "Matches the direction written down before the run (EXPERIMENTS.md §7.7) on the learning gap (larger at every γ), the discretization gap (exactly as computed) and convergence (fewer seeds meet the primary rule; here none). The expected exactly-best share near zero held at γ = 5 (0 of 10) and γ = 8 (1 of 10) but not at γ = 3 (4 of 10). γ = 3 has only 4 rivals within 25 bps/yr of the best, and its seeds split: four ended on the best portfolio and five ended more than 25 bps/yr away (final ranks 3, 8, 9, 12, 15 and 34 for the other six).",
+          "The grid's best portfolio was tried 81 to 4,114 times per seed at γ = 5 (median 116), close to the 85 random tries each portfolio gets from ε, while each seed's final portfolio was tried 19M to 22M times. Telling the top two apart at γ = 5 would take about 2.5M tries of each. Under greedy play with sample-average Q, a portfolio whose estimate starts low is rarely chosen again. This run did not test a larger budget on the 10% grid, so it cannot say how much more training would close the gap.",
+          "Every seed still ended within 25 bps/yr of the grid's best at γ = 5 and 8 (10 of 10), against 9 and 10 of 10 in all-three. At γ = 3, 5 of 10 ended above 25 bps/yr (worst 62.3), against none in all-three.",
+          "Training regret, median across seeds: 78.5, 93.7 and 88.6 bps/yr at γ = 5, 3 and 8, against 72.1, 64.2 and 88.5 in all-three. The median per-seed ratio is 1.05, 1.39 and 0.97, so regret rose at γ = 3, a little at γ = 5, and not at γ = 8."
+        ],
+        "caveats": [
+          "Post hoc: designed after the baseline-v1 results were seen; settings and expected direction registered 2026-10-27 (EXPERIMENTS.md §7.7), before this run. Report it as the Part VI action-space robustness check, against all-three.",
+          "This report's comparison section matches families on γ and grid, so it has no earlier entry for the 10% grid and does not line this run up against all-three. The paired grid comparisons are in results/grid10-robustness/comparison_g{3,5,8}_grid20_vs_grid10/, made with the command in EXPERIMENTS.md §7.7 (extended to γ = 3 and 8) from all-three's training logs.",
+          "Seed i here and seed i in all-three draw the same simulated returns (the returns stream does not depend on the actions), so the differences above are paired. They are 10 pairs per γ; the SEs are of the paired mean, and no formal test is part of this report.",
+          "The pre-registered rule needs the final greedy portfolio held for K = 2.6M episodes; 0 of 30 seeds met it. The greedy portfolio changed a median of 188k, 185k and 155k times per seed at γ = 5, 3 and 8, against about 2,500 to 3,000 in all-three. After settling, 99% or more of the excursions went to a portfolio more than 25 bps/yr from the best (median worst loss 281, 335 and 247 bps/yr): with about 85 tries each, some of the 43,758 noisy Q estimates sit above the leader by chance until a few hundred greedy plays pull them down. The post-hoc settled point (median 797M, 834M and 644M simulated days, about half the budget) always exists by construction.",
+          "The three γ trained in parallel as three processes into one results folder (seeds are deterministic, so results equal a sequential run); a final sequential pass reused all three and wrote the index. William's update() speed fix (REVIEW_NOTES_FOR_WILLIAM.md item 3) was not in; it changes speed only. Trained at commit e13a9a6 (local tag grid10-robustness, not pushed); its src/ is identical to 81814e6. Training logs (run_*.npz, about 12 GB) stay on Albert's Mac."
+        ]
+      }
+    },
+    {
+      "id": "tabular-const",
+      "title": "Tabular agent with a tuned constant learning rate",
+      "date": "2026-11-06",
+      "results_dir": "results/tabular-const",
+      "git_ref": "tabular-const",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc constant-learning-rate run (EXPERIMENTS.md §8.3), registered 2026-11-05 before running. Learning rate 1/N(a) -> constant α = 3.2e-4, tuned on separate seeds (master seed 20261103, results/tuning/fa_tuning.json); everything else as baseline-v1: B = 20, 13M episodes, ε 1% at halfway, 20% grid, γ = 3, 5, 8, 10 seeds, master seed 20261016. Trained at commit bc311a3 (tag tabular-const).",
+      "compare_with": [
+        "baseline-v1"
+      ],
+      "notes": {
+        "tldr": [
+          "All 30 seeds (3 γ × 10) trained 13M episodes with a constant learning rate α = 3.2e-4 in place of 1/N, with no crashes. The mean learning gap rose at every γ against baseline-v1: 17.6 to 43.5 bps/yr at γ = 5, 30.6 to 107.2 at γ = 3 and 13.0 to 43.3 at γ = 8.",
+          "2 of 30 seeds ended on the exactly-best grid portfolio (0, 2 and 0 of 10 at γ = 5, 3 and 8), against 3, 5 and 5 of 10 in baseline-v1. With a constant α and Q starting at 0, portfolios tried only during exploration end at about 0.3 of their true value, so the agent rarely revisits a rival once ε fades."
+        ],
+        "takeaways": [
+          "Paired by seed against baseline-v1, the mean learning-gap difference was +25.9 bps/yr (SE 11.5) at γ = 5, +76.6 (24.6) at γ = 3 and +30.2 (8.0) at γ = 8. One seed beat its baseline-v1 pair at γ = 5 and none at γ = 3 or 8.",
+          "Registered expectations (EXPERIMENTS.md §8.3). A larger mean learning gap than baseline-v1 at every γ: met. Fewer seeds meeting the primary convergence rule at every γ: not met at any γ (10, 8 and 10 of 10 at γ = 5, 3 and 8, against 9, 8 and 9).",
+          "Under a constant α the primary rule tracks stability and says little about accuracy. At γ = 5 all 10 seeds held their final portfolio for the last 1.3M episodes, none of them on the best portfolio, and the 10 seeds ended on 9 different portfolios. Measured: a portfolio updated N times holds about (1 − (1 − α)^N) of its true value; most are tried only during exploration, about 1,100 times, and end near 0.3 (run_000 slopes 0.291, 0.291 and 0.296 at γ = 5, 3 and 8), while the greedy portfolio sits at 0.69 to 1.14 of its value across the 30 seeds. Inferred, not tested: shrunken rivals cannot overtake the greedy portfolio once ε fades (EXPERIMENTS.md §8.7).",
+          "Seeds that stayed within 25 bps/yr of the best from some point on: 4, 2 and 1 of 10 at γ = 5, 3 and 8, against 7, 6 and 7 in baseline-v1.",
+          "Q-value fit over all 1,287 portfolios, median over seeds: Spearman 0.813, 0.703 and 0.917, top-10 recall 25%, 15% and 20% at γ = 5, 3 and 8. These mostly measure the shrinkage above. baseline-v1, re-evaluated on 2026-11-09, has 0.821, 0.710 and 0.920 and top-10 recall 35%, 20% and 20%, so tabular-const ranks the landscape slightly worse at every γ."
+        ],
+        "caveats": [
+          "Post hoc: designed after the baseline-v1 results were seen. α was tuned on separate seeds (master seed 20261103) at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.3). γ = 3 and 8 use the γ = 5 value untuned.",
+          "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
+          "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit and are shown in the report's results table (data.json re-extracted 2026-11-09).",
+          "Against baseline-v1 the report flags src/agent.py and src/train.py as changed training code. They really changed between baseline-v1's commit 80a6e9c and bc311a3, but not in tabular behaviour. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
+        ]
+      }
+    },
+    {
+      "id": "fa-quadratic",
+      "title": "Quadratic function approximation with a tuned constant learning rate",
+      "date": "2026-11-06",
+      "results_dir": "results/fa-quadratic",
+      "git_ref": "fa-quadratic",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Post-hoc function-approximation run (EXPERIMENTS.md §8.4), registered 2026-11-05 before running. The tabular Q-table is replaced by a linear Q-function on 45 quadratic features of the weights, the correctly specified reference model and never the discovery result. Constant α = 3.2e-4 and l2 = 0, tuned on separate seeds (master seed 20261103, results/tuning/fa_tuning.json); greedy portfolio refreshed every 100 updates. Everything else as tabular-const: B = 20, 13M episodes, ε 1% at halfway, 20% grid, γ = 3, 5, 8, 10 seeds, master seed 20261016. Trained at commit bc311a3 (tag fa-quadratic).",
+      "compare_with": [
+        "baseline-v1",
+        "tabular-const",
+        "fa-spline"
+      ],
+      "notes": {
+        "tldr": [
+          "All 30 seeds trained 13M episodes with a linear Q-function on the 45 quadratic features (α = 3.2e-4, l2 = 0), the correctly specified reference model. Against tabular-const, which shares α, seeds and settings, the mean learning gap fell at γ = 5 (43.5 to 22.6 bps/yr) and γ = 3 (107.2 to 8.0) and rose at γ = 8 (43.3 to 58.7).",
+          "The ranking of the whole Q-value landscape improved at every γ (median Spearman 0.915, 0.854 and 0.951 against 0.813, 0.703 and 0.917), but the top pick did not follow at γ = 8: all 10 seeds missed the best portfolio there, by 55.7 or 70.8 bps/yr."
+        ],
+        "takeaways": [
+          "Paired by seed against tabular-const, the mean learning-gap difference was −20.9 bps/yr (SE 9.8) at γ = 5, −99.2 (23.7) at γ = 3 and +15.4 (6.5) at γ = 8. Against baseline-v1 (tabular, α = 1/N): +5.0 (5.2), −22.6 (12.8) and +45.7 (5.6).",
+          "Registered expectations (EXPERIMENTS.md §8.4), against tabular-const at every γ. Smaller mean learning gap: met at γ = 5 and 3, not at γ = 8. Higher median Spearman correlation: met at all three. Higher median top-10 recall: met at γ = 5 (55% against 25%) and γ = 3 (80% against 15%), tied at γ = 8 (20% and 20%). The expectation holds at γ = 5 and 3 and fails at γ = 8.",
+          "Each γ's 10 seeds ended on only 2 portfolios. At γ = 3, 6 seeds ended on the best portfolio and all 10 stayed within 25 bps/yr from some point on, yet none held one portfolio through the last 1.3M episodes: the greedy choice kept switching between two near-tied portfolios. Primary convergence rule: 2, 0 and 9 of 10 at γ = 5, 3 and 8.",
+          "At γ = 8 the best grid portfolio holds 40% SPY, 40% IEF and 20% GLD. Every fa-quadratic and fa-spline seed and 6 of 10 tabular-const seeds hold 20% SPY, against 1 of 10 in baseline-v1; fa-quadratic picks the same portfolio on 8 of 10 seeds. Suspected cause, not tested: uniform exploration totals about 1.41M episodes, too few for 36 of the 45 quadratic directions to move far from θ = 0, so the fit is biased the same way in every seed (EXPERIMENTS.md §8.7)."
+        ],
+        "caveats": [
+          "Post hoc, and the reference model only: it is told the reward is quadratic in the weights, so it is never the discovery result (that is fa-spline). α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.4).",
+          "Besides the features, one mechanical difference from tabular-const remains: the FA agent refreshes its greedy portfolio every 100 updates, tabular-const every episode. Both break ties at random when acting.",
+          "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
+          "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit and are shown in the report's results table (data.json re-extracted 2026-11-09).",
+          "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const nothing is flagged; both trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
+        ]
+      }
+    },
+    {
+      "id": "fa-spline",
+      "title": "Spline function approximation",
+      "date": "2026-11-06",
+      "results_dir": "results/fa-spline",
+      "git_ref": "bc311a3",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Additive and pairwise cubic B-splines with alpha = 7.11e-6, l2 = 0 and greedy refresh every 100 updates. The 20% grid, 20-day blocks and baseline exploration schedule are shared with tabular-const.",
+      "notes": {
+        "tldr": [
+          "Thirty full-budget seeds across γ = 5, 3 and 8, paired with tabular-const on simulated returns."
+        ],
+        "takeaways": [
+          "γ = 5. Median learning gap was 5.3 bps/yr (range 0.0–78.5), versus 42.0 for tabular-const and 14.1 for baseline-v1. The paired mean difference versus tabular-const was -27.8 bps/yr (SE 11.9). 5/10 seeds found the best portfolio, 10/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.950 and 45%.",
+          "γ = 3. Median learning gap was 62.3 bps/yr (range 0.0–68.3), versus 102.6 for tabular-const and 10.0 for baseline-v1. The paired mean difference versus tabular-const was -61.8 bps/yr (SE 24.2). 3/10 seeds found the best portfolio, 10/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.945 and 65%.",
+          "γ = 8. Median learning gap was 51.6 bps/yr (range 50.0–61.2), versus 51.5 for tabular-const and 5.7 for baseline-v1. The paired mean difference versus tabular-const was +11.4 bps/yr (SE 5.1). 0/10 seeds found the best portfolio, 9/10 met the primary convergence rule, and median Spearman correlation and top-10 recall were 0.957 and 20%.",
+          "Against baseline-v1, the paired mean learning-gap differences (spline minus baseline) were −1.8 bp/yr (SE 9.5), +14.8 (17.3) and +41.6 (6.0) at γ = 5, 3 and 8. The γ = 5 median improved, with a much smaller paired mean change.",
+          "Median Spearman correlation / top-10 recall versus baseline-v1 and tabular-const: γ = 5: baseline-v1 0.821 / 35%; tabular-const 0.813 / 25%; γ = 3: baseline-v1 0.710 / 20%; tabular-const 0.703 / 15%; γ = 8: baseline-v1 0.920 / 20%; tabular-const 0.917 / 20%.",
+          "Registered expectation (EXPERIMENTS.md §8.5): a lower median Spearman correlation and top-10 recall over all portfolios than fa-quadratic at every γ. Not met. Spearman was higher at every γ (0.950, 0.945 and 0.957 against 0.915, 0.854 and 0.951). Top-10 recall was lower at γ = 5 (45% against 55%) and γ = 3 (65% against 80%) and tied at γ = 8 (20%). No direction was registered for the learning gap.",
+          "Paired by seed against fa-quadratic, the mean learning-gap difference was −6.9 bps/yr (SE 8.3) at γ = 5, +37.4 (10.2) at γ = 3 and −4.1 (2.0) at γ = 8."
+        ],
+        "caveats": [
+          "Spline and tabular-const use separately tuned learning rates, so this comparison combines changes in features and learning rate.",
+          "Post hoc. α was tuned on separate seeds at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.5). The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed: with α = 7.11e-6 and ‖φ‖² at most 45, one update moves a value by at most about 3.2e-4 times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
+          "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const and fa-quadratic nothing is flagged; all three trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
+        ]
+      },
+      "compare_with": [
+        "baseline-v1",
+        "tabular-const",
+        "fa-quadratic"
+      ]
     }
   ]
 }

@@ -1,7 +1,11 @@
 # Review History
 
 **Covers:** every closed review item and settled decision between Albert and
-William, 2026-09-29 to 2026-10-26. Moved here from
+William, 2026-09-29 to 2026-10-28 (§8 was added 2026-10-28). Later work is
+recorded elsewhere: `grid10-robustness` in `EXPERIMENTS.md` §7.7, the FA
+extension and its tuning in `FA_INTEGRATION_NOTES.md` and `EXPERIMENTS.md` §8,
+the transaction-cost extension in `TRANSACTION_COSTS.md`, and the 2026-11-06
+audit in `AUDIT_2026-11-06.md`. Moved here from
 `REVIEW_NOTES_FOR_WILLIAM.md` on 2026-10-26 so that file can list only open
 work. Section numbers §1 to §6 are unchanged from the original, because code
 comments in `src/config.py` and `src/tests/test_agent.py` cite them.
@@ -14,8 +18,9 @@ This is the paper trail. It records what was found in William's files and how
 each issue was fixed (§1), how the Q-learning core was split between us (§2),
 how γ, B and the convergence rule were decided and why (§3, §6), and the
 follow-up ideas we tested after the full run and rejected (§7). Nothing in
-here is waiting on anyone, except the two items marked as reopened, which are
-tracked in `REVIEW_NOTES_FOR_WILLIAM.md`.
+here is waiting on anyone, except the one item marked as reopened (§5.3, the
+tabular `update()` return value), which is tracked in
+`REVIEW_NOTES_FOR_WILLIAM.md`.
 
 **Key concepts to understand**
 
@@ -377,3 +382,86 @@ The surrogate script is not committed; it lived in William's session
 scratchpad. If the report cites this table, commit the script first
 (CLAUDE.md §6).
 
+
+---
+
+## 8. Post-hoc runs b63, n26m, eps-decay and all-three, 2026-10-28
+
+All four ran at full scale (3 γ × 10 seeds each, 20% grid), were extracted
+and reported under `reports/<run_id>/`, and are merged into `dev`. Each was
+registered with its expected direction on 2026-10-27, before it ran
+(`EXPERIMENTS.md` §7). Numbers below are from each experiment's
+`evaluation/summary.json`; learning gap in bps/yr against the best 20%-grid
+portfolio, 10 seeds.
+
+| Run | What changed | Mean gap γ = 5 / 3 / 8 | Worst seed γ = 5 / 3 / 8 | Exactly best γ = 5 / 3 / 8 | Regret per episode γ = 5 (bps/yr) |
+|---|---|---|---|---|---|
+| `baseline-v1` | (pre-registered) | 17.6 / 30.6 / 13.0 | 47.3 / 81.1 / 53.1 | 3 / 5 / 5 | 65.5 |
+| `b63` | B 20 → 63 | 5.1 / 10.0 / 9.1 | 15.9 / 20.0 / 29.5 | 6 / 5 / 5 | 51.2 |
+| `n26m` | 13M → 26M episodes | 8.3 / 16.2 / 5.0 | 15.9 / 62.3 / 27.2 | 3 / 4 / 7 | 60.9 |
+| `eps-decay` | ε at halfway 1% → 3% | 16.1 / 4.0 / 11.6 | 37.2 / 20.0 / 51.6 | 4 / 8 / 5 | 77.3 |
+| `all-three` | all three together | 7.9 / 4.0 / 1.1 | 29.4 / 20.0 / 11.5 | 5 / 8 / 9 | 72.1 |
+
+What closed with these runs:
+
+- **The B proposal** (`REVIEW_NOTES_FOR_WILLIAM.md`, 2026-10-26) became run
+  `b63`. B = 252 was not run. The 10% grid runs at `all-three`'s settings
+  (Albert's choice, 2026-10-27, `EXPERIMENTS.md` §7.7) rather than at B = 20
+  as William proposed; agreed, since it is compared with `all-three`.
+- **The slower-decay idea** was dropped by William on 2026-10-26 (§7.2) and run
+  anyway by Albert as `eps-decay`. The run agrees with the surrogate at γ = 5
+  and 8 (gap unchanged within noise, regret up) and did better than expected
+  at γ = 3.
+- **Rebuilding reports** (`NEXT_STEPS_FOR_ALBERT.md`, 2026-10-26) is solved by
+  `src/reporting/` (`reports/README.md`): each run is extracted once and every
+  report compares with the runs registered before it.
+
+What the runs show, for the report:
+
+- Every variant lowered the mean learning gap and the worst seed at every γ
+  (12 of 12 comparisons each). Medians and exact-best shares did not all
+  improve: `n26m` at γ = 3 went from a median of 10.0 to 20.0 and from 5 to 4
+  exactly best. With 10 seeds, part of the mean improvement is the baseline's
+  single bad seeds (81.1 bps at γ = 3, 53.1 at γ = 8) not recurring.
+- Longer episodes were the cheapest gain: `b63` cut the γ = 5 mean gap from
+  17.6 to 5.1 with lower regret. More exploration (`eps-decay`, `all-three`)
+  raised regret at γ = 5 and 8.
+- Measured in simulated days every variant takes longer to meet the
+  convergence rules, because each sees more data. Measured in episodes,
+  `b63` is faster than the baseline (γ = 5 primary rule 9.25M → 6.90M
+  episodes; near-optimal for good 1.29M → 0.70M), while `n26m` and
+  `eps-decay` are slower (near-optimal about 2.9M episodes), since a longer
+  budget or slower decay keeps ε high for longer.
+- Against the registered expectations: `b63` matched (smaller gap at every
+  γ). `n26m` expected a slight improvement likely within noise; the mean gap
+  fell at every γ, but the median and exact-best share got worse at γ = 3.
+  `eps-decay` matched at γ = 5 and 8. `all-three` expected the smallest gap of
+  runs 1 to 4 at every γ; it was smallest at γ = 8, tied at γ = 3 and behind
+  `b63` at γ = 5.
+
+## 9. Audit follow-ups closed 2026-11-09
+
+**TL;DR / In plain terms:** after the 2026-11-06 audit and Albert's 2026-11-09 flow audit (`AUDIT_2026-11-06.md`), Albert fixed his items on `dev` and William closed the ones Albert left for him. No reported number changed. Transaction-cost items stay open until the TC redesign is decided.
+
+**Key concepts to understand**
+
+- **Re-evaluating versus re-training.** A re-evaluation reads the saved training logs (`run_*.npz`) and recomputes every summary with today's `evaluate.py`. It cannot change what the agent learned, only add measures; that is why each was checked field by field against the committed summaries.
+- **Hash-seed stability.** Python randomizes string hashing per process, so iterating over a `set` of names can give a different order each run. A file written in that order changes on every rewrite even when its content is the same.
+
+**Key takeaways**
+
+- Every run's report now shows Q fit, so the FA expectations can be checked in the reports as well as in `summary.json`.
+- What stays open is TC (on hold), the final-report text (H4, M12) and merging `dev` into `main`.
+
+Albert's items, on `dev` (details in `AUDIT_2026-11-06.md` §2.1 and §8.3): H3, M1 (except `tc_sweep_report.py`), M2 to M5, M10, L2, L4, L5, L6 and the flow-audit items F-H1, F-M2, F-M4 to F-M10, F-L1 to F-L11 (except F-L10, report text) and F-L14, F-L15.
+
+William's items, on `feature/william-audit-fixes` (details in `AUDIT_2026-11-06.md` §2.2):
+
+| Item | Fix | Check |
+|---|---|---|
+| Failing test `test_tune_fa.py::test_a_clear_winner_is_decided_on_three_seeds` | The zero standard error is compared with `pytest.approx(0.0, abs=1e-12)` | numpy 2.3.5 gives 5e-15, numpy 2.2.6 exactly 0 |
+| L1, grid increment | `generate_weight_grid` raises unless 1/increment is a whole number | 14 tests; the old code built 165 portfolios for 0.3 |
+| L3, `requirements.txt` | Stale test count removed; unused `jupyter`, `seaborn`, `tqdm` dropped | Every remaining pin is imported |
+| F-L12, FA part | `tune_fa.summarize` sorts candidates; `fa_tuning.json` regenerated | Byte-identical across hash seeds; same content as before |
+| L8, F-M3 | `b63`, `eps-decay`, `tabular-const`, `fa-quadratic` re-evaluated at `3322e03`, re-extracted, reports rebuilt | No value changed; Q fit added |
+| F-M11 | Prospectus status brought up to date | Read |

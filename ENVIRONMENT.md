@@ -1,7 +1,7 @@
 # Part I: The Simulated Market
 
-**Owner:** Albert · **Status:** built and tested on `feature/environment`, awaiting William's review
-**Code:** `src/environment.py` · **Tests:** `src/tests/test_environment.py` (69 tests)
+**Owner:** Albert · **Status:** done; reviewed by William and merged; used by every run since 2026-10-22
+**Code:** `src/environment.py` · **Tests:** `src/tests/test_environment.py` (73 tests on 2026-11-06)
 **Date:** 2026-10-02, numpy 2.3.5, pandas 2.3.3
 
 ---
@@ -66,7 +66,7 @@ eval_sim = ReturnSimulator(mu, sigma, plan.evaluation_rng())  # identical for ev
 | Object | Used by | Purpose |
 |---|---|---|
 | `load_calibration()` | runner, benchmarks, tests | μ and Σ as arrays, ticker order checked |
-| `simulate_returns(mu, sigma, n_days, rng)` | runner, tests | The interface in `NEXT_STEPS_FOR_ALBERT.md` |
+| `simulate_returns(mu, sigma, n_days, rng)` | runner, tests | The original hand-off interface (2026-09-29) |
 | `ReturnSimulator(mu, sigma, rng)` | the agent, and evaluation | Hands out returns only; counts simulated days and episodes |
 | `SeedPlan(master_seed, n_runs)` | `train.py`, `evaluate.py` | Every random stream, plus a JSON record for the results |
 
@@ -137,11 +137,15 @@ Enforced by tests:
 
 - The simulator's public surface is pinned to five names (two sampling methods,
   two counters and the asset count). Nothing public exposes μ or Σ.
-- A source scan of `src/agent.py` fails on imports of `src.benchmarks`,
-  `src.data.clean`, `load_calibration` or `simulate_returns`, and on any path
-  into `data/` or any processed CSV name. Twelve test cases prove the scan
-  catches each route, because `agent.py` is a placeholder today and the guard
-  would otherwise pass vacuously.
+- A source scan of the agent modules (`src/agent.py`, and since the FA work
+  `src/features.py` and `src/fa_agent.py`) fails on imports of
+  `src.benchmarks`, `src.data.clean`, `load_calibration` or
+  `simulate_returns`, and on any path into `data/` or any processed CSV name.
+  Twelve test cases prove the scan catches each route. They were written when
+  `agent.py` was still a placeholder, so the guard could not pass vacuously.
+  The transaction-cost module `src/transaction_costs.py` is not scanned: it
+  loads μ and Σ by design for its oracle, so its training loop's isolation
+  rests on code review (`AUDIT_2026-11-06.md`).
 - An import-graph check imports `src.agent` in a fresh interpreter and fails if
   the benchmarks or the cleaning code got loaded by any route, including a
   helper module that imports them on the agent's behalf.
@@ -253,7 +257,7 @@ with probability about 6e-7 per statistic, and below 1e-4 across the suite.
 
 - **Agent (William and Albert, paired).**
   - The agent takes a `ReturnSimulator` and an `agent_rng`, never μ or Σ (§2.4).
-  - Episode length B is still to be chosen, and must be at least 2.
+  - Episode length B = 20 (decided 2026-10-16; `EXPERIMENTS.md`). It must be at least 2.
 - **`train.py`.**
   - Builds the `SeedPlan`.
   - Records a run manifest. `as_dict()` alone cannot reproduce a run, because `clean.py` can rewrite `data/processed/`. The manifest should hold:
@@ -263,15 +267,15 @@ with probability about 6e-7 per statistic, and below 1e-4 across the suite.
     - B and the episode count
     - the simulator class
   - Takes the Part IV observation count from the training loop (episodes used × B). With block sampling, `days_simulated` counts days drawn in advance, which can exceed the days used.
-  - The master seed and the number of runs are still open (prospectus §6).
+  - Master seed 20261016 and 10 runs per experiment (decided 2026-10-16).
 - **For William (flagged, not changed).**
-  - `episodic_mean_variance_reward` still returns NaN for a one-day batch when called directly. The simulator refuses such episodes.
+  - `episodic_mean_variance_reward` now raises `ValueError` for a one-day batch (it used to return NaN). The simulator also refuses such episodes. The comment in `src/environment.py` was updated to match on 2026-11-09 (audit L2).
   - Training speed: per 20-day episode, the reward call takes 7.6 µs against 3.8 µs for the draw. The agent's choice in episode k depends on the reward in episode k−1, so rewards cannot be computed for a whole block at once. Each episode's mean vector m and covariance matrix S can be, though, and then the reward is w'm − (γ/2)w'Sw. That identity is exact (checked with `rewards.py`).
 - **Part VI and bonus.**
   - Calibration windows need a helper that estimates μ and Σ from a date range of `excess_returns.csv`. Re-running `clean.py` would overwrite the baseline.
   - The three-asset comparison can reuse the nine-asset draws by taking columns SPY, IEF and GLD (positions 0, 3 and 6), which gives it exactly the same random numbers.
   - A transaction-cost layer that tracks weight drift needs total returns (excess plus the risk-free rate), not excess returns alone.
-- **Prospectus.** Row 2 ("Ground-truth environment") can move to done after William's review.
+- **Prospectus.** Row 2 ("Ground-truth environment") is marked done.
 
 ---
 

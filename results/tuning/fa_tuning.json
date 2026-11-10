@@ -1,0 +1,854 @@
+{
+  "note": "post hoc; tuning seeds only (master seed 20261103); criterion is the realized reward of each seed's final greedy portfolio on fresh evaluation draws, averaged over seeds; no closed-form objective or benchmark is computed. shortfall_seed_se_bps is the paired standard error over training seeds and decides close calls; shortfall_eval_se_bps covers evaluation draws only. Close-call rule: if the runner-up is within one seed SE, the top 3 are compared on seeds 0-5",
+  "n_episodes": 13000000,
+  "git_commits": [
+    "530cd91796db5e19ccb7b7488c0ccfe2d2055f21",
+    "945a55e250446a708f2a487137514e0946a2db4f-dirty"
+  ],
+  "n_eval_episodes": 200000,
+  "n_seeds": 3,
+  "incomplete": [],
+  "diverged": [],
+  "extra_seeds_needed": {},
+  "chosen": {
+    "tabular": {
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 0.00032,
+      "id": "tabular_f0.00016",
+      "close_call": false,
+      "base_best": "tabular_f0.00016",
+      "decided_on_seeds": 3,
+      "tied_with": []
+    },
+    "quadratic": {
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 0.00032,
+      "id": "quadratic_f0.00016",
+      "close_call": false,
+      "base_best": "quadratic_f0.00016",
+      "decided_on_seeds": 3,
+      "tied_with": []
+    },
+    "spline": {
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 7.111111111111112e-06,
+      "id": "spline_f0.00016",
+      "close_call": true,
+      "base_best": "spline_f0.00016_l20.0001",
+      "decided_on_seeds": 6,
+      "tied_with": []
+    }
+  },
+  "candidates": {
+    "quadratic_f0.00016": {
+      "model": "quadratic",
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 0.00032,
+      "criterion_daily": 0.00020128603594993035,
+      "criterion_bps": 507.2408105938245,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        511.61789216773445,
+        498.48664744600455
+      ],
+      "final_actions": [
+        1247,
+        1247,
+        1131
+      ],
+      "minutes_per_seed": 22.123683299444384,
+      "shortfall_to_model_best_bps": 0.0,
+      "shortfall_seed_se_bps": 0.0,
+      "shortfall_eval_se_bps": 0.0,
+      "seeds_at_least_as_good": 3
+    },
+    "quadratic_f0.0008": {
+      "model": "quadratic",
+      "fraction": 0.0008,
+      "l2": 0.0,
+      "alpha": 0.0016,
+      "criterion_daily": 0.00019778524061820255,
+      "criterion_bps": 498.4188063578704,
+      "per_seed_reward_bps": [
+        487.38517293577377,
+        481.6243691193558,
+        526.2468770184817
+      ],
+      "final_actions": [
+        1174,
+        1165,
+        1162
+      ],
+      "minutes_per_seed": 21.799202662777518,
+      "shortfall_to_model_best_bps": 8.822004235954099,
+      "shortfall_seed_se_bps": 18.36656008405728,
+      "shortfall_eval_se_bps": 4.000287719915069,
+      "seeds_at_least_as_good": 1
+    },
+    "quadratic_f0.004": {
+      "model": "quadratic",
+      "fraction": 0.004,
+      "l2": 0.0,
+      "alpha": 0.008,
+      "criterion_daily": 0.00015637525890083642,
+      "criterion_bps": 394.0656524301078,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        394.0656524301078,
+        394.0656524301078
+      ],
+      "final_actions": [
+        890,
+        890,
+        890
+      ],
+      "minutes_per_seed": 21.291099895000098,
+      "shortfall_to_model_best_bps": 113.1751581637167,
+      "shortfall_seed_se_bps": 4.377081573909966,
+      "shortfall_eval_se_bps": 6.967677468680912,
+      "seeds_at_least_as_good": 0
+    },
+    "quadratic_f0.02": {
+      "model": "quadratic",
+      "fraction": 0.02,
+      "l2": 0.0,
+      "alpha": 0.04,
+      "criterion_daily": 0.00015637525890083642,
+      "criterion_bps": 394.0656524301078,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        394.0656524301078,
+        394.0656524301078
+      ],
+      "final_actions": [
+        890,
+        890,
+        890
+      ],
+      "minutes_per_seed": 22.161586991110944,
+      "shortfall_to_model_best_bps": 113.1751581637167,
+      "shortfall_seed_se_bps": 4.377081573909966,
+      "shortfall_eval_se_bps": 6.967677468680912,
+      "seeds_at_least_as_good": 0
+    },
+    "quadratic_f0.1": {
+      "model": "quadratic",
+      "fraction": 0.1,
+      "l2": 0.0,
+      "alpha": 0.2,
+      "criterion_daily": 0.0001279454941789863,
+      "criterion_bps": 322.4226453310455,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        304.80701538086305,
+        268.39526818216564
+      ],
+      "final_actions": [
+        890,
+        175,
+        1050
+      ],
+      "minutes_per_seed": 23.051795754445223,
+      "shortfall_to_model_best_bps": 184.818165262779,
+      "shortfall_seed_se_bps": 34.29783278605966,
+      "shortfall_eval_se_bps": 6.778318294448584,
+      "seeds_at_least_as_good": 0
+    },
+    "quadratic_f0.5": {
+      "model": "quadratic",
+      "fraction": 0.5,
+      "l2": 0.0,
+      "alpha": 1.0,
+      "criterion_daily": 0.00011945921420957016,
+      "criterion_bps": 301.03721980811684,
+      "per_seed_reward_bps": [
+        240.65073881207704,
+        268.39526818216564,
+        394.0656524301078
+      ],
+      "final_actions": [
+        76,
+        1050,
+        890
+      ],
+      "minutes_per_seed": 22.34971159444475,
+      "shortfall_to_model_best_bps": 206.20359078570763,
+      "shortfall_seed_se_bps": 51.51767440637071,
+      "shortfall_eval_se_bps": 6.19998970087372,
+      "seeds_at_least_as_good": 0
+    },
+    "quadratic_f3.2e-05": {
+      "model": "quadratic",
+      "fraction": 3.2e-05,
+      "l2": 0.0,
+      "alpha": 6.4e-05,
+      "criterion_daily": 0.00019781216168492243,
+      "criterion_bps": 498.48664744600455,
+      "per_seed_reward_bps": [
+        498.48664744600455,
+        498.48664744600455,
+        498.48664744600455
+      ],
+      "final_actions": [
+        1131,
+        1131,
+        1131
+      ],
+      "minutes_per_seed": 15.931318957777695,
+      "shortfall_to_model_best_bps": 8.754163147819925,
+      "shortfall_seed_se_bps": 4.377081573909966,
+      "shortfall_eval_se_bps": 2.7328550730758816,
+      "seeds_at_least_as_good": 1
+    },
+    "quadratic_f6.4e-06": {
+      "model": "quadratic",
+      "fraction": 6.4e-06,
+      "l2": 0.0,
+      "alpha": 1.28e-05,
+      "criterion_daily": 5.523537324489229e-05,
+      "criterion_bps": 139.1931405771286,
+      "per_seed_reward_bps": [
+        139.1931405771286,
+        139.1931405771286,
+        139.1931405771286
+      ],
+      "final_actions": [
+        1286,
+        1286,
+        1286
+      ],
+      "minutes_per_seed": 13.239341551666278,
+      "shortfall_to_model_best_bps": 368.0476700166959,
+      "shortfall_seed_se_bps": 4.377081573909966,
+      "shortfall_eval_se_bps": 9.569776522130422,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f0.00016": {
+      "model": "spline",
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 7.111111111111112e-06,
+      "criterion_daily": 0.00020758331133854013,
+      "criterion_bps": 523.1099445731212,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1137
+      ],
+      "minutes_per_seed": 16.67115666111155,
+      "shortfall_to_model_best_bps": 3.1369324453604697,
+      "shortfall_seed_se_bps": 3.1369324453604577,
+      "shortfall_eval_se_bps": 0.23974378239031588,
+      "seeds_at_least_as_good": 2,
+      "extended": {
+        "criterion_daily": 0.00020758331133854013,
+        "criterion_bps": 523.1099445731212,
+        "per_seed_reward_bps": [
+          526.2468770184817,
+          526.2468770184817,
+          516.8360796824003,
+          526.2468770184817,
+          526.2468770184817,
+          516.8360796824003
+        ],
+        "shortfall_to_model_best_bps": 0.0,
+        "shortfall_seed_se_bps": 0.0,
+        "shortfall_eval_se_bps": 0.0,
+        "seeds_at_least_as_good": 6
+      }
+    },
+    "spline_f0.00016_l20.0001": {
+      "model": "spline",
+      "fraction": 0.00016,
+      "l2": 0.0001,
+      "alpha": 7.111111111111112e-06,
+      "criterion_daily": 0.00020882812580098477,
+      "criterion_bps": 526.2468770184817,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        526.2468770184817
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1162
+      ],
+      "minutes_per_seed": 17.949328105555875,
+      "shortfall_to_model_best_bps": 0.0,
+      "shortfall_seed_se_bps": 0.0,
+      "shortfall_eval_se_bps": 0.0,
+      "seeds_at_least_as_good": 3,
+      "extended": {
+        "criterion_daily": 0.00020587690173358227,
+        "criterion_bps": 518.8097923686273,
+        "per_seed_reward_bps": [
+          526.2468770184817,
+          526.2468770184817,
+          526.2468770184817,
+          526.2468770184817,
+          526.2468770184817,
+          481.6243691193558
+        ],
+        "shortfall_to_model_best_bps": 4.300152204493879,
+        "shortfall_seed_se_bps": 6.370452138285363,
+        "shortfall_eval_se_bps": 0.5236663160736258,
+        "seeds_at_least_as_good": 5
+      }
+    },
+    "spline_f0.00016_l20.001": {
+      "model": "spline",
+      "fraction": 0.00016,
+      "l2": 0.001,
+      "alpha": 7.111111111111112e-06,
+      "criterion_daily": 0.00020758331133854013,
+      "criterion_bps": 523.1099445731212,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1137
+      ],
+      "minutes_per_seed": 17.84820895666748,
+      "shortfall_to_model_best_bps": 3.1369324453604697,
+      "shortfall_seed_se_bps": 3.1369324453604577,
+      "shortfall_eval_se_bps": 0.23974378239031588,
+      "seeds_at_least_as_good": 2
+    },
+    "spline_f0.00016_l20.01": {
+      "model": "spline",
+      "fraction": 0.00016,
+      "l2": 0.01,
+      "alpha": 7.111111111111112e-06,
+      "criterion_daily": 0.00020758331133854013,
+      "criterion_bps": 523.1099445731212,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1137
+      ],
+      "minutes_per_seed": 17.723069769444148,
+      "shortfall_to_model_best_bps": 3.1369324453604697,
+      "shortfall_seed_se_bps": 3.1369324453604577,
+      "shortfall_eval_se_bps": 0.23974378239031588,
+      "seeds_at_least_as_good": 2
+    },
+    "spline_f0.00016_l21e-05": {
+      "model": "spline",
+      "fraction": 0.00016,
+      "l2": 1e-05,
+      "alpha": 7.111111111111112e-06,
+      "criterion_daily": 0.00020758331133854013,
+      "criterion_bps": 523.1099445731212,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1137
+      ],
+      "minutes_per_seed": 17.966214429444197,
+      "shortfall_to_model_best_bps": 3.1369324453604697,
+      "shortfall_seed_se_bps": 3.1369324453604577,
+      "shortfall_eval_se_bps": 0.23974378239031588,
+      "seeds_at_least_as_good": 2,
+      "extended": {
+        "criterion_daily": 0.00020463208727113767,
+        "criterion_bps": 515.6728599232669,
+        "per_seed_reward_bps": [
+          526.2468770184817,
+          526.2468770184817,
+          516.8360796824003,
+          526.2468770184817,
+          516.8360796824003,
+          481.6243691193558
+        ],
+        "shortfall_to_model_best_bps": 7.43708464985428,
+        "shortfall_seed_se_bps": 5.763581926608442,
+        "shortfall_eval_se_bps": 0.47232006846798,
+        "seeds_at_least_as_good": 4
+      }
+    },
+    "spline_f0.0008": {
+      "model": "spline",
+      "fraction": 0.0008,
+      "l2": 0.0,
+      "alpha": 3.555555555555556e-05,
+      "criterion_daily": 0.00016407038701498532,
+      "criterion_bps": 413.457375277763,
+      "per_seed_reward_bps": [
+        390.6149375078258,
+        469.7378150330629,
+        380.0193732924003
+      ],
+      "final_actions": [
+        901,
+        1150,
+        886
+      ],
+      "minutes_per_seed": 16.478375874999134,
+      "shortfall_to_model_best_bps": 112.78950174071862,
+      "shortfall_seed_se_bps": 28.30596179575518,
+      "shortfall_eval_se_bps": 3.596140339522555,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f0.004": {
+      "model": "spline",
+      "fraction": 0.004,
+      "l2": 0.0,
+      "alpha": 0.00017777777777777779,
+      "criterion_daily": 0.0001517745171067804,
+      "criterion_bps": 382.4717831090867,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        394.0656524301078,
+        359.28404446704445
+      ],
+      "final_actions": [
+        890,
+        890,
+        1030
+      ],
+      "minutes_per_seed": 16.09908798166693,
+      "shortfall_to_model_best_bps": 143.77509390939494,
+      "shortfall_seed_se_bps": 11.593869321021108,
+      "shortfall_eval_se_bps": 3.6277722769262337,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f0.02": {
+      "model": "spline",
+      "fraction": 0.02,
+      "l2": 0.0,
+      "alpha": 0.0008888888888888889,
+      "criterion_daily": 8.113840971537664e-05,
+      "criterion_bps": 204.46879248274917,
+      "per_seed_reward_bps": [
+        223.86314242048206,
+        107.61907423712756,
+        281.9241607906378
+      ],
+      "final_actions": [
+        179,
+        222,
+        560
+      ],
+      "minutes_per_seed": 16.117159647222273,
+      "shortfall_to_model_best_bps": 321.77808453573243,
+      "shortfall_seed_se_bps": 51.243443179711974,
+      "shortfall_eval_se_bps": 6.290016379962129,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f0.1": {
+      "model": "spline",
+      "fraction": 0.1,
+      "l2": 0.0,
+      "alpha": 0.0044444444444444444,
+      "criterion_daily": 0.00012867858554340794,
+      "criterion_bps": 324.270035569388,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        188.31362528435687,
+        390.43082899369944
+      ],
+      "final_actions": [
+        890,
+        223,
+        845
+      ],
+      "minutes_per_seed": 16.37002545277808,
+      "shortfall_to_model_best_bps": 201.9768414490936,
+      "shortfall_seed_se_bps": 67.986302808108,
+      "shortfall_eval_se_bps": 5.188566538194211,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f0.5": {
+      "model": "spline",
+      "fraction": 0.5,
+      "l2": 0.0,
+      "alpha": 0.022222222222222223,
+      "criterion_daily": 0.0001019271481057684,
+      "criterion_bps": 256.85641322653635,
+      "per_seed_reward_bps": [
+        127.9117707602054,
+        248.5918164892959,
+        394.0656524301078
+      ],
+      "final_actions": [
+        348,
+        166,
+        890
+      ],
+      "minutes_per_seed": 15.635439531111237,
+      "shortfall_to_model_best_bps": 269.39046379194525,
+      "shortfall_seed_se_bps": 76.94305221268303,
+      "shortfall_eval_se_bps": 4.339625564219802,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f3.2e-05": {
+      "model": "spline",
+      "fraction": 3.2e-05,
+      "l2": 0.0,
+      "alpha": 1.4222222222222221e-06,
+      "criterion_daily": 0.0001768304627548456,
+      "criterion_bps": 445.61276614221094,
+      "per_seed_reward_bps": [
+        446.6758931475184,
+        446.6758931475184,
+        443.486512131596
+      ],
+      "final_actions": [
+        887,
+        887,
+        842
+      ],
+      "minutes_per_seed": 16.386941356110363,
+      "shortfall_to_model_best_bps": 80.63411087627067,
+      "shortfall_seed_se_bps": 1.0631270053074786,
+      "shortfall_eval_se_bps": 3.0121638948190035,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f6.4e-06": {
+      "model": "spline",
+      "fraction": 6.4e-06,
+      "l2": 0.0,
+      "alpha": 2.8444444444444443e-07,
+      "criterion_daily": 0.00020404236741043076,
+      "criterion_bps": 514.1867658742855,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        514.1063257727217,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1247,
+        1147,
+        1137
+      ],
+      "minutes_per_seed": 14.021173744999881,
+      "shortfall_to_model_best_bps": 12.060111144196169,
+      "shortfall_seed_se_bps": 1.5068978279905907,
+      "shortfall_eval_se_bps": 1.533420928378418,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f6.4e-06_l20.0001": {
+      "model": "spline",
+      "fraction": 6.4e-06,
+      "l2": 0.0001,
+      "alpha": 2.8444444444444443e-07,
+      "criterion_daily": 0.00020404236741043076,
+      "criterion_bps": 514.1867658742855,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        514.1063257727217,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1247,
+        1147,
+        1137
+      ],
+      "minutes_per_seed": 17.63884275944438,
+      "shortfall_to_model_best_bps": 12.060111144196169,
+      "shortfall_seed_se_bps": 1.5068978279905907,
+      "shortfall_eval_se_bps": 1.533420928378418,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f6.4e-06_l20.001": {
+      "model": "spline",
+      "fraction": 6.4e-06,
+      "l2": 0.001,
+      "alpha": 2.8444444444444443e-07,
+      "criterion_daily": 0.00020404236741043076,
+      "criterion_bps": 514.1867658742855,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        514.1063257727217,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1247,
+        1147,
+        1137
+      ],
+      "minutes_per_seed": 17.863319998889025,
+      "shortfall_to_model_best_bps": 12.060111144196169,
+      "shortfall_seed_se_bps": 1.5068978279905907,
+      "shortfall_eval_se_bps": 1.533420928378418,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f6.4e-06_l20.01": {
+      "model": "spline",
+      "fraction": 6.4e-06,
+      "l2": 0.01,
+      "alpha": 2.8444444444444443e-07,
+      "criterion_daily": 0.00020404236741043076,
+      "criterion_bps": 514.1867658742855,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        514.1063257727217,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1247,
+        1147,
+        1137
+      ],
+      "minutes_per_seed": 18.444623239444464,
+      "shortfall_to_model_best_bps": 12.060111144196169,
+      "shortfall_seed_se_bps": 1.5068978279905907,
+      "shortfall_eval_se_bps": 1.533420928378418,
+      "seeds_at_least_as_good": 0
+    },
+    "spline_f6.4e-06_l21e-05": {
+      "model": "spline",
+      "fraction": 6.4e-06,
+      "l2": 1e-05,
+      "alpha": 2.8444444444444443e-07,
+      "criterion_daily": 0.00020404236741043076,
+      "criterion_bps": 514.1867658742855,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        514.1063257727217,
+        516.8360796824003
+      ],
+      "final_actions": [
+        1247,
+        1147,
+        1137
+      ],
+      "minutes_per_seed": 17.688532068333327,
+      "shortfall_to_model_best_bps": 12.060111144196169,
+      "shortfall_seed_se_bps": 1.5068978279905907,
+      "shortfall_eval_se_bps": 1.533420928378418,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_1overN": {
+      "model": "tabular",
+      "fraction": null,
+      "l2": 0.0,
+      "alpha": "sample_average",
+      "criterion_daily": 0.00020722223277905885,
+      "criterion_bps": 522.2000266032283,
+      "per_seed_reward_bps": [
+        526.2468770184817,
+        526.2468770184817,
+        514.1063257727217
+      ],
+      "final_actions": [
+        1162,
+        1162,
+        1147
+      ],
+      "minutes_per_seed": 36.81665441055536,
+      "shortfall_to_model_best_bps": -48.088249558572855,
+      "shortfall_seed_se_bps": 28.445755235182183,
+      "shortfall_eval_se_bps": 2.573608371336387,
+      "seeds_at_least_as_good": 3
+    },
+    "tabular_f0.00016": {
+      "model": "tabular",
+      "fraction": 0.00016,
+      "l2": 0.0,
+      "alpha": 0.00032,
+      "criterion_daily": 0.00018813959406533946,
+      "criterion_bps": 474.1117770446554,
+      "per_seed_reward_bps": [
+        511.61789216773445,
+        421.5812702448646,
+        489.13616872136714
+      ],
+      "final_actions": [
+        1247,
+        815,
+        1259
+      ],
+      "minutes_per_seed": 30.59340912388806,
+      "shortfall_to_model_best_bps": 0.0,
+      "shortfall_seed_se_bps": 0.0,
+      "shortfall_eval_se_bps": 0.0,
+      "seeds_at_least_as_good": 3
+    },
+    "tabular_f0.0008": {
+      "model": "tabular",
+      "fraction": 0.0008,
+      "l2": 0.0,
+      "alpha": 0.0016,
+      "criterion_daily": 0.00016185357703128213,
+      "criterion_bps": 407.871014118831,
+      "per_seed_reward_bps": [
+        394.0656524301078,
+        440.56954056288504,
+        388.97784936350024
+      ],
+      "final_actions": [
+        890,
+        877,
+        905
+      ],
+      "minutes_per_seed": 30.272190275556124,
+      "shortfall_to_model_best_bps": 66.24076292582438,
+      "shortfall_seed_se_bps": 42.909315994333376,
+      "shortfall_eval_se_bps": 5.953239203252304,
+      "seeds_at_least_as_good": 1
+    },
+    "tabular_f0.004": {
+      "model": "tabular",
+      "fraction": 0.004,
+      "l2": 0.0,
+      "alpha": 0.008,
+      "criterion_daily": 0.0001389400685436291,
+      "criterion_bps": 350.12897272994536,
+      "per_seed_reward_bps": [
+        390.43082899369944,
+        272.6962289306146,
+        387.25986026552204
+      ],
+      "final_actions": [
+        845,
+        906,
+        880
+      ],
+      "minutes_per_seed": 29.868107315000252,
+      "shortfall_to_model_best_bps": 123.98280431471005,
+      "shortfall_seed_se_bps": 13.642059566312627,
+      "shortfall_eval_se_bps": 6.6335463069667515,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_f0.02": {
+      "model": "tabular",
+      "fraction": 0.02,
+      "l2": 0.0,
+      "alpha": 0.04,
+      "criterion_daily": 0.00010812410274329886,
+      "criterion_bps": 272.4727389131132,
+      "per_seed_reward_bps": [
+        270.76422450893045,
+        273.9577632997944,
+        272.6962289306146
+      ],
+      "final_actions": [
+        915,
+        846,
+        906
+      ],
+      "minutes_per_seed": 30.424702675000297,
+      "shortfall_to_model_best_bps": 201.63903813154224,
+      "shortfall_seed_se_bps": 27.912158247624934,
+      "shortfall_eval_se_bps": 7.895914966189194,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_f0.1": {
+      "model": "tabular",
+      "fraction": 0.1,
+      "l2": 0.0,
+      "alpha": 0.2,
+      "criterion_daily": 8.386242813061666e-05,
+      "criterion_bps": 211.333318889154,
+      "per_seed_reward_bps": [
+        90.53950322791684,
+        270.76422450893045,
+        272.6962289306146
+      ],
+      "final_actions": [
+        157,
+        915,
+        906
+      ],
+      "minutes_per_seed": 30.428547883333845,
+      "shortfall_to_model_best_bps": 262.7784581555014,
+      "shortfall_seed_se_bps": 81.38538386543362,
+      "shortfall_eval_se_bps": 8.388703259386993,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_f0.5": {
+      "model": "tabular",
+      "fraction": 0.5,
+      "l2": 0.0,
+      "alpha": 1.0,
+      "criterion_daily": 0.00010317932017053422,
+      "criterion_bps": 260.01188682974623,
+      "per_seed_reward_bps": [
+        174.65540386941905,
+        381.4464352273934,
+        223.9338213924263
+      ],
+      "final_actions": [
+        580,
+        825,
+        228
+      ],
+      "minutes_per_seed": 32.296567197222934,
+      "shortfall_to_model_best_bps": 214.09989021490915,
+      "shortfall_seed_se_bps": 89.41524810376183,
+      "shortfall_eval_se_bps": 7.534267350373231,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_f3.2e-05": {
+      "model": "tabular",
+      "fraction": 3.2e-05,
+      "l2": 0.0,
+      "alpha": 6.4e-05,
+      "criterion_daily": 0.00015338777681798505,
+      "criterion_bps": 386.53719758132235,
+      "per_seed_reward_bps": [
+        372.48713778137346,
+        353.9996422491097,
+        433.12481271348395
+      ],
+      "final_actions": [
+        1011,
+        1218,
+        836
+      ],
+      "minutes_per_seed": 30.336434599444164,
+      "shortfall_to_model_best_bps": 87.57457946333307,
+      "shortfall_seed_se_bps": 25.993570858892046,
+      "shortfall_eval_se_bps": 3.212353784388899,
+      "seeds_at_least_as_good": 0
+    },
+    "tabular_f6.4e-06": {
+      "model": "tabular",
+      "fraction": 6.4e-06,
+      "l2": 0.0,
+      "alpha": 1.28e-05,
+      "criterion_daily": 0.00013960680973109556,
+      "criterion_bps": 351.8091605223608,
+      "per_seed_reward_bps": [
+        372.48713778137346,
+        353.9996422491097,
+        328.9407015365993
+      ],
+      "final_actions": [
+        1011,
+        1218,
+        1186
+      ],
+      "minutes_per_seed": 33.902075167778335,
+      "shortfall_to_model_best_bps": 122.30261652229458,
+      "shortfall_seed_se_bps": 28.028083953486764,
+      "shortfall_eval_se_bps": 1.9642153468190717,
+      "seeds_at_least_as_good": 0
+    }
+  }
+}

@@ -23,7 +23,6 @@ Run from the repo root:
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -33,8 +32,13 @@ from src.action_space.grid import generate_weight_grid
 from src.benchmarks.mean_variance import constrained_optimal_weights
 from src.data.universe import TICKERS
 from src.environment import PROCESSED_DIR, load_calibration
+import subprocess
+import warnings
+from functools import lru_cache
+
+from src.hashing import digest_variants, matches
 from src.evaluate import (exact_stats, first_for_good, first_greedy_stable, full_windows, greedy_stable_through_end,
-                          objective)
+                          near_optimal_every_episode, objective, q_fit, settled_from)
 from src.train import grid_fingerprint
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -42,7 +46,52 @@ REPORTS = ROOT / "reports"
 REGISTRY = REPORTS / "registry.json"
 BPS = 252 * 1e4            # daily objective difference -> bps per year
 MAX_POINTS = 650           # time-series points kept per curve (binned beyond this)
-SCHEMA_VERSION = 2   # 2: cross-seed medians computed before binning
+SCHEMA_VERSION = 3   # 2: cross-seed medians computed before binning; 3: Q-value fit per seed (audit M5)
+
+
+@lru_cache(maxsize=None)
+def committed_bytes(commit: str, path: str) -> bytes | None:
+    """A file's contents at a commit, or None when git or the commit is unavailable."""
+    try:
+        return subprocess.run(["git", "show", f"{commit}:{path}"], capture_output=True, check=True, cwd=ROOT).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+@lru_cache(maxsize=None)
+def _git_missing_warning(commit: str) -> None:
+    """Warn once per commit, and only when git or the commit itself is unavailable
+    (a file absent at a present commit is not a git problem)."""
+    try:
+        subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], capture_output=True, check=True, cwd=ROOT)
+        return
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    warnings.warn(f"git could not read commit {commit}; stored file digests are compared as they are, so files "
+                  "hashed with Windows line endings may show as changed (audit F-M5)", stacklevel=3)
+
+
+def canonical_digest(digest: str, path: str, commit: str | None) -> str:
+    """The line-ending-normalized digest a stored digest stands for.
+
+    Manifests written on Windows before 2026-11-09 hashed CRLF bytes, so the
+    same file has a different digest there than on the Mac (AUDIT_2026-11-06.md
+    M2). When the file at the run's commit, with either line ending, gives the
+    stored digest, the LF digest is returned; otherwise the digest is kept as is
+    and any real difference still shows. Extraction stores the result, so a
+    report can be built without git (F-M5)."""
+    if not commit:
+        return digest
+    commit = commit.removesuffix("-dirty")
+    data = committed_bytes(commit, path)
+    if data is None:
+        _git_missing_warning(commit)
+        return digest
+    return digest_variants(data).get(digest, digest)
+
+
+def canonical_digests(stored: dict, prefix: str, commit: str | None) -> dict:
+    return {name: canonical_digest(d, prefix + name, commit) for name, d in stored.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -72,13 +121,6 @@ def tries_to_separate(sd_best: float, gap_daily: float) -> float:
     return float(8 * sd_best ** 2 / gap_daily ** 2)
 
 
-def settled_from(ckpt_episode: np.ndarray, ckpt_greedy: np.ndarray, final: int) -> int:
-    """First checkpoint from which the final action is greedy at every later
-    checkpoint. Post-hoc and descriptive (RUN_ISSUES_2026-10-22.md Finding 1)."""
-    bad = np.flatnonzero(ckpt_greedy != final)
-    return int(ckpt_episode[bad[-1] + 1]) if bad.size else int(ckpt_episode[0])
-
-
 def excursions(ch_ep, ch_act, final: int, after: int, n_episodes: int, loss_by_action) -> list[tuple[int, int, float]]:
     """Distinct excursions after episode `after`: maximal stretches during which
     the greedy action is not the final one. Returns (start, length, worst loss)."""
@@ -99,16 +141,6 @@ def excursions(ch_ep, ch_act, final: int, after: int, n_episodes: int, loss_by_a
     return out
 
 
-def near_optimal_every_episode(ch_ep, ch_act, loss_by_action, threshold: float):
-    """First episode after which every greedy action, brief switches included,
-    stays within `threshold` bps/yr of the best. None if never."""
-    over = np.flatnonzero(np.asarray(loss_by_action)[ch_act] > threshold)
-    if over.size == 0:
-        return int(ch_ep[0])
-    i = over[-1]
-    return int(ch_ep[i + 1]) if i + 1 < len(ch_ep) else None
-
-
 def bin_series(x: np.ndarray, ys: dict[str, np.ndarray], how: dict[str, str], max_points: int = MAX_POINTS):
     """Shorten aligned series to at most max_points by grouping consecutive
     points. `how` per series: 'max' keeps spikes (loss), 'mean' averages,
@@ -124,10 +156,6 @@ def bin_series(x: np.ndarray, ys: dict[str, np.ndarray], how: dict[str, str], ma
         f = {"max": np.max, "mean": np.mean, "last": lambda a: a[-1]}[how[k]]
         out[k] = np.array([f(v[a:b]) for a, b in zip(edges[:-1], edges[1:])])
     return xb, out
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _median(values):
@@ -149,9 +177,9 @@ def _spread(values) -> dict:
 
 def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.ndarray,
                        processed_dir: Path, keep_seed_series: bool = True) -> dict:
-    manifest = json.loads((exp_dir / "manifest.json").read_text())
+    manifest = json.loads((exp_dir / "manifest.json").read_text(encoding="utf-8"))
     for name, digest in manifest["calibration_sha256"].items():
-        if _sha256(processed_dir / name) != digest:
+        if not matches(processed_dir / name, digest):  # either line ending (src/hashing.py)
             raise ValueError(
                 f"{exp_dir.name}: {name} differs from the calibration this experiment was trained on. "
                 "Point --processed-dir at the calibration it used (for example a calibration-window run)."
@@ -191,18 +219,20 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         final = int(np.argmax(d["final_q"]))
         w = grid[final]
         settle = settled_from(ep, greedy, final)
-        exc = excursions(ch_ep, ch_act, final, settle, n_ep, loss)
+        exc = excursions(ch_ep, ch_act, final, settle, n_ep, loss) if settle is not None else []
         half_exc = [e for e in exc if e[0] > n_ep // 2]
         window = np.diff(np.concatenate([[0], ep]))
         regret_avg = np.cumsum(counts @ (u_best - u)) / ep * BPS
         reward = d["checkpoint_mean_reward"]
         reward_ma = np.array([reward[max(0, i - 4): i + 1].mean() for i in range(reward.size)])
         stable_at, _ = first_greedy_stable(ch_ep, ch_act, n_ep, k)
-        through_end = greedy_stable_through_end(ch_ep, n_ep, k)
+        through_end = greedy_stable_through_end(ch_ep, n_ep, k) if ch_act[-1] == final else None
         dq_at = first_for_good(ep, d["checkpoint_max_abs_dq"] < dq_tol, full_windows(ep, cfg["log_every"]))
         near_ck = first_for_good(ep, loss[greedy] <= near)
         near_ev = near_optimal_every_episode(ch_ep, ch_act, loss, near)
         stats = exact_stats(w, mu, sigma, gamma)
+        visited = d["final_visit_counts"] > 0
+        fit_all, fit_visited = q_fit(d["final_q"], u), q_fit(d["final_q"][visited], u[visited])
         obs = lambda e: None if e is None else int(e) * B
         seed = {
             "run": r,
@@ -231,6 +261,13 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
             "near_obs_ckpt": obs(near_ck),
             "near_obs_episode": obs(near_ev),
             "seconds": entry.get("seconds"),
+            # Q-value fit (evaluate.q_fit): learned Q against U(w) of every portfolio, and of those tried.
+            "q_pearson_all": fit_all["pearson"],
+            "q_spearman_all": fit_all["spearman"],
+            "q_top10_recall_all": fit_all["top_k_recall"],
+            "q_spearman_visited": fit_visited["spearman"],
+            "q_top10_recall_visited": fit_visited["top_k_recall"],
+            "optimism_bps": float((d["final_q"][final] - u[final]) * BPS),
         }
         if ep_grid is None:
             ep_grid = ep
@@ -266,6 +303,9 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         "epsilon_final": float(cfg["epsilon0"] * np.exp(-cfg["beta"] * n_ep)),
         "random_tries_per_portfolio": float(cfg["epsilon0"] * (1 - np.exp(-cfg["beta"] * n_ep)) / cfg["beta"] / grid.shape[0]),
         "alpha_rule": cfg["alpha_rule"], "q_init": cfg["q_init"], "discount": cfg["discount"],
+        # Agent fields: tabular manifests leave them out (train.config_record).
+        "agent": cfg.get("agent", "tabular"), "feature_map": cfg.get("feature_map"),
+        "l2": cfg.get("l2", 0.0), "greedy_refresh_every": cfg.get("greedy_refresh_every", 1),
         "log_every": cfg["log_every"], "convergence_k": k, "near_optimal_bps": near, "dq_tol": dq_tol,
         "n_eval_episodes": settings.get("n_eval_episodes"),
     }
@@ -286,6 +326,11 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
         "regret_avg": _spread([s["regret_avg_bps"] for s in seeds]),
         "within_near_of_best": sum(s["loss_best"] <= near for s in seeds),
         "seconds_per_seed": _median([s["seconds"] for s in seeds]),
+        "q_spearman_all": _spread([s["q_spearman_all"] for s in seeds]),
+        "q_top10_recall_all": _spread([s["q_top10_recall_all"] for s in seeds]),
+        "q_spearman_visited": _spread([s["q_spearman_visited"] for s in seeds]),
+        "q_top10_recall_visited": _spread([s["q_top10_recall_visited"] for s in seeds]),
+        "optimism": _spread([s["optimism_bps"] for s in seeds]),
     }
     return {
         "name": exp_dir.name,
@@ -313,8 +358,9 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
             "share_median": np.round(medb["share_median"], 4).tolist(),
         },
         "code": {"git_commit": manifest.get("git_commit"), "numpy": manifest.get("seed_plan", {}).get("numpy_version"),
-                 "code_sha256": manifest.get("code_sha256", {})},
-        "calibration_sha256": manifest["calibration_sha256"],
+                 "code_sha256": canonical_digests(manifest.get("code_sha256", {}), "", manifest.get("git_commit"))},
+        "calibration_sha256": canonical_digests(manifest["calibration_sha256"], "data/processed/",
+                                                manifest.get("git_commit")),
     }
 
 
@@ -383,7 +429,7 @@ def main() -> None:
     data = extract_run(entry, processed_dir=args.processed_dir)
     out = REPORTS / args.run_id / "data.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+    out.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8", newline="\n")
     print(f"wrote {out.relative_to(ROOT)} ({out.stat().st_size / 1e6:.2f} MB, {len(data['experiments'])} experiments)")
 
 

@@ -1,47 +1,57 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-10-26
-**Status:** the Q-learning core is done and the full-scale run is committed. What's left on your side is the list below. Everything closed so far (review issues, decisions, rejected ideas) is in `REVIEW_HISTORY.md`.
+**Date:** 2026-11-09
+**Status:** open items only. Closed items are in `REVIEW_HISTORY.md` and `AUDIT_2026-11-06.md` §2.
 
 ---
 
 ## TL;DR / In plain terms
 
-Your files are done and every review issue in them is closed. Next come four things: finish the review swap, make one speed fix the 10% grid needs, build the two extensions, and write your report sections. One proposal needs Albert's agreement before anything runs: longer episodes (a higher B).
+What is left is decisions and writing. The transaction-cost agent scores like a random portfolio even with free trading, so the TC extension needs a design decision before any more TC runs; then pick the final runs and write the report, including the FA expectations that failed.
+
+**Key concepts to understand**
+
+- **Shrinkage under a constant α.** With α constant and Q starting at 0, a portfolio updated N times holds about (1 − (1 − α)^N) of its true value. Portfolios tried only during exploration (about 1,100 times) end at about 0.3 of their value, measured at 0.29 to 0.30 in `tabular-const`'s logs. The inferred consequence (not tested by a counterfactual run) is that the greedy portfolio can then never be overtaken, which would explain why `tabular-const` "converged" in 28 of 30 seeds while finding the best portfolio in 2.
+- **Unfinished FA directions.** Uniform exploration lasts about 1/β ≈ 1.41M episodes, not the 13M our §8.4 estimate assumed. At that count 36 of the 45 quadratic directions and 351 of the 369 spline directions barely move from θ = 0. This is the suspected cause of the γ = 8 miss (every FA seed holds 20% SPY where the best portfolio holds 40%); it is not tested yet.
+
+**Key takeaways**
+
+- `baseline-v1` stays the headline for Parts IV and V.
+- For the FA section: both FA models beat `tabular-const` at γ = 5 and 3 (paired −20.9 ± 9.8 and −99.2 ± 23.7 bps/yr for the quadratic) and rank the landscape better at every γ on Spearman, but neither beats `baseline-v1` reliably. `fa-spline` ranked the landscape better than the correctly specified quadratic, against our prediction. No "discovery" claim.
 
 ---
 
-## What's done
+## Still open
 
-| Component | Where | Evidence |
+| Item | What | Waits on |
 |---|---|---|
-| Benchmarks, grid, reward | `src/benchmarks/`, `src/action_space/`, `src/rewards.py` | 60 tests; review issues 1 to 5 and A to C closed (`REVIEW_HISTORY.md` §1) |
-| Agent, including the `epsilon` property and `greedy_action` note | `src/agent.py` | 24 tests; `train.py` now logs `agent.epsilon`, bit-identical logs checked on 2 seeds × 30,000 episodes |
-| γ justification | `DATA_CLEANING.md` §8.4 | Sources listed there |
-| `.gitignore` for results sharing, keeping the run log | `.gitignore` | Checked with `git check-ignore` |
-| Full-scale run, 2026-10-22 | `results/` | `RUN_ISSUES_2026-10-22.md`; every number re-derived |
-
-247 tests pass.
+| PR into `dev` | `feature/william-audit-fixes` is pushed; open a PR into `dev` | William |
+| F-M1 | Merge `dev` into `main` (GitHub's default branch, about 50 commits behind) through one PR | William and Albert agreeing |
+| H4, M12, F-L10 | Report text: the failed FA expectations, the tuning disclosure, caveats on weights where no seed converged | The report draft |
+| F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B) | Low priority; or say it in the report |
+| L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
+| F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
+| TC | H1, H2, M7 to M9, M11, plus F-L12 and Albert's M1 print fix (`sys.stdout.reconfigure`) for `tc_sweep_report.py` | The TC redesign |
 
 ## Your next steps
 
-1. **Review swap.** Review `train.py`, still open from the split. Then review Albert's evaluation PR for `RUN_ISSUES` Findings 1 to 3 when he opens it. He reviews the `train.py` change from the `epsilon` property.
-2. **Q-table copy fix, now needed** (`REVIEW_HISTORY.md` §5.3). The 10% grid is the Part VI action-space check, and the runner costs 91 µs per episode there vs. 51.6 µs for the bare loop (3.3 hours for 10 seeds of 13M). *Correction 2026-10-27:* the full Q-table copy is only about 6 µs of that gap; `train.py`'s own per-episode `np.argmax` over 43,758 entries is about 36 µs (timed on Albert's Mac). Your half: `update()` returns the new Q(action). Albert's half: `train.py` keeps its own copy and updates one entry.
-   *Update 2026-10-27 (Albert):* Albert's half is in `src/train.py` (merged from `run/grid10-robustness`). It uses the returned value when there is one, falls back to the full copy when `update()` returns `None` (today's behaviour), and checks its copy against `agent.q_values` at every checkpoint. A test shows bit-identical logs from `TabularQAgent` and from a subclass whose `update()` returns the value. Your half, proposed and not applied (`src/agent.py` is yours): end `update()` with `return float(self._q[action])`, change its return annotation to `float`, and add a test that the returned value equals `q_values[action]`. It saves about 6 µs of roughly 96 µs per episode, so post-hoc run `grid10-robustness` takes about 20 to 22 hours with it and 21 to 23 without (`EXPERIMENTS.md` §7.7). Low priority; the larger saving is in `train.py`'s greedy logging, Albert's side.
-3. **Extensions: transaction costs and function approximation.** Transaction costs are paired with Albert, Week 7 (starts Oct 30). Function approximation is yours, Week 8 (starts Nov 6). For the write-up: a Q-function quadratic in the weights can represent the mean-variance objective exactly, so say plainly that it learns from rewards only and never sees μ or Σ.
-4. **Your report sections** (prospectus §4): Theory/Benchmark and Q-learning. `REVIEW_HISTORY.md` §7.1 explains why exact recovery fails, which is the core of the Q-learning results.
+1. **Open a PR from `feature/william-audit-fixes` into `dev`.** Run the full suite first; Albert's `test_every_registered_report_builds_from_committed_data` fails on a broken registry or a stale report.
+2. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.
+3. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. The strongest FA candidate is FA on the 10% grid (C1), where tabular struggled most; a γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
+   - A run trained from the new branch will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
+4. **Write the FA section** using `EXPERIMENTS.md` §8.7, including the failed expectations, the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
+5. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; speeds up 10% grid tabular runs only, so it matters if C1 includes a tabular 10% comparison.
+6. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α versus 1/N discussion), and the FA extension.
 
 ## To decide with Albert
 
-**Increase B as an extra episode-length check.** The assignment lists "different training budgets, episode lengths, and random seeds" as a Part VI robustness check. Longer episodes make each reward less noisy for every portfolio at once, and they cost little: B = 63 was 43.8 µs per episode vs. 38.2 µs at B = 20 (+15%) for 3.15 times the simulated days. Simulator estimates on the baseline, 100 seeds each (`REVIEW_HISTORY.md` §7.2):
+**TC redesign** (step 2 above).
 
-| B | Exactly best | Mean learning gap (bps/yr) |
-|---|---|---|
-| 20 (current) | 44% | 9.3 |
-| 63 (a quarter) | 44% | 7.6 |
-| 252 (a year) | 68% | 3.7 |
+**Final runs.** `AUDIT_2026-11-06.md` §6. A TC option first, then C1 to C3, P1 and P2 as time allows.
 
-Proposal: run B = 63 and B = 252 at γ = 5 on the 20% grid with the same seeds and 13M episodes, and keep B = 20 as the headline. Because this comes after seeing results, write each run and its expected direction (smaller learning gap) into `src/config.py` and `EXPERIMENTS.md` before running, and label it post-hoc in the report. Note in the report that a 252-day batch stretches the assignment's "short batch of returns". Run the 10% grid at B = 20 so it changes one thing from the baseline.
+**Merging `dev` into `main`** (F-M1).
 
-Both runs need Albert's code first. B is global in `src/config.py` and locked in the results folder's `batch_settings`, so each experiment needs its own B and its own `--results-dir`.
+**`all-three`'s comparison set** (L7).
+
+**Which post-hoc runs go in the report.** `grid10-robustness` is the action-space check and γ = 3 and 8 the economic check. `b63` and `n26m` cover "different training budgets, episode lengths". `eps-decay` stays short, as mostly a negative result. `all-three` is the combined check `grid10-robustness` is compared against. The three constant-α runs go in the FA extension and in the Part III learning-rate discussion.
