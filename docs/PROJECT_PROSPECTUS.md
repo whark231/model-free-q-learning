@@ -2,7 +2,7 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** living plan, updated 2026-11-09. The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). Still open: H4, M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set) and F-L13 (a tag on Albert's Mac). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC decision, choosing the final runs, and the report.
+**Status:** living plan, updated 2026-11-10. The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). H4 closed 2026-11-10 (`AUDIT_2026-11-06.md` §2.3). Still open: M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set) and F-L13 (a tag on Albert's Mac). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC decision, choosing the final runs, and the report.
 
 ---
 

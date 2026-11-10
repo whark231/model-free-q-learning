@@ -51,6 +51,10 @@ All documentation or data, no code:
 - **Merged:** `feature/william-audit-fixes` into `dev` (PR #27), then `dev` into `main` (PR #28, F-M1), both on 2026-11-09.
 - **Docs moved into `docs/`** on 2026-11-09 (`docs/README.md` is the index). Contents unchanged; only the location tables in `README.md` and `CLAUDE.md` were updated. Pull before editing any doc.
 
+## From William, 2026-11-10
+
+H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-quadratic`, `fa-spline`) is written up in `AUDIT_2026-11-06.md` §2.3 with its settings, the five registered checks, the two wrong reasons and what the report can claim. Every number was re-checked against the committed summaries and matches `EXPERIMENTS.md` §8.7, so nothing in your files changes.
+
 ## Your next steps
 
 **Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: pushing or deleting the local `grid10-robustness` tag (F-L13), and caveating post-convergence weights in the report text (F-L10).

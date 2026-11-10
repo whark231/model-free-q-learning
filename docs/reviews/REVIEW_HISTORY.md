@@ -452,6 +452,7 @@ What the runs show, for the report:
 
 - Every run's report now shows Q fit, so the FA expectations can be checked in the reports as well as in `summary.json`.
 - What stays open is TC (on hold), the final-report text (H4, M12) and merging `dev` into `main`.
+- Later: `dev` was merged into `main` the same day (PR #28), and H4 was closed on 2026-11-10 (`AUDIT_2026-11-06.md` §2.3).
 
 Albert's items, on `dev` (details in `AUDIT_2026-11-06.md` §2.1 and §8.3): H3, M1 (except `tc_sweep_report.py`), M2 to M5, M10, L2, L4, L5, L6 and the flow-audit items F-H1, F-M2, F-M4 to F-M10, F-L1 to F-L11 (except F-L10, report text) and F-L14, F-L15.
 
