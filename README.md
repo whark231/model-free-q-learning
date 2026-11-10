@@ -57,13 +57,13 @@ download would change the calibration.
 
 **Post-hoc runs** use `--run <run_id>` into their own results folder, for
 example `python -m src.run_experiments --run b63 --results-dir results/b63`.
-`EXPERIMENTS.md` §7 lists the tabular variants (`eps-decay`, `b63`, `n26m`,
+`docs/methods/EXPERIMENTS.md` §7 lists the tabular variants (`eps-decay`, `b63`, `n26m`,
 `all-three`, `grid10-robustness`) and §8 the constant-learning-rate runs
 (`tabular-const`, `fa-quadratic`, `fa-spline`), each with its command,
 expected direction and run time.
 
 **Transaction costs** run through their own script with a configuration file
-(`TRANSACTION_COSTS.md`):
+(`docs/methods/TRANSACTION_COSTS.md`):
 
 ```bash
 python -m src.transaction_costs experiments/transaction-costs/quadratic-cost.json --dry-run
@@ -88,7 +88,7 @@ evaluation (`SeedPlan` in `src/environment.py`). Each run's manifest records
 the seed plan. Seed i draws the same simulated returns in every run, so runs
 can be compared seed by seed. The learning rates for the constant-α runs were
 tuned on a separate master seed, **20261103**, never on the reported one
-(`EXPERIMENTS.md` §8.1).
+(`docs/methods/EXPERIMENTS.md` §8.1).
 
 ## Expected outputs
 
@@ -102,23 +102,40 @@ tuned on a separate master seed, **20261103**, never on the reported one
 | `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
 
 Training logs (`run_*.npz`) are not committed; every summary and report is.
-See `EXPERIMENTS.md` §4 for the folder layout.
+See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
 
 ## Pipeline
 
 | Step | Code | Documentation |
 |---|---|---|
-| Download and clean nine ETFs and the risk-free rate | `src/data/` | `DATA_CLEANING.md` |
-| Simulated market from the calibrated μ and Σ | `src/environment.py` | `ENVIRONMENT.md` |
+| Download and clean nine ETFs and the risk-free rate | `src/data/` | `docs/methods/DATA_CLEANING.md` |
+| Simulated market from the calibrated μ and Σ | `src/environment.py` | `docs/methods/ENVIRONMENT.md` |
 | Benchmarks: closed form, long-only optimum, best grid portfolio | `src/benchmarks/mean_variance.py` | |
 | Action grid and reward | `src/action_space/grid.py`, `src/rewards.py` | |
 | Tabular Q-learning agent | `src/agent.py` | |
 | Training runner | `src/train.py` | |
-| Evaluation against the benchmarks | `src/evaluate.py` | `EVALUATION.md` |
-| Experiment settings and batch runner | `src/config.py`, `src/run_experiments.py` | `EXPERIMENTS.md` |
-| Function approximation: features, agent, step-size tuning | `src/features.py`, `src/fa_agent.py`, `src/tune_fa.py` | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 |
-| Transaction costs: stateful agent, grid oracle, sweep report | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `TRANSACTION_COSTS.md` |
+| Evaluation against the benchmarks | `src/evaluate.py` | `docs/methods/EVALUATION.md` |
+| Experiment settings and batch runner | `src/config.py`, `src/run_experiments.py` | `docs/methods/EXPERIMENTS.md` |
+| Function approximation: features, agent, step-size tuning | `src/features.py`, `src/fa_agent.py`, `src/tune_fa.py` | `docs/methods/FA_INTEGRATION_NOTES.md`, `docs/methods/EXPERIMENTS.md` §8 |
+| Transaction costs: stateful agent, grid oracle, sweep report | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `docs/methods/TRANSACTION_COSTS.md` |
 | Run reports | `src/reporting/` | `reports/README.md` |
 
-`PROJECT_PROSPECTUS.md` has the plan and task ownership.
-`AUDIT_2026-11-06.md` lists the open issues found in the 2026-11-06 audit.
+`docs/PROJECT_PROSPECTUS.md` has the plan and task ownership.
+`docs/reviews/AUDIT_2026-11-06.md` lists the open issues found in the 2026-11-06 audit.
+`docs/README.md` lists every document.
+
+## Repository layout
+
+| Folder | What |
+|---|---|
+| `src/` | All code; tests in `src/tests/` |
+| `data/` | `raw/` (committed, never re-downloaded), `interim/`, `processed/` (rebuilt by `src.data.clean`) |
+| `experiments/` | Run configurations for the transaction-cost script |
+| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/`; `tuning/` holds the FA step-size search |
+| `reports/` | One HTML report per run with its extracted `data.json`, the run list `registry.json`, and the hand-built `full_run_2026-10-22/` report |
+| `docs/` | Methods, reviews and audits, team notes, and the prospectus (`docs/README.md`) |
+| `notebooks/` | An empty placeholder notebook; no reported result uses it |
+| `no-ai-slop-main/` | The writing-style checklist the docs follow (`CLAUDE.md` §3.1) |
+
+`assignment.pdf` (the assignment) and `CLAUDE.md` (the team's working agreement
+with Claude) stay at the root.
