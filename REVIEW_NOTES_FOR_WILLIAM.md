@@ -26,17 +26,17 @@ What is left is decisions and writing. The transaction-cost agent scores like a 
 
 | Item | What | Waits on |
 |---|---|---|
-| Commit and merge | `feature/william-audit-fixes` is uncommitted; then a PR into `dev` | William |
+| PR into `dev` | `feature/william-audit-fixes` is pushed; open a PR into `dev` | William |
 | F-M1 | Merge `dev` into `main` (GitHub's default branch, about 50 commits behind) through one PR | William and Albert agreeing |
 | H4, M12, F-L10 | Report text: the failed FA expectations, the tuning disclosure, caveats on weights where no seed converged | The report draft |
 | F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B) | Low priority; or say it in the report |
 | L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
 | F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
-| TC | H1, H2, M7 to M9, M11, plus M1 and F-L12 for `tc_sweep_report.py` | The TC redesign |
+| TC | H1, H2, M7 to M9, M11, plus F-L12 and Albert's M1 print fix (`sys.stdout.reconfigure`) for `tc_sweep_report.py` | The TC redesign |
 
 ## Your next steps
 
-1. **Commit `feature/william-audit-fixes`, push it and open a PR into `dev`.** Run the full suite first; Albert's `test_every_registered_report_builds_from_committed_data` fails on a broken registry or a stale report.
+1. **Open a PR from `feature/william-audit-fixes` into `dev`.** Run the full suite first; Albert's `test_every_registered_report_builds_from_committed_data` fails on a broken registry or a stale report.
 2. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.
 3. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. The strongest FA candidate is FA on the 10% grid (C1), where tabular struggled most; a γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
    - A run trained from the new branch will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
