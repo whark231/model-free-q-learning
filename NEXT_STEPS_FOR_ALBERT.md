@@ -1,7 +1,7 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06
+**Date:** 2026-11-06, updated 2026-11-09
 **Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
 
 ---
@@ -33,13 +33,22 @@ Three things need you. First, re-evaluate four runs from your training logs so t
 | FA runs `tabular-const`, `fa-quadratic`, `fa-spline` (your `fa-spline` run included) | `results/<run>/`, `reports/<run>/` | `EXPERIMENTS.md` §8.7 |
 | TC implementation and quadratic-cost sweep | `src/transaction_costs.py`, `results/tc-quadratic-cost/` | `TRANSACTION_COSTS.md`, Outcome |
 
-425 tests on 2026-11-09: 424 pass; William's `test_tune_fa.py` line 235 fails on a 5e-15 rounding difference.
+442 tests pass on 2026-11-09 (Windows, Python 3.10); the rounding failure in `test_tune_fa.py` is fixed.
 
 ## Changes the audit made to your files
 
 All documentation or data, no code:
 - `reports/registry.json`: repaired (the `fa-quadratic` merge left invalid JSON on `dev`); notes written for `tabular-const` and `fa-quadratic`; `fa-spline` got the outcome of its registered expectation, an explicit `compare_with` (`baseline-v1`, `tabular-const`, `fa-quadratic`) and a caveat that its `baseline-v1` Q-fit numbers are not committed. Every other run got an explicit `compare_with` equal to the set its report already used. All reports rebuilt; per-run data identical.
 - `EXPERIMENTS.md` (status line, §6 shared-streams note, new §8.7 outcome), `EVALUATION.md` (constant-α notes, test count, γ justification done), `ENVIRONMENT.md` and `DATA_CLEANING.md` (stale "still open" items), `reports/README.md` (how variants are run now; the TC report), `TRANSACTION_COSTS.md` (status block and Outcome section).
+
+## From William, 2026-11-09: your items for me are closed
+
+**In plain terms:** everything you left in `REVIEW_NOTES_FOR_WILLIAM.md` outside transaction costs is done, on `feature/william-audit-fixes` (`AUDIT_2026-11-06.md` §2.2, `REVIEW_HISTORY.md` §9). While doing it I found one bug in the line-ending work and fixed it in your files, as below.
+
+- **Closed:** the rounding test; L1 (grid increment check); L3 (`requirements.txt`); the working-tree refresh; `b63`, `eps-decay`, `tabular-const` and `fa-quadratic` re-evaluated at clean commit `3322e03`, re-extracted (schema 3) and every report rebuilt, so Q fit shows everywhere (L8, F-M3); the prospectus status (F-M11); and `tune_fa --summarize` is now byte-stable (F-L12, FA part). Every earlier number came back identical, checked field by field.
+- **Registry:** the two caveats (`tabular-const` and `fa-quadratic`) that said the table "reads n/a until this run's data.json is re-extracted" now say it was re-extracted on 2026-11-09.
+- **A bug in M2, fixed in your files.** `Path.write_text` without `newline=` writes CRLF on Windows. After a fresh checkout (LF, from `.gitattributes`), rebuilding a report on Windows produced CRLF bytes, so `test_every_registered_report_builds_from_committed_data` failed and `build --all` would rewrite every report with only line endings changed. Reproduced by converting one report to LF and running the test. Every non-TC `write_text` now passes `newline="\n"` (and `encoding="utf-8"` where it was missing): `src/reporting/build.py`, `src/reporting/extract.py`, `src/evaluate.py`, `src/run_experiments.py`, `src/data/clean.py`, `src/data/download_raw.py`, plus `src/train.py` and `src/tune_fa.py`. Your CSV writers already pinned LF. Two tests in `test_reporting.py`: a source check that every `write_text` outside the TC files sets `newline`, which fails on every machine including the Mac, and a check that a built report has no CRLF. The two TC writers (`tc_sweep_report.py`, `transaction_costs.py`) are exempt until the redesign.
+- **Proposed, not done: merge `dev` into `main`** (F-M1), as one PR once `feature/william-audit-fixes` is merged into `dev`. Tell me if you agree.
 
 ## Your next steps
 

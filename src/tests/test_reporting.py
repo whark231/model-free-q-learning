@@ -402,3 +402,36 @@ def test_the_comparison_plot_refuses_more_grids_than_colours(tmp_path):
     # compare_experiments refuses before reading or evaluating anything
     with pytest.raises(ValueError, match="at most"):
         ev.compare_experiments([tmp_path / "missing"] * 3, ["a", "b", "c"], None, tmp_path / "out")
+
+
+def test_every_text_writer_pins_lf_line_endings():
+    """Path.write_text without newline= writes CRLF on Windows, so a report or
+    summary rebuilt there no longer matches the committed LF bytes and
+    test_every_registered_report_builds_from_committed_data fails after a
+    fresh checkout (found 2026-11-09). A source check, so it fails on every
+    machine, the Mac included. The transaction-cost files are on hold
+    (AUDIT_2026-11-06.md) and exempt until the redesign."""
+    import ast
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1]
+    exempt = {"tc_sweep_report.py", "transaction_costs.py"}
+    missing = []
+    for path in sorted(src.rglob("*.py")):
+        if "tests" in path.parts or path.name in exempt:
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "write_text"
+                    and not any(k.arg == "newline" for k in node.keywords)):
+                missing.append(f"{path.relative_to(src)}:{node.lineno}")
+    assert not missing, f"write_text without a newline argument: {missing}"
+
+
+def test_a_built_report_has_lf_line_endings(tmp_path):
+    import shutil
+    registry = extract.load_registry()
+    run_id = registry["runs"][0]["id"]
+    (tmp_path / run_id).mkdir()
+    shutil.copy(extract.REPORTS / run_id / "data.json", tmp_path / run_id / "data.json")
+    out = build.write_report(run_id, registry, reports_dir=tmp_path)
+    assert b"\r\n" not in out.read_bytes()

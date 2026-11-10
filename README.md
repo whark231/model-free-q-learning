@@ -12,9 +12,9 @@ transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations (425 tests on 2026-11-09; 424 pass, and
-`test_tune_fa.py::test_a_clear_winner_is_decided_on_three_seeds` fails on a
-5e-15 rounding difference, reported to William):
+Tested on two combinations. On 2026-11-09 all 442 tests passed on Windows with
+Python 3.10; the Mac combination last passed the full suite before that day's
+fixes (425 tests, one rounding failure since fixed with a 1e-12 tolerance):
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -39,7 +39,7 @@ $env:PYTHONIOENCODING = "utf-8"
 From the repo root:
 
 ```bash
-python -m pytest src/tests -q          # see Requirements for the one known failure
+python -m pytest src/tests -q          # all tests pass
 python -m src.data.clean               # rebuild data/processed/ from the committed raw data
 python -m src.run_experiments --results-dir results/repro   # baseline-v1: train and evaluate into a new folder
 ```

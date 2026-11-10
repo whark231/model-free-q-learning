@@ -190,7 +190,7 @@ def write_report(run_id: str, registry: dict, reports_dir: Path = REPORTS, templ
     # Escape every "<" so no registry text can close the script or open an HTML comment inside it.
     payload = json.dumps(data, separators=(",", ":")).replace("<", "\\u003c")
     out = reports_dir / run_id / "report.html"
-    out.write_text(html.replace(PLACEHOLDER, payload), encoding="utf-8")
+    out.write_text(html.replace(PLACEHOLDER, payload), encoding="utf-8", newline="\n")
     return out
 
 

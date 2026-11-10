@@ -10,7 +10,14 @@ def generate_weight_grid(n_assets: int = 9, increment: float = 0.2) -> np.ndarra
 
     portfolios = []
 
-    total_units = round(1.0 / increment) # <- investment units
+    # The grid only exists when the increment divides 1 exactly. Rounding 1/0.3
+    # to 3 would silently build a one-third grid instead (AUDIT_2026-11-06.md L1).
+    if not np.isfinite(increment) or increment <= 0:
+        raise ValueError(f"increment must be positive and finite, got {increment!r}")
+    units_exact = 1.0 / increment
+    total_units = round(units_exact) # <- investment units
+    if total_units < 1 or abs(units_exact - total_units) > 1e-9 * total_units:
+        raise ValueError(f"1/increment must be a whole number of units; {increment!r} gives {units_exact!r}")
 
     for divider_positions in combinations(range(n_assets - 1 + total_units), n_assets - 1):
 

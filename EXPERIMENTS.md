@@ -728,12 +728,13 @@ The FA agent with additive plus pairwise cubic B-spline features, α = 7.11e-6, 
 ### 8.6 Commands and run time
 
 ```powershell
-$env:PYTHONIOENCODING = "utf-8"   # until the Windows print fix (NEXT_STEPS_FOR_ALBERT.md)
 python -m src.run_experiments --run tabular-const --dry-run
 python -m src.run_experiments --run tabular-const --results-dir results/tabular-const
 python -m src.run_experiments --run fa-quadratic --results-dir results/fa-quadratic
 python -m src.run_experiments --run fa-spline --results-dir results/fa-spline
 ```
+
+These are the commands the runs were made with. `run_experiments` now sets UTF-8 output itself, so `PYTHONIOENCODING` is no longer needed on Windows (fixed 2026-11-09). In a fresh clone the folders above hold committed manifests without the training logs, so `run_experiments` refuses them; to reproduce a run, train into a new folder, for example `--results-dir results/repro_fa-quadratic`, and compare with the committed summaries. With the logs present, the same commands only re-run the evaluation.
 
 The three are independent, so they can run as three processes at once. Before starting, time a short run of each with `--episodes 200000 --runs 1 --results-dir results/smoke_<run_id>`.
 

@@ -2,6 +2,10 @@
 
 import ast
 import json
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -232,7 +236,9 @@ def test_a_clear_winner_is_decided_on_three_seeds(tmp_path):
     chosen = summary["chosen"]["quadratic"]
     assert chosen["id"] == "quadratic_f0.1" and chosen["decided_on_seeds"] == 3 and not chosen["close_call"]
     assert summary["extra_seeds_needed"] == {}
-    assert summary["candidates"]["quadratic_f0.02"]["shortfall_seed_se_bps"] == 0.0  # same gap on every seed
+    # Same gap on every seed, so the SE is zero up to rounding: numpy 2.3.5 on
+    # the Mac gives 5e-15, numpy 2.2.6 on Windows exactly 0 (audit 2026-11-09).
+    assert summary["candidates"]["quadratic_f0.02"]["shortfall_seed_se_bps"] == pytest.approx(0.0, abs=1e-12)
 
 
 def test_a_close_call_extends_the_top_three_and_can_change_the_winner(tmp_path):
@@ -345,3 +351,26 @@ def test_the_extend_step_trains_seeds_three_to_five_only(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["tune_fa", "--extend", "--episodes", "1000", "--out", str(tmp_path)])
     tune.main()
     assert calls == [(["quadratic_f0.1"], [3, 4, 5])]
+
+
+def test_the_summary_is_byte_stable_across_python_hash_seeds(tmp_path):
+    """Candidates used to be tabulated in set order, which changes with
+    PYTHONHASHSEED, so --summarize rewrote fa_tuning.json with no change in
+    content (audit F-L12). Two processes with different hash seeds must write
+    identical bytes, with candidates in sorted order."""
+    actions = _ranked_actions(200)
+    fractions = (0.5, 0.1, 0.02, 0.004, 8e-4, 1.6e-4)
+    for k, f in enumerate(fractions):
+        for seed in range(3):
+            _write(tmp_path / "records_src", f"tabular_f{f:g}", "tabular", f, seed, actions[(k + seed) % len(actions)])
+    outputs = []
+    for hash_seed in ("1", "2", "3"):
+        out = tmp_path / f"run{hash_seed}"
+        shutil.copytree(tmp_path / "records_src" / "records", out / "records")
+        code = f"from src.tune_fa import summarize; summarize({str(out)!r}, 200)"
+        env = {**os.environ, "PYTHONHASHSEED": hash_seed}
+        subprocess.run([sys.executable, "-c", code], check=True, env=env, cwd=Path(__file__).resolve().parents[2])
+        outputs.append((out / "fa_tuning.json").read_bytes())
+    assert outputs[0] == outputs[1] == outputs[2]
+    candidates = list(json.loads(outputs[0])["candidates"])
+    assert candidates == sorted(candidates)

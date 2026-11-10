@@ -438,3 +438,30 @@ What the runs show, for the report:
   `eps-decay` matched at γ = 5 and 8. `all-three` expected the smallest gap of
   runs 1 to 4 at every γ; it was smallest at γ = 8, tied at γ = 3 and behind
   `b63` at γ = 5.
+
+## 9. Audit follow-ups closed 2026-11-09
+
+**TL;DR / In plain terms:** after the 2026-11-06 audit and Albert's 2026-11-09 flow audit (`AUDIT_2026-11-06.md`), Albert fixed his items on `dev` and William closed the ones Albert left for him. No reported number changed. Transaction-cost items stay open until the TC redesign is decided.
+
+**Key concepts to understand**
+
+- **Re-evaluating versus re-training.** A re-evaluation reads the saved training logs (`run_*.npz`) and recomputes every summary with today's `evaluate.py`. It cannot change what the agent learned, only add measures; that is why each was checked field by field against the committed summaries.
+- **Hash-seed stability.** Python randomizes string hashing per process, so iterating over a `set` of names can give a different order each run. A file written in that order changes on every rewrite even when its content is the same.
+
+**Key takeaways**
+
+- Every run's report now shows Q fit, so the FA expectations can be checked in the reports as well as in `summary.json`.
+- What stays open is TC (on hold), the final-report text (H4, M12) and merging `dev` into `main`.
+
+Albert's items, on `dev` (details in `AUDIT_2026-11-06.md` §2.1 and §8.3): H3, M1 (except `tc_sweep_report.py`), M2 to M5, M10, L2, L4, L5, L6 and the flow-audit items F-H1, F-M2, F-M4 to F-M10, F-L1 to F-L11 (except F-L10, report text) and F-L14, F-L15.
+
+William's items, on `feature/william-audit-fixes` (details in `AUDIT_2026-11-06.md` §2.2):
+
+| Item | Fix | Check |
+|---|---|---|
+| Failing test `test_tune_fa.py::test_a_clear_winner_is_decided_on_three_seeds` | The zero standard error is compared with `pytest.approx(0.0, abs=1e-12)` | numpy 2.3.5 gives 5e-15, numpy 2.2.6 exactly 0 |
+| L1, grid increment | `generate_weight_grid` raises unless 1/increment is a whole number | 14 tests; the old code built 165 portfolios for 0.3 |
+| L3, `requirements.txt` | Stale test count removed; unused `jupyter`, `seaborn`, `tqdm` dropped | Every remaining pin is imported |
+| F-L12, FA part | `tune_fa.summarize` sorts candidates; `fa_tuning.json` regenerated | Byte-identical across hash seeds; same content as before |
+| L8, F-M3 | `b63`, `eps-decay`, `tabular-const`, `fa-quadratic` re-evaluated at `3322e03`, re-extracted, reports rebuilt | No value changed; Q fit added |
+| F-M11 | Prospectus status brought up to date | Read |

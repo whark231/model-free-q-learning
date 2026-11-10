@@ -533,7 +533,7 @@ def grid_fingerprint(grid: np.ndarray) -> str:
 
 
 def _write_manifest(out_dir: Path, manifest: dict) -> None:
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n")
 
 
 def _hashes(root: Path, names) -> dict:

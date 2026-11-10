@@ -87,7 +87,7 @@ The `train.py` CLI still has no FA flags. None are needed, since the runs go thr
 
 Still open, and not blocking:
 - **A 10% grid FA run** (`fa-spline-grid10`). Not registered; decide after the 20% grid results.
-- **The Windows print crash** in `run_experiments`. Set `$env:PYTHONIOENCODING = "utf-8"` until it is fixed (`NEXT_STEPS_FOR_ALBERT.md`).
+- ~~**The Windows print crash** in `run_experiments`.~~ Fixed 2026-11-09 (`AUDIT_2026-11-06.md` M1).
 
 ## 3. Speed and the greedy refresh interval
 

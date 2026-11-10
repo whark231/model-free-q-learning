@@ -2,7 +2,7 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** living plan, updated 2026-11-06 after the whole-project audit (`AUDIT_2026-11-06.md`). The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. What remains is choosing the final runs, a few code fixes, and the report.
+**Status:** living plan, updated 2026-11-09. The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). Still open: H4, M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set), F-L13 (a tag on Albert's Mac) and F-M1 (merging `dev` into `main`). What remains is the TC decision, choosing the final runs, and the report.
 
 ---
 
@@ -47,23 +47,23 @@ Both of us now modify the core algorithm, as planned for the extension phase.
 | 5 | Reward: episodic realized mean-variance reward | Part III | ✅ Done. `src/rewards.py`; E[reward] = U(w) checked by Monte Carlo |
 | 6 | Stateless tabular Q-learning agent with ε-greedy exploration | Part III | ✅ Done. `src/agent.py` |
 | 7 | Training across seeds and a convergence rule fixed in advance | Part IV | ✅ Done. `baseline-v1`, 2026-10-22: γ = 3, 5, 8 and the 25% grid, 10 seeds × 13M episodes (`results/INDEX.md`, `EXPERIMENTS.md`) |
-| 8 | Benchmark comparison: weights, distances, economic performance | Part V | ✅ Done. Every experiment's `evaluation/` folder has the grouped weight bars, absolute differences, L1 and Euclidean distances, the performance table, both gaps and the per-seed distribution. `RUN_ISSUES` §4 steps 1 to 3 (total-gap column, "settled" measure) are still open in code (`AUDIT_2026-11-06.md` M10) |
+| 8 | Benchmark comparison: weights, distances, economic performance | Part V | ✅ Done. Every experiment's `evaluation/` folder has the grouped weight bars, absolute differences, L1 and Euclidean distances, the performance table, both gaps and the per-seed distribution. The total gap against the continuous optimum and the post-hoc "settled" measure are in every summary, `per_seed.csv` and `INDEX.md` (`RUN_ISSUES` §4 steps 1 to 3, fixed 2026-11-09, `AUDIT_2026-11-06.md` M10) |
 | 9 | Convergence analysis: learning curves, regret, two resolutions | Part V | ✅ Done. Learning curves, cumulative regret, observations to the 25 bps line; 20% vs 25% and 20% vs 10% grids |
 | 10 | Robustness checks (one action-space, one economic or statistical) | Part VI | ✅ Done. Risk aversion γ = 3 and 8; the 10% grid (`grid10-robustness`, 2026-10-29); training budget, episode length and exploration (`b63`, `n26m`, `eps-decay`, `all-three`, 2026-10-28) |
 
-Full suite: 407 tests passing (`python -m pytest src/tests -q`).
+Full suite: 442 tests passing on 2026-11-09 (`python -m pytest src/tests -q`).
 
 ### Extensions (bonus)
 | # | Component | Notes | Status (2026-11-06) |
 |---|---|---|---|
 | 11 | Transaction costs: state = previous target, quadratic cost on the move | `TRANSACTION_COSTS.md`, `src/transaction_costs.py` | 🔶 Built; quadratic-cost sweep run (0, 1, 2, 5 bp; 10 seeds). The code is correct but the agent learns nothing: at zero cost it scores like a random portfolio, 468 bps/yr below the oracle. Discount and learning-rate comparisons registered, **not run**, and should not be run as designed. Needs a redesign decision (`AUDIT_2026-11-06.md` H1, H2, §6.2) |
-| 12 | Function approximation: linear Q over quadratic or spline features | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 | ✅ Built, step size tuned on separate seeds, and run 2026-11-06: `tabular-const`, `fa-quadratic`, `fa-spline` (30 seeds each). Both FA models beat the constant-α tabular agent at γ = 5 and 3 and ranked the reward landscape better (Spearman); of the registered expectations, split into five checks, four failed in whole or part (`EXPERIMENTS.md` §8.7) |
+| 12 | Function approximation: linear Q over quadratic or spline features | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 | ✅ Built, step size tuned on separate seeds, and run 2026-11-06: `tabular-const`, `fa-quadratic`, `fa-spline` (30 seeds each). Both FA models beat the constant-α tabular agent at γ = 5 and 3 and ranked the reward landscape better (Spearman); of the registered expectations, split into five checks, four failed in whole or part (`EXPERIMENTS.md` §8.7). Every run now carries Q-fit numbers and shows them in its report (2026-11-09) |
 
 ### Deliverables
 | # | Component | Notes | Status (2026-11-06) |
 |---|---|---|---|
 | 13 | Research report (10 to 15 pages) in the assignment's structure | Sections split in §4 | ⬜ Not started. Inputs: `reports/<run_id>/report.html`, `results/<experiment>/evaluation/`, `EXPERIMENTS.md` §7 and §8.7, `REVIEW_HISTORY.md` §7 and §8 |
-| 14 | Clean, reproducible code and README | | 🔶 README updated 2026-11-06. Windows print crash, line-ending hashing and the TC reproduction commands still to fix (`AUDIT_2026-11-06.md` M1, M2, M9) |
+| 14 | Clean, reproducible code and README | | 🔶 Windows print crash and line-ending hashing fixed, and the README's reproduce command works in a fresh clone (2026-11-09; `AUDIT_2026-11-06.md` M1, M2, F-H1). Still open: the TC reproduction commands (M9) and the print fix in `tc_sweep_report.py`, both waiting on the TC redesign; and `main` is about 50 commits behind `dev` (F-M1) |
 | 15 | Class presentation | | ⬜ Not started |
 
 ## 4. Task Ownership
@@ -92,7 +92,7 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 
 | Week | Dates | Focus | Target output |
 |---|---|---|---|
-| 8 (rest) | Nov 6 to 12 | Decide the final runs and the TC redesign (`AUDIT_2026-11-06.md` §6, §7); re-evaluate `baseline-v1` and the other three runs for Q-fit; fix M1 to M5 | Final run list registered with expected directions; Q-fit committed |
+| 8 (rest) | Nov 6 to 12 | Done by Nov 9: every run re-evaluated with Q fit, audit fixes M1 to M5, M10 and the flow-audit items. Still to do: decide the final runs and the TC redesign (`AUDIT_2026-11-06.md` §6, §7); merge `dev` into `main` | Final run list registered with expected directions |
 | 9 | Nov 13 to 19 | Run the final runs; build their reports; first full report draft | All figures and tables final; draft complete |
 | 10 | Nov 20 to 26 | Thanksgiving buffer: light schedule | Report polish, code cleanup, README |
 | Final | Nov 27 to 30 | Final review and submission | Report, code and README submitted |
@@ -116,7 +116,7 @@ The Q-learning core's decisions (γ, the convergence rule, episode length, episo
 - **Transaction costs may not reach a credible result in time.** The audit found the current design cannot learn. Fallback: report it as a carefully diagnosed negative result and put the bonus weight on function approximation. A correctly scoped smaller extension beats a broken ambitious one under the rubric.
 - **Run time competes with writing.** A 30-seed run takes 2.5 to 7.5 hours per machine. Register and start the final runs early in week 9 so the draft is written while they train.
 - **Thanksgiving week reduces available time** right before the deadline, so the draft should be finished by Nov 19.
-- **Reproducibility on Windows.** Until the print crash and the line-ending hashing are fixed (`AUDIT_2026-11-06.md` M1, M2), a grader on Windows hits a crash and the reports show false "changed" flags.
+- **Reproducibility.** The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). A grader who clones without naming a branch still gets `main`, which is about 50 commits behind `dev`, until the two are merged (F-M1).
 
 ---
 
