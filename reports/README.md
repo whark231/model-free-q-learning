@@ -100,15 +100,23 @@ Do these in order. Steps 1 and 2 happen **before** training starts.
    ```
    It refuses if a seed is missing or if the calibration files differ from
    the ones the run was trained on (pass `--processed-dir` for a run that used
-   a different calibration on purpose).
+   a different calibration on purpose). Extract again after re-evaluating a
+   run, so its `data.json` picks up the new summaries. Code and calibration
+   digests are stored in their line-ending-normalized form, so the same
+   commit gives the same `data.json` on Windows and on a Mac.
 6. **Build the report:**
    ```bash
    python -m src.reporting.build b60-v1
    ```
    `python -m src.reporting.build --all` rebuilds every registered run, for
-   example after a template change. Earlier reports stay comparable to the
-   runs before them, because each report only layers in runs registered
-   before it.
+   example after a template change. By default a report compares with the
+   runs registered before it; an explicit `compare_with` in the registry can
+   name any run, later ones included. A `data.json` written by an older
+   extract step (lower `schema_version`) still builds; the build prints a
+   note, and fields it lacks, such as the Q fit, show as n/a. The header
+   gives two commits: "Trained at" (from the manifests) and "Evaluated at"
+   (the code that wrote the summaries); a `-dirty` suffix means that
+   commit had uncommitted changes.
 7. **Write the notes.** Read the report, fill in `notes.tldr`, `takeaways` and
    `caveats` in the registry, and rebuild. The numbers are generated; only the
    interpretation is written by hand.

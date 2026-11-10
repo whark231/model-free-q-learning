@@ -65,7 +65,7 @@ overwrite an earlier evaluation unless `--overwrite` is given.
 | `learning_curve.png` | Mean reward per window; CE loss of the current greedy portfolio |
 | `cumulative_regret.png` | Expected regret against the best grid action |
 | `ce_loss_by_seed.png` | Final CE loss of each run |
-| `convergence_by_resolution.png` (with `--compare`) | Median CE loss over time for each grid |
+| `convergence_by_resolution.png` (with `--compare`) | Median CE loss over time for each grid: a solid line against the best portfolio on that grid (learning gap) and a dashed line against the continuous optimum (learning gap plus that grid's discretization gap, so grids of different coarseness can be read on one scale). At most as many grids as the palette has colours (two); more raises an error |
 
 ---
 
@@ -120,7 +120,7 @@ pre-registered rules. `summary.json` lists them under
 | Measure | Definition |
 |---|---|
 | `settled` | First checkpoint from which the final greedy action is the greedy action at every later checkpoint. `None` if it is not greedy at the last checkpoint. No K window, so it can be met by a seed that fails `greedy_stable_through_end`. For a tabular agent the last checkpoint's greedy action is the final one by definition, so every seed settles (at the latest, at the last checkpoint): the share of seeds is always 100% and only the timing carries information. `INDEX.md` therefore shows the median and range, not a share. |
-| `near_optimal_every_episode` | First episode after which every greedy action, brief switches between checkpoints included, stays within the near-optimal line. The every-episode counterpart of `near_optimal_for_good`. A seed whose final greedy action is within the line always meets it, however late its last switch; read the episode, not only the share |
+| `near_optimal_every_episode` | First episode after which every greedy action, brief switches between checkpoints included, stays within the near-optimal line. The every-episode counterpart of `near_optimal_for_good`. A seed whose final greedy action is within the line always meets it, however late its last switch; read the episode, not only the share. For FA runs the greedy action is refreshed every 100 updates, so "every episode" has a resolution of 100 episodes there |
 
 ### Provenance (added 2026-11-09)
 
@@ -217,6 +217,7 @@ against w_disc, with its standard error, is the reliable realized comparison.
 | Post-hoc measures and total gap (2026-11-09) | An agent whose greedy action switches at episode 1,200 settles at checkpoint 1,500 and is near-optimal every episode from 1,200; total gap equals discretization plus learning gap per seed and matches an independent U(w*) − U(w) |
 | Line endings (2026-11-09) | LF and CRLF copies of a file get the same digest; a manifest whose calibration digests are the CRLF form is accepted |
 | Re-evaluating existing runs (2026-11-09) | `baseline-v1`, `n26m`, `all-three`, `grid10-robustness` and `fa-spline` re-evaluated: every earlier value in `summary.json`, `comparison.json` and the CSVs identical, figures byte-identical. The total gap matches `RUN_ISSUES_2026-10-22.md` Finding 3 (19.8, 14.3, 12.5 and 11.9 bps/yr medians) |
+| Flow-audit fixes (2026-11-09, `AUDIT_2026-11-06.md` §8) | A folder with a committed manifest but no training logs is refused with a pointer to `--results-dir results/repro`, and nothing is deleted; the provenance digests now cover `src/environment.py` and `src/action_space/grid.py`; the comparison plot refuses more grids than colours |
 | Re-evaluating existing runs (2026-11-04) | `b63` and `eps-decay` (6 experiments) re-evaluated with the new code: every earlier number in `summary.json`, `weights.csv` and `performance.csv` identical |
 | Mutation testing | 17 deliberate bugs injected; 16 caught. The survivor changes only which weights the bar chart draws, which no test inspects |
 

@@ -12,8 +12,9 @@ transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations, both passing the full test suite (407 tests on
-2026-11-06):
+Tested on two combinations (425 tests on 2026-11-09; 424 pass, and
+`test_tune_fa.py::test_a_clear_winner_is_decided_on_three_seeds` fails on a
+5e-15 rounding difference, reported to William):
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -26,8 +27,8 @@ Tested on two combinations, both passing the full test suite (407 tests on
 pip install -r requirements.txt
 ```
 
-**Windows:** several commands print "γ" and stop with a `UnicodeEncodeError`
-under the default console encoding. Set the encoding first:
+**Windows:** `src.run_experiments` and `src.evaluate` now set UTF-8 output
+themselves. `src.tc_sweep_report` does not yet, so before running it set:
 
 ```powershell
 $env:PYTHONIOENCODING = "utf-8"
@@ -38,10 +39,17 @@ $env:PYTHONIOENCODING = "utf-8"
 From the repo root:
 
 ```bash
-python -m pytest src/tests -q          # all tests pass
+python -m pytest src/tests -q          # see Requirements for the one known failure
 python -m src.data.clean               # rebuild data/processed/ from the committed raw data
 python -m src.run_experiments          # baseline-v1: train and evaluate every experiment
 ```
+
+A fresh clone has each run's manifest and summaries but not its training
+logs (`run_*.npz`, too large to commit), so `src.run_experiments` refuses to
+re-evaluate a committed folder. To reproduce a run, train into a new folder
+and compare with the committed summaries, for example
+`python -m src.run_experiments --results-dir results/repro` against
+`results/INDEX.md`. Training is seeded, so the numbers should match.
 
 Do not re-run `src.data.download_raw` to reproduce results. The raw data
 (downloaded 2026-09-24) is committed because Yahoo restates history, and a new

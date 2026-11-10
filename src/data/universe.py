@@ -43,7 +43,7 @@ FF_DAILY_URL = (
 # adopted: the team chose to keep one consistent, assignment-named source rather
 # than splice or switch mid-project.
 
-# Optional hard cap on the sample end. None means "as far as the data supports".
-# Pin a date here (or pass --end) to freeze the calibration window while new
-# data is being appended, so report numbers stay reproducible.
-DEFAULT_SAMPLE_END = None
+# Hard cap on the sample end, pinned to the calibration every committed run
+# was trained on (audit F-M8). New raw data appended later cannot move mu and
+# Sigma unless this is changed on purpose (or --end is passed).
+DEFAULT_SAMPLE_END = "2026-07-31"

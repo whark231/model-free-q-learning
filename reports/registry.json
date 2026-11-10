@@ -41,8 +41,8 @@
       ],
       "notes": {
         "tldr": [
-          "All three experiments trained 10 seeds each with ε falling to 3% at halfway instead of 1%, with no crashes. At γ = 5 the result is about the same as the baseline: mean learning gap 17.6 to 16.1 bps/yr, 4 of 10 seeds exactly best against 3, while training regret rose from 65.5 to 77.3 bps/yr per episode.",
-          "At γ = 3 it did better: 8 of 10 seeds exactly best against 5, mean gap 30.6 to 4.0 bps/yr, worst seed 81.1 to 20.0. At γ = 8 the gap was unchanged (median 5.7) and regret rose most, 77.0 to 99.2."
+          "All three experiments trained 10 seeds each with ε falling to 3% at halfway instead of 1%, with no crashes. At γ = 5 the result is about the same as the baseline: mean learning gap 17.6 to 16.1 bps/yr, 4 of 10 seeds exactly best against 3, while median training regret across seeds rose from 65.5 to 77.3 bps/yr per episode.",
+          "At γ = 3 it did better: 8 of 10 seeds exactly best against 5, mean gap 30.6 to 4.0 bps/yr, worst seed 81.1 to 20.0. At γ = 8 the gap was unchanged (median 5.7) and median regret rose most, 77.0 to 99.2."
         ],
         "takeaways": [
           "At γ = 5 and 8 this matches the expectation registered on 2026-10-27: gap and exact-best share unchanged within noise, regret higher (+11.8 bps/yr at γ = 5 against the +15 expected). γ = 3 improved more than expected; on 10 seeds, 8 of 10 against 5 of 10 is not a significant difference, so treat it as a possible effect, not a finding.",
@@ -74,7 +74,7 @@
         ],
         "takeaways": [
           "This matches the expectation registered on 2026-10-27 (smaller learning gap at every γ) on the mean and the worst seed. The γ = 5 jump in exact-best share is larger than expected but rests on 10 seeds, so treat it as within noise of the surrogate's prediction.",
-          "Training regret per episode fell or held (γ = 5: 65.5 to 51.2 bps/yr), and the pre-registered rule was met earlier in episodes at every γ (γ = 5 median 9.25M to 6.90M episodes). Counted in simulated days it looks later (185M to 435M), because each episode now holds 63 days."
+          "Median training regret per episode fell or held (γ = 5: 65.5 to 51.2 bps/yr), and the pre-registered rule was met earlier in episodes at every γ (γ = 5 median 9.25M to 6.90M episodes). Counted in simulated days it looks later (185M to 435M), because each episode now holds 63 days."
         ],
         "caveats": [
           "Post hoc: B = 63 was chosen after the baseline results were seen. Report it as a sensitivity check, not as a replacement for baseline-v1.",
@@ -204,13 +204,13 @@
           "Registered expectations (EXPERIMENTS.md §8.3). A larger mean learning gap than baseline-v1 at every γ: met. Fewer seeds meeting the primary convergence rule at every γ: not met at any γ (10, 8 and 10 of 10 at γ = 5, 3 and 8, against 9, 8 and 9).",
           "Under a constant α the primary rule tracks stability and says little about accuracy. At γ = 5 all 10 seeds held their final portfolio for the last 1.3M episodes, none of them on the best portfolio, and the 10 seeds ended on 9 different portfolios. Measured: a portfolio updated N times holds about (1 − (1 − α)^N) of its true value; most are tried only during exploration, about 1,100 times, and end near 0.3 (run_000 slopes 0.291, 0.291 and 0.296 at γ = 5, 3 and 8), while the greedy portfolio sits at 0.69 to 1.14 of its value across the 30 seeds. Inferred, not tested: shrunken rivals cannot overtake the greedy portfolio once ε fades (EXPERIMENTS.md §8.7).",
           "Seeds that stayed within 25 bps/yr of the best from some point on: 4, 2 and 1 of 10 at γ = 5, 3 and 8, against 7, 6 and 7 in baseline-v1.",
-          "Q-value fit over all 1,287 portfolios, median over seeds: Spearman 0.813, 0.703 and 0.917, top-10 recall 25%, 15% and 20% at γ = 5, 3 and 8. These mostly measure the shrinkage above. The committed baseline-v1 summaries have no Q-fit numbers yet, so this report cannot set them side by side."
+          "Q-value fit over all 1,287 portfolios, median over seeds: Spearman 0.813, 0.703 and 0.917, top-10 recall 25%, 15% and 20% at γ = 5, 3 and 8. These mostly measure the shrinkage above. baseline-v1, re-evaluated on 2026-11-09, has 0.821, 0.710 and 0.920 and top-10 recall 35%, 20% and 20%, so tabular-const ranks the landscape slightly worse at every γ."
         ],
         "caveats": [
           "Post hoc: designed after the baseline-v1 results were seen. α was tuned on separate seeds (master seed 20261103) at γ = 5 only and registered 2026-11-05, before this run (EXPERIMENTS.md §8.1 and §8.3). γ = 3 and 8 use the γ = 5 value untuned.",
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
-          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit; the HTML report does not show them yet.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit. The report's results table shows them; it reads n/a until this run's data.json is re-extracted with the current extract step.",
           "Against baseline-v1 the report flags src/agent.py and src/train.py as changed training code. They really changed between baseline-v1's commit 80a6e9c and bc311a3, but not in tabular behaviour. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }
@@ -245,7 +245,7 @@
           "Besides the features, one mechanical difference from tabular-const remains: the FA agent refreshes its greedy portfolio every 100 updates, tabular-const every episode. Both break ties at random when acting.",
           "Seed i here and seed i in the compared runs draw the same simulated returns (same master seed and stream layout), so differences are paired: 10 pairs per γ, SEs are of the paired mean, and no formal test is part of this report.",
           "The ΔQ rule (max |ΔQ| below 1e-5 from some window on) is met in the first 10,000-episode window by every seed. With α = 3.2e-4 one update moves a value by about α times the reward noise (1.6e-3 per episode), about 5e-7, so under a constant α this rule carries no information about convergence.",
-          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit; the HTML report does not show them yet.",
+          "The Q-value fit numbers (Spearman, top-10 recall over all 1,287 portfolios) come from each experiment's evaluation/summary.json under q_fit. The report's results table shows them; it reads n/a until this run's data.json is re-extracted with the current extract step.",
           "Against baseline-v1 the report flags training code: src/agent.py and src/train.py really changed between baseline-v1's commit 80a6e9c and bc311a3. Against tabular-const nothing is flagged; both trained at bc311a3. Earlier builds also flagged the calibration and other files; those were line-ending artifacts, fixed 2026-11-09 (AUDIT_2026-11-06.md M2, M3)."
         ]
       }

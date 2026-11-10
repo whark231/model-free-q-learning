@@ -257,6 +257,7 @@ def test_a_tabular_config_does_not_match_a_function_approximation_folder(tmp_pat
     run_dir = tmp_path / "fa"
     run_dir.mkdir()
     (run_dir / "manifest.json").write_text(json.dumps({"config": config_record(fa), "runs": [{}]}))
+    (run_dir / "run_000.npz").write_bytes(b"")
     with pytest.raises(ValueError, match="different settings"):
         training_status(run_dir, TrainConfig(**common, log_every=500))
     assert training_status(run_dir, fa) == "finished"
@@ -523,3 +524,16 @@ def test_dry_run_prints_gamma_on_a_cp1252_console():
                [sys.executable, "-m", module, "--run", "tabular-const", "--dry-run"]
         done = subprocess.run(args, capture_output=True, env=env, cwd=train.REPO_ROOT)
         assert done.returncode == 0, done.stderr.decode(errors="replace")
+
+
+def test_a_committed_manifest_without_its_logs_is_refused_clearly(tmp_path):
+    """A fresh clone has committed manifests but no .npz logs (audit F-H1)."""
+    from src.run_experiments import training_status
+    experiment = cfg.experiments()[0]
+    run_all(tmp_path, only=[experiment.name], **SMALL)
+    run_dir = tmp_path / experiment.name
+    (run_dir / "run_000.npz").unlink()
+    train_cfg = cfg.train_config(experiment, SMALL["n_episodes"], SMALL["n_runs"], SMALL["log_every"])
+    with pytest.raises(FileNotFoundError, match="--results-dir results/repro"):
+        training_status(run_dir, train_cfg)
+    assert (run_dir / "manifest.json").exists()  # nothing deleted

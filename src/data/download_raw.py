@@ -4,7 +4,7 @@ Writes only to data/raw/. Everything downstream works on a copy (see clean.py).
 
 Two modes:
 
-  --mode full     (default) Fresh pull of the whole history, overwriting
+  --mode full     Fresh pull of the whole history, overwriting
                   data/raw. Use this to start over.
 
   --mode extend   Keep every existing raw row byte-for-byte and append only
@@ -26,8 +26,13 @@ adjustment convention, so every file is logged in data/raw/MANIFEST.json with a
 SHA-256 digest, the row count, the date span and the library version that
 produced it.
 
+--mode is required, so the raw data is never overwritten by accident
+(audit F-M8). In extend mode the appended Adj Close rows are rescaled onto the
+existing rows' adjustment basis at the last shared date, so no return crosses
+two bases (F-M9); the factor is recorded in the manifest.
+
 Usage:
-    python3 -m src.data.download_raw                # full pull
+    python3 -m src.data.download_raw --mode full    # full pull, overwrites data/raw
     python3 -m src.data.download_raw --mode extend  # append new dates only
 """
 
@@ -63,6 +68,25 @@ AUTO_ADJUST = False
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def rescale_appended(existing: pd.DataFrame, fresh: pd.DataFrame, appended: pd.DataFrame,
+                     column: str = "Adj Close") -> tuple[pd.DataFrame, float | None]:
+    """Put appended adjusted prices on the existing rows' adjustment basis.
+
+    A fresh Yahoo pull restates every earlier adjusted price after a
+    distribution, so its new rows sit on a different basis from rows kept from
+    an older pull. Multiplying the appended rows by existing / fresh on the
+    last shared date makes the return across the join equal the fresh series'
+    return (audit F-M9). Unadjusted columns are left alone."""
+    shared = existing.index.intersection(fresh.index)
+    if appended.empty or column not in appended or shared.empty:
+        return appended, None
+    last = shared.max()
+    factor = float(existing.loc[last, column] / fresh.loc[last, column])
+    out = appended.copy()
+    out[column] = out[column] * factor
+    return out, factor
 
 
 def _fetch_history(ticker: str) -> pd.DataFrame:
@@ -127,7 +151,7 @@ def download_prices(mode: str = "full") -> tuple[dict, dict]:
         if mode == "extend" and out.exists():
             existing = pd.read_csv(out, index_col="Date", parse_dates=True).sort_index()
             new_dates = fresh.index.difference(existing.index)
-            appended = fresh.loc[new_dates]
+            appended, factor = rescale_appended(existing, fresh, fresh.loc[new_dates])
 
             # Existing rows are kept exactly as they are; only genuinely new
             # dates are added, and they are re-sorted into place.
@@ -138,13 +162,14 @@ def download_prices(mode: str = "full") -> tuple[dict, dict]:
                 "rows_before": int(len(existing)),
                 "rows_appended": int(len(appended)),
                 "appended_dates": [str(d.date()) for d in new_dates],
+                "adj_close_rescale_factor": factor,
                 "upstream_revisions_detected": _compare_overlap(existing, fresh),
             }
             df = combined
         else:
             df = fresh
 
-        df.to_csv(out)
+        df.to_csv(out, lineterminator="\n")  # LF on every machine, so the digest matches a checkout
         entries[ticker] = {
             "file": str(out),
             "rows": int(len(df)),
@@ -219,7 +244,7 @@ def main() -> None:
     parser.add_argument(
         "--mode",
         choices=("full", "extend"),
-        default="full",
+        required=True,
         help="full: fresh pull, overwrite. extend: keep existing rows, append new dates.",
     )
     args = parser.parse_args()

@@ -82,7 +82,7 @@ TOP_K = 10  # portfolios compared by the top-k recall
 # Evaluation-side code whose digest goes into summary.json; training code is
 # already in each manifest's code_sha256 (RUN_ISSUES_2026-10-22.md Finding 7).
 EVAL_CODE_FILES = ("src/evaluate.py", "src/config.py", "src/run_experiments.py", "src/hashing.py",
-                   "src/benchmarks/mean_variance.py")
+                   "src/benchmarks/mean_variance.py", "src/environment.py", "src/action_space/grid.py")
 RUN_KEYS = (
     "checkpoint_episode", "checkpoint_mean_reward", "checkpoint_max_abs_dq", "checkpoint_greedy",
     "checkpoint_action_counts", "checkpoint_next_epsilon", "greedy_change_episode",
@@ -558,7 +558,8 @@ def compare_experiments(run_dirs, labels, config: EvalConfig, out_dir: Path,
     results, curves = {}, {}
     for run_dir, label in zip(run_dirs, labels):
         summary, c = _evaluate(run_dir, config, out_dir / f"eval_{label}", processed_dir, overwrite, False)
-        curves[label] = (c["obs"][1:], np.median(np.array(c["loss_bps"]), axis=0))
+        curves[label] = (c["obs"][1:], np.median(np.array(c["loss_bps"]), axis=0),
+                         summary["discretization_gap"]["ce_loss_bps"])
         conv = summary["convergence"]
         results[label] = {
             "n_actions": summary["n_actions"],
@@ -740,13 +741,21 @@ def _plot_loss_by_seed(path, seeds, threshold):
 
 
 def _plot_comparison(path, curves, threshold):
+    """Solid: CE loss against the best portfolio on that grid (learning gap).
+    Dashed: the same curve plus that grid's discretization gap, i.e. the loss
+    against the continuous optimum (total gap), so grids can be compared on
+    one reference (audit F-M6)."""
+    if len(curves) > len(RESOLUTION_COLORS):
+        raise ValueError(f"at most {len(RESOLUTION_COLORS)} grids per comparison plot (audit F-L4)")
     fig, ax = _figure()
-    for (label, (obs, loss)), hue in zip(curves.items(), RESOLUTION_COLORS):
-        ax.plot(obs / 1e6, loss, color=hue, linewidth=2, label=f"{label} grid")
+    for (label, (obs, loss, disc)), hue in zip(curves.items(), RESOLUTION_COLORS):
+        ax.plot(obs / 1e6, loss, color=hue, linewidth=2, label=f"{label} grid, vs best on that grid")
+        ax.plot(obs / 1e6, loss + disc, color=hue, linewidth=1.5, linestyle=(0, (4, 2)),
+                label=f"{label} grid, vs continuous optimum")
     ax.axhline(threshold, color=INK_2, linewidth=1, linestyle="--", label=f"Near-optimal line ({threshold:g} bps/yr)")
     _style(ax, "Convergence by grid resolution (median across seeds)", "Simulated days (millions)",
-           "CE loss vs best on that grid (bps/yr)")
-    _clip_top(ax, [loss for _, loss in curves.values()], threshold)
+           "CE loss (bps/yr)")
+    _clip_top(ax, [loss + disc for _, loss, disc in curves.values()], threshold)
     ax.legend(frameon=False, labelcolor=INK_2, loc="center right")
     fig.tight_layout()
     fig.savefig(path)

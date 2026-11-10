@@ -44,7 +44,7 @@ import pandas as pd
 
 from src.data.universe import TICKERS
 
-PROCESSED_DIR = Path("data/processed")
+PROCESSED_DIR = Path(__file__).resolve().parents[1] / "data/processed"  # not the working directory (audit F-L1)
 
 # src.rewards.episodic_mean_variance_reward uses a ddof=1 variance, which needs
 # at least two days; it raises ValueError for a one-day batch (it used to return

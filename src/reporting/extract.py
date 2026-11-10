@@ -32,7 +32,11 @@ from src.action_space.grid import generate_weight_grid
 from src.benchmarks.mean_variance import constrained_optimal_weights
 from src.data.universe import TICKERS
 from src.environment import PROCESSED_DIR, load_calibration
-from src.hashing import matches
+import subprocess
+import warnings
+from functools import lru_cache
+
+from src.hashing import digest_variants, matches
 from src.evaluate import (exact_stats, first_for_good, first_greedy_stable, full_windows, greedy_stable_through_end,
                           near_optimal_every_episode, objective, q_fit, settled_from)
 from src.train import grid_fingerprint
@@ -43,6 +47,51 @@ REGISTRY = REPORTS / "registry.json"
 BPS = 252 * 1e4            # daily objective difference -> bps per year
 MAX_POINTS = 650           # time-series points kept per curve (binned beyond this)
 SCHEMA_VERSION = 3   # 2: cross-seed medians computed before binning; 3: Q-value fit per seed (audit M5)
+
+
+@lru_cache(maxsize=None)
+def committed_bytes(commit: str, path: str) -> bytes | None:
+    """A file's contents at a commit, or None when git or the commit is unavailable."""
+    try:
+        return subprocess.run(["git", "show", f"{commit}:{path}"], capture_output=True, check=True, cwd=ROOT).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+@lru_cache(maxsize=None)
+def _git_missing_warning(commit: str) -> None:
+    """Warn once per commit, and only when git or the commit itself is unavailable
+    (a file absent at a present commit is not a git problem)."""
+    try:
+        subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], capture_output=True, check=True, cwd=ROOT)
+        return
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    warnings.warn(f"git could not read commit {commit}; stored file digests are compared as they are, so files "
+                  "hashed with Windows line endings may show as changed (audit F-M5)", stacklevel=3)
+
+
+def canonical_digest(digest: str, path: str, commit: str | None) -> str:
+    """The line-ending-normalized digest a stored digest stands for.
+
+    Manifests written on Windows before 2026-11-09 hashed CRLF bytes, so the
+    same file has a different digest there than on the Mac (AUDIT_2026-11-06.md
+    M2). When the file at the run's commit, with either line ending, gives the
+    stored digest, the LF digest is returned; otherwise the digest is kept as is
+    and any real difference still shows. Extraction stores the result, so a
+    report can be built without git (F-M5)."""
+    if not commit:
+        return digest
+    commit = commit.removesuffix("-dirty")
+    data = committed_bytes(commit, path)
+    if data is None:
+        _git_missing_warning(commit)
+        return digest
+    return digest_variants(data).get(digest, digest)
+
+
+def canonical_digests(stored: dict, prefix: str, commit: str | None) -> dict:
+    return {name: canonical_digest(d, prefix + name, commit) for name, d in stored.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -309,8 +358,9 @@ def extract_experiment(exp_dir: Path, settings: dict, mu: np.ndarray, sigma: np.
             "share_median": np.round(medb["share_median"], 4).tolist(),
         },
         "code": {"git_commit": manifest.get("git_commit"), "numpy": manifest.get("seed_plan", {}).get("numpy_version"),
-                 "code_sha256": manifest.get("code_sha256", {})},
-        "calibration_sha256": manifest["calibration_sha256"],
+                 "code_sha256": canonical_digests(manifest.get("code_sha256", {}), "", manifest.get("git_commit"))},
+        "calibration_sha256": canonical_digests(manifest["calibration_sha256"], "data/processed/",
+                                                manifest.get("git_commit")),
     }
 
 

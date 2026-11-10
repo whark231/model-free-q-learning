@@ -82,6 +82,8 @@ CODE_FILES = (
     "src/environment.py",
     "src/rewards.py",
     "src/action_space/grid.py",
+    "src/hashing.py",
+    "src/config.py",
 )
 FA_CODE_FILES = ("src/fa_agent.py", "src/features.py")  # hashed only for function-approximation runs
 
@@ -465,6 +467,8 @@ def run_experiment(
         "git_commit": _git_commit(),
         "python": platform.python_version(),
         "numpy": np.__version__,
+        "scipy": _version("scipy"),
+        "pandas": _version("pandas"),
         "log_schema": {
             "checkpoint_*": "one row per log_every episodes; the last row covers the final, possibly shorter, window",
             "checkpoint_next_epsilon": "agent.epsilon after this many episodes, the rate for the next episode; "
@@ -537,6 +541,14 @@ def _hashes(root: Path, names) -> dict:
     """Line-ending-normalized digests (src/hashing.py), so the same file gives
     the same digest on Windows and on the Mac."""
     return {name: file_sha256(root / name) for name in names}
+
+
+def _version(module: str) -> str | None:
+    """A library's version, or None when it is not installed."""
+    try:
+        return __import__(module).__version__
+    except ImportError:
+        return None
 
 
 def _git_commit() -> str | None:

@@ -33,7 +33,7 @@ The audit found no correctness bug in the core code or in the FA code. It did fi
 | `tabular-const`, `fa-quadratic`, `fa-spline` run and reported | `results/<run>/`, `reports/<run>/` | `EXPERIMENTS.md` §8.7; report notes written 2026-11-06 |
 | Whole-project audit | `AUDIT_2026-11-06.md` | Four independent reviewers |
 
-407 tests pass.
+425 tests on 2026-11-09: 424 pass, plus the known failure in item 1 below.
 
 ## From Albert, 2026-11-09: audit fixes on `dev`
 
@@ -44,6 +44,16 @@ The audit found no correctness bug in the core code or in the FA code. It did fi
 3. **M1 is fixed in `run_experiments.py` and `evaluate.py` only.** `tc_sweep_report.py` still needs the same `sys.stdout.reconfigure(encoding="utf-8")` line; it was left alone because TC work is on hold.
 4. **After you pull, refresh your working tree once** so the new `.gitattributes` takes effect: `git rm --cached -r -q . ; git reset --hard` on a clean tree (commit or stash first). Text files then check out with LF, and `data/processed/` hashes the same on your machine as on the Mac. The code hashes line-ending-normalized bytes anyway (`src/hashing.py`), so nothing breaks if you skip this; and manifests you wrote on Windows before today are still accepted.
 5. **Re-evaluate the runs whose logs only you have** (`b63`, `eps-decay`, `tabular-const`, `fa-quadratic`), so their summaries and `INDEX.md` gain the total gap, the post-hoc settled measure and provenance (audit L8). Same commands as before, for example `python -m src.run_experiments --run b63 --results-dir results/b63`; finished training is skipped and only the evaluation is rewritten. Then `python -m src.reporting.extract b63` and `python -m src.reporting.build --all`. Every earlier number should come back identical; on the Mac the four re-evaluated runs did.
+
+## From Albert, 2026-11-09 (second round): flow-audit fixes
+
+**In plain terms:** the flow audit (`AUDIT_2026-11-06.md` §8) found one break: the README's reproduce command crashed in a fresh clone because the training logs are not committed. That and the other Albert-owned items are fixed on `dev` (§8.3); no reported number changed. Three things need you.
+
+1. **Re-extract your four runs after re-evaluating them** (item 5 above): `python -m src.reporting.extract <run>` for `eps-decay`, `b63`, `tabular-const` and `fa-quadratic`, then `python -m src.reporting.build --all`. Their `data.json` files are schema 2, so their reports show Q fit as n/a (F-M3). The new test `test_every_registered_report_builds_from_committed_data` compares each rebuilt report with the committed one, so commit the rebuilt reports with the data.
+2. **Update the prospectus status** (F-M11). It still lists M10, M1, M2 and the Q-fit re-evaluation as open. Not changed, since the file is yours.
+3. **Merging `dev` into `main`** (F-M1). `main`, GitHub's default branch, is about 50 commits behind, so a plain clone gets the old README. Proposed: one PR from `dev` to `main` once you have pulled and agree.
+
+Also changed in shared code, all backward compatible: new manifests record scipy and pandas versions and hash `src/hashing.py` and `src/config.py`; evaluation provenance hashes `src/environment.py` and `src/action_space/grid.py`; a results folder whose manifest is committed but whose `.npz` logs are missing is now refused with a pointer to `--results-dir results/repro`.
 
 ## Your next steps
 

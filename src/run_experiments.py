@@ -106,6 +106,16 @@ def training_status(run_dir: Path, train_cfg) -> str:
             f"{run_dir} is partly trained ({done} of {expected} runs). Delete that one folder and run again; "
             "other experiments are unaffected"
         )
+    files = [r.get("file", f"run_{r.get('run', i):03d}.npz") for i, r in enumerate(manifest["runs"])]
+    missing = [f for f in files if not (run_dir / f).exists()]
+    if missing:
+        # Manifests and evaluations are committed; the training logs are not. A
+        # fresh clone therefore has "finished" folders without logs (audit F-H1).
+        raise FileNotFoundError(
+            f"{run_dir} has a committed manifest but not its training logs ({len(missing)} of {expected} .npz "
+            "files missing, e.g. " + missing[0] + "). To reproduce, train into a new folder, for example "
+            "--results-dir results/repro, and compare with the committed summaries. Nothing was changed"
+        )
     return "finished"
 
 
@@ -205,6 +215,7 @@ def _index_entry(experiment, summary: dict) -> dict:
         "share_exactly_best_discrete": learned["share_exactly_best_discrete"],
         "convergence": {rule: conv[rule] for rule in conv["rules"]},
         "settled": conv.get("settled"),
+        "near_optimal_every_episode": conv.get("near_optimal_every_episode"),
         "q_spearman_all": summary.get("q_fit", {}).get("all", {}).get("spearman"),
     }
 
@@ -236,15 +247,16 @@ def _index_markdown(index: dict) -> str:
         "portfolio on that grid, the total gap against the continuous long-only optimum (discretization plus "
         "learning, per seed). For each rule: the share of seeds that met it, and in brackets the median simulated "
         "days (millions) among the seeds that did. The primary rule's count includes its K-episode waiting window. "
-        "Near-optimal is read at the 10,000-episode checkpoints; \"settled\" (post hoc, descriptive) is the first "
+        "Simulated days = episodes x B. Near-optimal for good is read at the 10,000-episode checkpoints; the "
+        "every-episode version (post hoc) also counts brief switches between checkpoints, so it is later. \"settled\" (post hoc, descriptive) is the first "
         "checkpoint from which the final portfolio was greedy at every later checkpoint; a tabular seed always "
         "settles by the last checkpoint, so that column gives the median and range in millions of days, not a share. Q fit is the median "
         "Spearman correlation between the learned Q-values and every portfolio's true value.",
         "",
         "| Experiment | γ | Grid | Discretization gap | Learning gap, median (range) | Total gap, median (range) | "
-        "Exactly best | Converged (primary rule) | Settled (post hoc), median (range) | Near-optimal for good (checkpoints) | "
+        "Exactly best | Converged (primary rule) | Settled (post hoc), median (range) | Near-optimal for good (checkpoints) | Near-optimal every episode (post hoc) | "
         "Q fit | Folder |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for e in index["experiments"]:
         gap = e["learning_gap_bps"]
@@ -269,7 +281,7 @@ def _index_markdown(index: dict) -> str:
             f"{_fmt(e['discretization_gap_bps'])} | {_fmt(gap['median'])} ({_fmt(gap['min'])} to {_fmt(gap['max'])}) | "
             f"{total_text} | "
             f"{e['share_exactly_best_discrete']:.0%} | {obs(e['convergence'][primary])} | {settled_text} | "
-            f"{obs(e['convergence']['near_optimal_for_good'])} | "
+            f"{obs(e['convergence']['near_optimal_for_good'])} | {obs(e.get('near_optimal_every_episode'))} | "
             f"{fit_text} | "
             f"[{e['folder']}]({e['folder']}/evaluation/summary.json) |"
         )

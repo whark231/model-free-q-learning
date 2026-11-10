@@ -15,12 +15,11 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import subprocess
-from functools import lru_cache
+import sys
 from pathlib import Path
 
-from src.hashing import digest_variants
-from src.reporting.extract import REPORTS, ROOT, load_registry, registry_entry
+from src.reporting.extract import (REPORTS, ROOT, SCHEMA_VERSION, canonical_digests, load_registry,
+                                  registry_entry)
 
 TEMPLATE = Path(__file__).resolve().parent / "template.html"
 PLACEHOLDER = "/*__REPORT_DATA__*/null"
@@ -63,33 +62,10 @@ def _same(a, b) -> bool:
     return a == b
 
 
-@lru_cache(maxsize=None)
-def _committed_bytes(commit: str, path: str) -> bytes | None:
-    """A file's contents at a commit, or None when git or the commit is unavailable."""
-    try:
-        return subprocess.run(["git", "show", f"{commit}:{path}"], capture_output=True, check=True, cwd=ROOT).stdout
-    except (OSError, subprocess.CalledProcessError):
-        return None
-
-
-def canonical_digest(digest: str, path: str, commit: str | None) -> str:
-    """The line-ending-normalized digest a stored digest stands for.
-
-    Manifests written on Windows before 2026-11-09 hashed CRLF bytes, so the
-    same file has a different digest there than on the Mac (AUDIT_2026-11-06.md
-    M2). When the file at the run's commit, with either line ending, gives the
-    stored digest, the LF digest is returned; otherwise the digest is kept as is
-    and any real difference still shows."""
-    if not commit:
-        return digest
-    data = _committed_bytes(commit.removesuffix("-dirty"), path)
-    return digest if data is None else digest_variants(data).get(digest, digest)
-
-
 def _digests(exp: dict, key: str, prefix: str = "") -> dict:
     commit = exp.get("code", {}).get("git_commit")
     stored = exp.get(key, {}) if key == "calibration_sha256" else exp.get("code", {}).get(key, {})
-    return {name: canonical_digest(d, prefix + name, commit) for name, d in stored.items()}
+    return canonical_digests(stored, prefix, commit)
 
 
 def param_changes(old: dict, new: dict) -> list[dict]:
@@ -130,6 +106,11 @@ def load_run_data(run_id: str, reports_dir: Path = REPORTS) -> dict:
         raise FileNotFoundError(f"{path} is missing; run `python -m src.reporting.extract {run_id}` on the machine "
                                 "that holds that run's training logs")
     data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("schema_version", 1) < SCHEMA_VERSION:
+        # Fields added since are shown as n/a; re-extract on the machine with the logs (audit F-M3).
+        print(f"note: {path.relative_to(ROOT) if path.is_relative_to(ROOT) else path} is schema "
+              f"{data.get('schema_version')} (current {SCHEMA_VERSION}); newer fields show as n/a until "
+              f"`python -m src.reporting.extract {run_id}` is re-run", file=sys.stderr)
     for exp in data.get("experiments", []):
         for key, value in AGENT_PARAM_DEFAULTS.items():
             exp.get("params", {}).setdefault(key, value)

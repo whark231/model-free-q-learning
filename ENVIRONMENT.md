@@ -269,7 +269,7 @@ with probability about 6e-7 per statistic, and below 1e-4 across the suite.
   - Takes the Part IV observation count from the training loop (episodes used × B). With block sampling, `days_simulated` counts days drawn in advance, which can exceed the days used.
   - Master seed 20261016 and 10 runs per experiment (decided 2026-10-16).
 - **For William (flagged, not changed).**
-  - `episodic_mean_variance_reward` now raises `ValueError` for a one-day batch (it used to return NaN). The simulator also refuses such episodes. The comment at `src/environment.py` lines 44 to 48 still describes the old NaN behaviour.
+  - `episodic_mean_variance_reward` now raises `ValueError` for a one-day batch (it used to return NaN). The simulator also refuses such episodes. The comment in `src/environment.py` was updated to match on 2026-11-09 (audit L2).
   - Training speed: per 20-day episode, the reward call takes 7.6 µs against 3.8 µs for the draw. The agent's choice in episode k depends on the reward in episode k−1, so rewards cannot be computed for a whole block at once. Each episode's mean vector m and covariance matrix S can be, though, and then the reward is w'm − (γ/2)w'Sw. That identity is exact (checked with `rewards.py`).
 - **Part VI and bonus.**
   - Calibration windows need a helper that estimates μ and Σ from a date range of `excess_returns.csv`. Re-running `clean.py` would overwrite the baseline.

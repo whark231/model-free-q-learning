@@ -376,3 +376,26 @@ def test_extract_carries_the_q_fit_that_evaluate_reports(small_run):
         assert mine["near_obs_episode"] == theirs["near_optimal_every_episode_observations"]
     assert e["summary"]["q_spearman_all"]["median"] == pytest.approx(summary["q_fit"]["all"]["spearman"]["median"])
     assert data["schema_version"] == 3
+
+
+def test_every_registered_report_builds_from_committed_data(tmp_path):
+    """A broken registry or data.json fails here, not at report time (audit L6, F-L5).
+    Builds into a copy, then checks the committed report.html is current."""
+    import shutil
+    registry = extract.load_registry()
+    reports = tmp_path / "reports"
+    for entry in registry["runs"]:
+        (reports / entry["id"]).mkdir(parents=True)
+        shutil.copy(extract.REPORTS / entry["id"] / "data.json", reports / entry["id"] / "data.json")
+    for entry in registry["runs"]:
+        out = build.write_report(entry["id"], registry, reports_dir=reports)
+        committed = extract.REPORTS / entry["id"] / "report.html"
+        assert out.read_bytes() == committed.read_bytes(), f"{committed} is out of date; run src.reporting.build --all"
+
+
+def test_the_comparison_plot_refuses_more_grids_than_colours(tmp_path):
+    import numpy as np
+    from src import evaluate as ev
+    curves = {str(i): (np.arange(3.0), np.zeros(3), 1.0) for i in range(len(ev.RESOLUTION_COLORS) + 1)}
+    with pytest.raises(ValueError, match="at most"):
+        ev._plot_comparison(tmp_path / "x.png", curves, 25.0)

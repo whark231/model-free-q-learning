@@ -645,7 +645,7 @@ Every α (and the spline l2) was chosen on separate tuning seeds before these ru
 - **How each expectation is read.**
   - "Learning gap" means the mean over the 10 seeds, as in `REVIEW_HISTORY.md` §8.
   - "Q-value fit" means the median over seeds of the Spearman correlation and the top-10 recall over all portfolios (`q_fit_all`, `EVALUATION.md` §2).
-  - The fit metrics are in each experiment's `evaluation/summary.json`; the HTML reports do not show them yet.
+  - The fit metrics are in each experiment's `evaluation/summary.json`, `INDEX.md` and, since 2026-11-09, the HTML reports (a report extracted before then shows them as n/a until re-extracted).
 - **Tuned at γ = 5 only.** The same α and l2 are used at γ = 3 and 8.
 
 **Key takeaways**
@@ -754,15 +754,15 @@ All numbers are from each experiment's `evaluation/summary.json`. Learning gaps 
 
 | γ | Run | Mean gap | Median (range) | Exactly best | Primary rule | Near-optimal | Spearman (all) | Top-10 recall |
 |---|---|---|---|---|---|---|---|---|
-| 5 | `baseline-v1` | 17.6 | 14.1 (0.0 to 47.3) | 3 | 9 | 7 | not committed | not committed |
+| 5 | `baseline-v1` | 17.6 | 14.1 (0.0 to 47.3) | 3 | 9 | 7 | 0.821 | 35% |
 | 5 | `tabular-const` | 43.5 | 42.0 (10.5 to 109.9) | 0 | 10 | 4 | 0.813 | 25% |
 | 5 | `fa-quadratic` | 22.6 | 22.6 (15.9 to 29.4) | 0 | 2 | 5 | 0.915 | 55% |
 | 5 | `fa-spline` | 15.7 | 5.3 (0.0 to 78.5) | 5 | 10 | 8 | 0.950 | 45% |
-| 3 | `baseline-v1` | 30.6 | 10.0 (0.0 to 81.1) | 5 | 8 | 6 | not committed | not committed |
+| 3 | `baseline-v1` | 30.6 | 10.0 (0.0 to 81.1) | 5 | 8 | 6 | 0.710 | 20% |
 | 3 | `tabular-const` | 107.2 | 102.6 (0.0 to 205.2) | 2 | 8 | 2 | 0.703 | 15% |
 | 3 | `fa-quadratic` | 8.0 | 0.0 (0.0 to 20.0) | 6 | 0 | 10 | 0.854 | 80% |
 | 3 | `fa-spline` | 45.4 | 62.3 (0.0 to 68.3) | 3 | 10 | 3 | 0.945 | 65% |
-| 8 | `baseline-v1` | 13.0 | 5.7 (0.0 to 53.1) | 5 | 9 | 7 | not committed | not committed |
+| 8 | `baseline-v1` | 13.0 | 5.7 (0.0 to 53.1) | 5 | 9 | 7 | 0.920 | 20% |
 | 8 | `tabular-const` | 43.3 | 51.5 (11.5 to 61.2) | 0 | 10 | 1 | 0.917 | 20% |
 | 8 | `fa-quadratic` | 58.7 | 55.7 (55.7 to 70.8) | 0 | 9 | 0 | 0.951 | 20% |
 | 8 | `fa-spline` | 54.6 | 51.6 (50.0 to 61.2) | 0 | 9 | 0 | 0.957 | 20% |
@@ -801,4 +801,4 @@ Paired mean learning-gap differences (SE):
 - **The ΔQ rule is uninformative under a constant α.** Every seed of all three runs meets it in the first 10,000-episode window, because one update moves a value by about 5e-7, far below the 1e-5 tolerance.
 - **γ = 8 is a systematic miss.** The best grid portfolio there is 40% SPY, 40% IEF, 20% GLD. All 20 FA seeds and 6 of 10 `tabular-const` seeds hold 20% SPY, against 1 of 10 in `baseline-v1`. `fa-quadratic` picks the same portfolio on 8 of 10 seeds, which points to a bias shared by every seed rather than noise. The suspected cause is the unfinished directions above. Solving the average (mean-field) update from θ = 0 over 1.41M uniform episodes predicts the spline's γ = 8 pick at a 50.0 bps/yr gap, against actual picks 50.0 to 61.2 off, and predicts the best portfolio at γ = 3 and 5 (reviewer's calculation, not re-checked, no committed script). For the quadratic, this exploration-only calculation is far off, so it explains the quadratic's miss only in part. Also untested: α was tuned at γ = 5 only.
 - **No discovery claim.** `fa-spline` ranks the landscape at least as well as the correctly specified quadratic on Spearman, but its picks are not better than `baseline-v1`'s at any γ in a way the SEs support (−1.8 ± 9.5 at γ = 5). That is evidence the generic features can represent the landscape. It is no evidence that the agent found the optimum.
-- **`baseline-v1` has no committed Q-fit numbers.** Its summaries need re-evaluating with the current `evaluate.py` and committing before the FA-versus-tabular fit comparison can include it (`AUDIT_2026-11-06.md`).
+- **`baseline-v1`'s Q fit** (re-evaluated 2026-11-09, `AUDIT_2026-11-06.md` H3): every FA run ranks the landscape better than `baseline-v1` on Spearman at every γ; on top-10 recall `fa-quadratic` and `fa-spline` are higher at γ = 5 and 3 and tie at γ = 8. `tabular-const` is just below `baseline-v1` on Spearman at every γ.

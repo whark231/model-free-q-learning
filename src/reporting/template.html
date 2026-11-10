@@ -346,6 +346,12 @@ const mfmt = v => v >= 10 ? f(v, 0) + "M" : v >= 1 ? f(v, 1) + "M" : f(v * 1000,
 const refRun = R.reference_id ? RUNS[R.reference_id] : null;
 const expColor = (i) => css(`--s${(i % 8) + 1}`);
 
+// Training and evaluation can happen at different commits (a re-evaluation
+// rewrites index.json), so the header shows both (audit F-M2).
+const shortCommit = c => { const s = String(c); return s.slice(0, 7) + (s.endsWith("-dirty") ? "-dirty" : ""); };
+const trainedAt = exps => { const cs = [...new Set(exps.map(e => e.code && e.code.git_commit).filter(Boolean))];
+  return cs.length ? `Trained at ${cs.map(c => `<code>${esc(shortCommit(c))}</code>`).join(", ")}` : ""; };
+
 // ---------- static sections ----------
 function header() {
   const reg = REG[R.current_id] || {}, run = CUR.run, idx = CUR.index || {};
@@ -355,7 +361,7 @@ function header() {
   $("what-changed").innerHTML = esc(run.what_changed || "");
   const exps = CUR.experiments;
   $("meta").innerHTML = [`Run <code>${esc(run.id)}</code>`, run.date ? `Date ${esc(run.date)}` : "", run.git_ref ? `Code <code>${esc(run.git_ref)}</code>` : "",
-    idx.git_commit ? `Commit <code>${esc(String(idx.git_commit).slice(0, 7))}</code>` : "", `${exps.length} experiment${exps.length > 1 ? "s" : ""}`, `Results <code>${esc(run.results_dir)}</code>`,
+    trainedAt(exps), idx.git_commit ? `Evaluated at <code>${esc(shortCommit(idx.git_commit))}</code>` : "", `${exps.length} experiment${exps.length > 1 ? "s" : ""}`, `Results <code>${esc(run.results_dir)}</code>`,
     reg.original_report ? `Original report <code>${esc(reg.original_report)}</code>` : ""].filter(Boolean).map(x => `<span>${x}</span>`).join("");
   const banners = [];
   if (run.scale !== "full") banners.push(`<b>Reduced settings.</b> This run is a pipeline or exploratory check (scale: ${esc(run.scale || "unknown")}); its numbers are not report results.`);
@@ -579,7 +585,7 @@ function notesSection() {
   ];
   $("caveats").innerHTML = [...cav, ...std].map(c => `<li>${c}</li>`).join("");
   const idx = CUR.index || {};
-  $("footer").innerHTML = `Built by <code>python -m src.reporting.build ${esc(R.current_id)}</code> from <code>reports/registry.json</code> and the committed <code>reports/&lt;run&gt;/data.json</code> files of ${R.run_order.map(id => `<code>${esc(id)}</code>`).join(", ")}. ${idx.written_utc ? `Run index written ${esc(idx.written_utc)}. ` : ""}numpy ${esc(CUR.experiments[0].code.numpy || idx.numpy || "")}.`;
+  $("footer").innerHTML = `Built by <code>python -m src.reporting.build ${esc(R.current_id)}</code> from <code>reports/registry.json</code> and the committed <code>reports/&lt;run&gt;/data.json</code> files of ${R.run_order.map(id => `<code>${esc(id)}</code>`).join(", ")}. ${idx.written_utc ? `Evaluation index written ${esc(idx.written_utc)}. ` : ""}numpy ${esc(CUR.experiments[0].code.numpy || idx.numpy || "")}.`;
 }
 
 function renderAll() { header(); settingsSection(); resultsSection(); resultsCharts(); detailSection(); compareSection(); notesSection(); }

@@ -519,7 +519,8 @@ def test_summary_records_its_provenance(tmp_path, market):
     run_dir, _ = train_with(tmp_path, [fixed(0)])
     prov = ev.evaluate_experiment(run_dir, EVAL)["provenance"]
     assert set(prov["code_sha256"]) == {"src/evaluate.py", "src/config.py", "src/run_experiments.py", "src/hashing.py",
-                                         "src/benchmarks/mean_variance.py"}
+                                         "src/benchmarks/mean_variance.py", "src/environment.py",
+                                         "src/action_space/grid.py"}
     raw = (REPO_ROOT / "src/evaluate.py").read_bytes().replace(b"\r\n", b"\n")
     assert prov["code_sha256"]["src/evaluate.py"] == sha256_bytes(raw)
     assert prov["numpy"] == np.__version__ and prov["matplotlib"] and "git_commit" in prov
