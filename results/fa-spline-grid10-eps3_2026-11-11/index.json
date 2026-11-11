@@ -1,0 +1,335 @@
+{
+  "written_utc": "2026-11-11T16:18:09+00:00",
+  "git_commit": "c0e549454f256b69cf7b97756b36ae658bd81949",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "settings": {
+    "gammas": [
+      3.0,
+      5.0,
+      8.0
+    ],
+    "gamma_baseline": 5.0,
+    "episode_length": 63,
+    "n_episodes": 26000000,
+    "n_runs": 10,
+    "master_seed": 20261016,
+    "epsilon0": 1.0,
+    "beta": 2.6973522287076783e-07,
+    "alpha_rule": 2.7775746373405417e-05,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "convergence_k": 2600000,
+    "primary_convergence_rule": "greedy_stable_through_end",
+    "dq_tol": 1e-05,
+    "near_optimal_bps": 25.0,
+    "n_eval_episodes": 10000,
+    "increments": [
+      0.1
+    ],
+    "post_hoc_run": "fa-spline-grid10-eps3",
+    "epsilon_at_halfway": 0.03,
+    "agent": "linear",
+    "feature_map": "spline",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "full_scale": true,
+  "post_hoc_run": {
+    "run_id": "fa-spline-grid10-eps3",
+    "registered": "2026-11-11",
+    "expected": "against grid10-robustness (same B, episodes, \u03b5 and seeds; paired, 2 SE): a median Spearman correlation over all 43,758 portfolios of at least 0.9 at every \u03b3; at least 6 of 10 seeds meeting the primary rule at every \u03b3 (a constant alpha settles the greedy portfolio, so this measures stability); no direction for the learning gap at any \u03b3, top-10 recall, exactly-best share or regret; discretization gap identical"
+  },
+  "experiments": [
+    {
+      "name": "baseline_g5_grid10_B63_N26M_eps3_FAspline",
+      "purpose": "post-hoc run fa-spline-grid10-eps3: against grid10-robustness (same B, episodes, \u03b5 and seeds; paired, 2 SE): a median Spearman correlation over all 43,758 portfolios of at least 0.9 at every \u03b3; at least 6 of 10 seeds meeting the primary rule at every \u03b3 (a constant alpha settles the greedy portfolio, so this measures stability); no direction for the learning gap at any \u03b3, top-10 recall, exactly-best share or regret; discretization gap identical",
+      "gamma": 5.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "baseline_g5_grid10_B63_N26M_eps3_FAspline",
+      "discretization_gap_bps": 1.2902468012125807,
+      "learning_gap_bps": {
+        "mean": 78.75268941341666,
+        "median": 66.35259172230397,
+        "min": 58.21945337847022,
+        "max": 140.92463927282543,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 80.04293621462924,
+        "median": 67.64283852351655,
+        "min": 59.5097001796828,
+        "max": 142.21488607403802,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.4,
+          "observations": {
+            "mean": 1402817850.0,
+            "median": 1390674600.0,
+            "min": 1296325800.0,
+            "max": 1533596400.0,
+            "n": 4
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 630000.0,
+            "median": 630000.0,
+            "min": 630000.0,
+            "max": 630000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 1524852000.0,
+          "median": 1586655000.0,
+          "min": 1144080000.0,
+          "max": 1634220000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.0,
+        "observations": {
+          "mean": null,
+          "median": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9689011085631412,
+        "median": 0.9762748661561418,
+        "min": 0.9404722824764632,
+        "max": 0.981103620187808,
+        "n": 10
+      }
+    },
+    {
+      "name": "robust_g3_grid10_B63_N26M_eps3_FAspline",
+      "purpose": "post-hoc run fa-spline-grid10-eps3: against grid10-robustness (same B, episodes, \u03b5 and seeds; paired, 2 SE): a median Spearman correlation over all 43,758 portfolios of at least 0.9 at every \u03b3; at least 6 of 10 seeds meeting the primary rule at every \u03b3 (a constant alpha settles the greedy portfolio, so this measures stability); no direction for the learning gap at any \u03b3, top-10 recall, exactly-best share or regret; discretization gap identical",
+      "gamma": 3.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g3_grid10_B63_N26M_eps3_FAspline",
+      "discretization_gap_bps": 2.4742144891934794,
+      "learning_gap_bps": {
+        "mean": 140.64608535428525,
+        "median": 137.6480221462166,
+        "min": 94.17700936951049,
+        "max": 207.43273850876056,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 143.1202998434787,
+        "median": 140.12223663541008,
+        "min": 96.65122385870396,
+        "max": 209.90695299795405,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.3,
+          "observations": {
+            "mean": 1449665700.0,
+            "median": 1470659400.0,
+            "min": 1355438700.0,
+            "max": 1522899000.0,
+            "n": 3
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 630000.0,
+            "median": 630000.0,
+            "min": 630000.0,
+            "max": 630000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 1577898000.0,
+          "median": 1601145000.0,
+          "min": 1506960000.0,
+          "max": 1634220000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.0,
+        "observations": {
+          "mean": null,
+          "median": null,
+          "min": null,
+          "max": null,
+          "n": 0
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.956155657833909,
+        "median": 0.9631901115285222,
+        "min": 0.9160660485690604,
+        "max": 0.974024966020122,
+        "n": 10
+      }
+    },
+    {
+      "name": "robust_g8_grid10_B63_N26M_eps3_FAspline",
+      "purpose": "post-hoc run fa-spline-grid10-eps3: against grid10-robustness (same B, episodes, \u03b5 and seeds; paired, 2 SE): a median Spearman correlation over all 43,758 portfolios of at least 0.9 at every \u03b3; at least 6 of 10 seeds meeting the primary rule at every \u03b3 (a constant alpha settles the greedy portfolio, so this measures stability); no direction for the learning gap at any \u03b3, top-10 recall, exactly-best share or regret; discretization gap identical",
+      "gamma": 8.0,
+      "increment": 0.1,
+      "n_actions": 43758,
+      "n_episodes": 26000000,
+      "n_runs": 10,
+      "converge_k": 2600000,
+      "folder": "robust_g8_grid10_B63_N26M_eps3_FAspline",
+      "discretization_gap_bps": 6.133499610241306,
+      "learning_gap_bps": {
+        "mean": 59.57774990571585,
+        "median": 59.565810585738575,
+        "min": 1.2500244899184156,
+        "max": 107.9840357149215,
+        "n": 10
+      },
+      "total_gap_bps": {
+        "mean": 65.71124951595716,
+        "median": 65.69931019597988,
+        "min": 7.383524100159722,
+        "max": 114.11753532516282,
+        "n": 10
+      },
+      "share_exactly_best_discrete": 0.0,
+      "convergence": {
+        "greedy_stable": {
+          "share_of_seeds": 0.3,
+          "observations": {
+            "mean": 1311158100.0,
+            "median": 1296174600.0,
+            "min": 1234617300.0,
+            "max": 1402682400.0,
+            "n": 3
+          }
+        },
+        "greedy_stable_through_end": {
+          "share_of_seeds": 0.0,
+          "observations": {
+            "mean": null,
+            "median": null,
+            "min": null,
+            "max": null,
+            "n": 0
+          }
+        },
+        "dq_below_tol_for_good": {
+          "share_of_seeds": 1.0,
+          "observations": {
+            "mean": 630000.0,
+            "median": 630000.0,
+            "min": 630000.0,
+            "max": 630000.0,
+            "n": 10
+          }
+        },
+        "near_optimal_for_good": {
+          "share_of_seeds": 0.1,
+          "observations": {
+            "mean": 1535310000.0,
+            "median": 1535310000.0,
+            "min": 1535310000.0,
+            "max": 1535310000.0,
+            "n": 1
+          }
+        }
+      },
+      "settled": {
+        "share_of_seeds": 1.0,
+        "observations": {
+          "mean": 1534869000.0,
+          "median": 1557360000.0,
+          "min": 1360800000.0,
+          "max": 1629810000.0,
+          "n": 10
+        }
+      },
+      "near_optimal_every_episode": {
+        "share_of_seeds": 0.1,
+        "observations": {
+          "mean": 1534887900.0,
+          "median": 1534887900.0,
+          "min": 1534887900.0,
+          "max": 1534887900.0,
+          "n": 1
+        }
+      },
+      "q_spearman_all": {
+        "mean": 0.9827393318424379,
+        "median": 0.9832513647143666,
+        "min": 0.9754216920713192,
+        "max": 0.9892093265485643,
+        "n": 10
+      }
+    }
+  ],
+  "comparison": null
+}

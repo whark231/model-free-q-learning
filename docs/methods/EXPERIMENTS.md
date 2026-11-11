@@ -857,4 +857,27 @@ for eps in eps3 eps10; do python -m src.run_experiments --run fa-spline-grid10-$
 - **Time.** A 100,000-episode timing run (2026-11-11, one seed, `baseline_g5`, `eps3`) took 7.3 s of training, about 32 minutes per 26M-episode seed and 5.3 hours per experiment. With six processes sharing the machine, expect about 6 to 8 hours. William's 42 s per 100,000 episodes (2026-11-10) was on another machine with other jobs running.
 - **Disk.** About 455 to 480 MB per seed (2,600 snapshots × 43,758 float32 values, which barely compress), so 4.5 to 4.8 GB per experiment and about 28 GB for both runs. 40 GB was free at registration.
 - **Memory.** About 1.1 to 1.2 GB per process, peaking near 1.4 GB at each checkpoint (a float64 copy of the feature matrix), about 8.5 GB for six.
-- **Caveat for the report.** The runs will show "Training code changed" against earlier runs for `src/action_space/grid.py` and `src/train.py`. Those edits are LF writes, the increment guard and provenance fields (`AUDIT_2026-11-06.md` §2.2 and §8); `grid_sha256` matches.
+- **Caveat for the report.** The runs will show "Training code changed" against earlier runs for `src/action_space/grid.py`, `src/environment.py` and `src/train.py`. Since `fa-spline`, those edits are LF writes, the increment guard and provenance fields (`AUDIT_2026-11-06.md` §2.2 and §8); `environment.py` now resolves the processed-data path relative to the file instead of the working directory. Against `grid10-robustness`, `train.py` also gains the FA agent, which is the change under test. `grid_sha256` matches.
+
+#### Outcome for `fa-spline-grid10-eps3`, written after the run (2026-11-11)
+
+**TL;DR / In plain terms:** the FA agent learned the shape of the value landscape much better than the table did, but it picked worse portfolios at every γ, and on no seed was its final pick held for the required 2.6M episodes. It under-weights SPY on every seed. `fa-spline-grid10-eps10` (training) tests whether more exploration fixes this.
+
+Paired by seed against `grid10-robustness` (10 seeds per γ; numbers from each experiment's `evaluation/per_seed.csv`):
+
+| | γ = 5 | γ = 3 | γ = 8 |
+|---|---|---|---|
+| Mean learning gap, FA / table (bps/yr) | 78.8 / 11.7 | 140.6 / 22.0 | 59.6 / 5.8 |
+| Paired difference (SE) | +67.1 (9.1) | +118.6 (12.2) | +53.8 (9.8) |
+| Median Spearman, FA / table | 0.976 / 0.543 | 0.963 / 0.406 | 0.983 / 0.725 |
+| Primary rule met, FA / table | 0 / 0 of 10 | 0 / 0 | 0 / 0 |
+| SPY in FA picks (best grid portfolio) | 20% to 30% (50%) | 20% to 40% (60%) | 20% to 30% (40%) |
+| Training regret per episode, FA / table (bps/yr) | 122.7 / 78.8 | 160.0 / 91.3 | 126.5 / 88.1 |
+
+Registered expectations:
+- **Spearman of at least 0.9 at every γ: held** (lowest seed 0.916).
+- **At least 6 of 10 seeds meeting the primary rule at every γ: failed** (0 of 10 at every γ). Unlike `fa-spline` and `tabular-const` on the 20% grid, a constant α did not settle the greedy portfolio here; the post-hoc settled point has a median of 1,557M to 1,601M of 1,638M simulated days.
+- **Discretization gap identical: held** (1.3, 2.5 and 6.1 bps/yr).
+- **No direction** was registered for the learning gap, top-10 recall, the exactly-best share or regret. The gap and regret came out worse for FA beyond 2 SE at every γ. Median top-10 recall was lower at γ = 5 and 3 (0% against 10%) and tied at γ = 8 (10%; means 12% against 9%). FA ended on the exactly-best portfolio on 0 seeds at every γ, against 0, 4 and 1 for the table, so it is clearly behind only at γ = 3.
+
+This run shows that a good overall ranking (Spearman) does not imply a good pick, because the pick depends on the small differences among the best portfolios. The SPY under-weight on every seed points to a bias shared across seeds rather than noise. On the 20% grid `fa-spline` under-weighted SPY on every seed only at γ = 8 (7 of 10 at γ = 3, 1 of 10 at γ = 5). The tabular `grid10-robustness` run also under-weights SPY, on 8, 4 and 6 of 10 seeds by one grid step (10 points), so the direction is not specific to the features; FA's under-weight is larger (10 to 30 points) and on every seed. The suspected cause, unfinished weight directions, is not tested by this run. William's mean-field calculation (true μ and Σ) predicted gaps of about 33.6, 0 and 1.3 bps/yr; the realized gaps are larger at every γ, so it understates the problem.
