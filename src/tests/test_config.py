@@ -455,22 +455,41 @@ def test_fa_spline_uses_the_alpha_and_l2_chosen_on_six_seeds():
         assert tc.master_seed == 20261016 and tc.n_runs == 10 and tc.episode_length == 20
 
 
-def test_fa_spline_grid10_pairs_with_grid10_robustness_and_keeps_the_spline_alpha():
-    """EXPERIMENTS.md §8.8, registered 2026-11-10: the same seeds and training budget as
-    grid10-robustness, and fa-spline's agent settings unchanged (not re-tuned)."""
-    run, tab, spline = (cfg.POST_HOC_RUNS[k] for k in ("fa-spline-grid10", "grid10-robustness", "fa-spline"))
-    assert run.registered == "2026-11-10"
+def test_fa_spline_grid10_runs_pair_with_grid10_robustness_and_differ_only_in_epsilon():
+    """EXPERIMENTS.md §8.8, registered 2026-11-11: the same seeds and training budget as
+    grid10-robustness, fa-spline's features, and eps3 / eps10 differing in ε alone."""
+    eps3, eps10, tab, spline = (cfg.POST_HOC_RUNS[k] for k in (
+        "fa-spline-grid10-eps3", "fa-spline-grid10-eps10", "grid10-robustness", "fa-spline"))
+    assert "fa-spline-grid10" not in cfg.POST_HOC_RUNS  # replaced before training
+    assert eps3.registered == eps10.registered == "2026-11-11"
     for field in ("episode_length", "n_episodes", "epsilon_at_halfway", "increment"):
-        assert getattr(run, field) == getattr(tab, field), field
-    for field in ("alpha_rule", "agent", "feature_map", "l2", "greedy_refresh_every"):
-        assert getattr(run, field) == getattr(spline, field), field
-    assert [e.name for e in cfg.experiments(run)] == [
-        "baseline_g5_grid10_B63_N26M_eps3_FAspline", "robust_g3_grid10_B63_N26M_eps3_FAspline",
-        "robust_g8_grid10_B63_N26M_eps3_FAspline"]
-    for experiment, twin in zip(cfg.experiments(run), cfg.experiments(tab)):
-        tc, ttc = cfg.train_config(experiment), cfg.train_config(twin)
-        assert (tc.gamma, tc.master_seed, tc.n_runs, tc.beta) == (ttc.gamma, ttc.master_seed, ttc.n_runs, ttc.beta)
-        assert tc.n_episodes % tc.greedy_refresh_every == 0 and cfg.LOG_EVERY % tc.greedy_refresh_every == 0
+        assert getattr(eps3, field) == getattr(tab, field), field
+    for field in ("agent", "feature_map", "l2", "greedy_refresh_every"):
+        assert getattr(eps3, field) == getattr(spline, field), field
+    differ = {k for k in cfg.BASELINE_RUN_SETTINGS if getattr(eps3, k) != getattr(eps10, k)}
+    assert differ == {"epsilon_at_halfway"} and eps10.epsilon_at_halfway == 0.10
+    for run, eps in ((eps3, "eps3"), (eps10, "eps10")):
+        assert [e.name for e in cfg.experiments(run)] == [
+            f"{g}_grid10_B63_N26M_{eps}_FAspline" for g in ("baseline_g5", "robust_g3", "robust_g8")]
+        for experiment, twin in zip(cfg.experiments(run), cfg.experiments(tab)):
+            tc, ttc = cfg.train_config(experiment), cfg.train_config(twin)
+            assert (tc.gamma, tc.master_seed, tc.n_runs) == (ttc.gamma, ttc.master_seed, ttc.n_runs)
+            assert tc.n_episodes % tc.greedy_refresh_every == 0 and cfg.LOG_EVERY % tc.greedy_refresh_every == 0
+    assert cfg.train_config(cfg.experiments(eps3)[0]).beta == cfg.train_config(cfg.experiments(tab)[0]).beta
+
+
+def test_the_grid10_alpha_is_the_spline_alpha_noise_matched_from_the_features():
+    """Re-derived from the features, not copied from config.py: 63/20 for B, and the
+    ratio of mean ||phi||^2 over the 20% and 10% grids. Uses no mu or Sigma."""
+    import numpy as np
+    from src.action_space.grid import generate_weight_grid
+    from src.features import spline_additive_pairwise_features
+    mean_sq = {inc: float((spline_additive_pairwise_features(generate_weight_grid(9, inc)).astype(np.float64) ** 2)
+                          .sum(axis=1).mean()) for inc in (0.2, 0.1)}
+    expected = cfg.TUNED_ALPHA_SPLINE * 63 / 20 * mean_sq[0.2] / mean_sq[0.1]
+    assert cfg.ALPHA_SPLINE_GRID10 == pytest.approx(expected, rel=1e-9)
+    assert cfg.POST_HOC_RUNS["fa-spline-grid10-eps3"].alpha_rule == cfg.ALPHA_SPLINE_GRID10
+    assert cfg.ALPHA_SPLINE_GRID10 < 2 / 45 * 1e-3  # far inside the stability bound
 
 
 def test_an_fa_variant_runs_end_to_end_and_records_its_agent(tmp_path):

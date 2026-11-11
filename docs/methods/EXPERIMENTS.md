@@ -1,6 +1,6 @@
 # Running the Experiments
 
-**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05 and run 2026-11-06, outcome in §8.7; `baseline-v1`, `n26m`, `all-three`, `grid10-robustness` and `fa-spline` re-evaluated 2026-11-09 to add the total gap, the post-hoc settled measure, Q fit and provenance, with every earlier number unchanged (`AUDIT_2026-11-06.md` §2.1); the transaction-cost runs are run separately by `src/transaction_costs.py` (`TRANSACTION_COSTS.md`); later runs follow `reports/README.md`
+**Owner:** Albert · **Status:** settings fixed 2026-10-16; first full-scale run done 2026-10-22 (tag `baseline-v1`, `results/`); post-hoc runs registered 2026-10-27, all five run 2026-10-28 to 2026-10-29 (§7); constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline` registered 2026-11-05 and run 2026-11-06, outcome in §8.7; `baseline-v1`, `n26m`, `all-three`, `grid10-robustness` and `fa-spline` re-evaluated 2026-11-09 to add the total gap, the post-hoc settled measure, Q fit and provenance, with every earlier number unchanged (`AUDIT_2026-11-06.md` §2.1); the transaction-cost runs are run separately by `src/transaction_costs.py` (`TRANSACTION_COSTS.md`); FA on the 10% grid at two exploration levels (`fa-spline-grid10-eps3`, `fa-spline-grid10-eps10`) registered 2026-11-11 before training (§8.8); later runs follow `reports/README.md`
 **Settings:** `src/config.py` · **Runner:** `src/run_experiments.py` · **Tests:** `src/tests/test_config.py`
 
 ---
@@ -804,49 +804,57 @@ Paired mean learning-gap differences (SE):
 - **No discovery claim.** `fa-spline` ranks the landscape at least as well as the correctly specified quadratic on Spearman, but its picks are not better than `baseline-v1`'s at any γ in a way the SEs support (−1.8 ± 9.5 at γ = 5). That is evidence the generic features can represent the landscape. It is no evidence that the agent found the optimum.
 - **`baseline-v1`'s Q fit** (re-evaluated 2026-11-09, `AUDIT_2026-11-06.md` H3): every FA run ranks the landscape better than `baseline-v1` on Spearman at every γ; on top-10 recall `fa-quadratic` and `fa-spline` are higher at γ = 5 and 3 and tie at γ = 8. `tabular-const` is just below `baseline-v1` on Spearman at every γ.
 
-### 8.8 Run `fa-spline-grid10` (post hoc, registered 2026-11-10 before training)
+### 8.8 Runs `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10` (post hoc, registered 2026-11-11 before training)
 
-**TL;DR / In plain terms:** the spline FA agent on the 10% grid (43,758 portfolios), where the tabular agent never met the primary convergence rule. It uses `grid10-robustness`'s training budget and seeds, so the two pair seed by seed. It tests whether one shared set of weights ranks a large action space better than a table does. It also tests whether the γ = 8 bias from the 20% grid carries over.
+**TL;DR / In plain terms:** the spline FA agent on the 10% grid (43,758 portfolios), where the tabular agent never met the primary convergence rule. Two runs with the same learning rate, differing only in how much the agent explores. `eps3` keeps `grid10-robustness`'s exploration, so it pairs with it seed by seed and asks whether shared weights beat a table on a large grid. `eps10` explores more (ε = 10% at halfway) and asks whether the FA agent's weak spot is too few random portfolios to learn from. The first registration (2026-11-10, William) used one run with `fa-spline`'s α unchanged; Albert replaced it with these two on 2026-11-11, before any training.
 
 **Key concepts to understand**
 
-- **Why FA should help on a large grid.** The table learns each of the 43,758 values separately. Uniform exploration gives each one about 85 tries (3.71M uniform episodes / 43,758). The spline model shares its parameters, so every reward moves the value of every portfolio.
-- **Why it may still miss.** At this α, about 3.71M uniform episodes leave 513 of the 558 spline directions identified on this grid with α·λ·3.71M < 1, so they do not finish learning (eigenvalues of E[φφᵀ] over the uniform 10% grid; the 20% grid identifies only 369, so the model is effectively richer here). On the 20% grid that left every FA seed at γ = 8 with too little SPY (§8.7, `AUDIT_2026-11-06.md` §2.3). The 10% grid's best γ = 8 portfolio is the same 40% SPY, 40% IEF, 20% GLD.
+- **Why FA should help on a large grid.** The table learns each of the 43,758 values separately. Uniform exploration gives each one about 85 tries (3.70M uniform episodes / 43,758). The spline model shares its 909 weights, so every reward moves the value of every portfolio.
+- **Why exploration matters more for FA, not less.** A linear model learns along directions of its weights, and a direction is learned only from rewards of portfolios whose features vary along it. Greedy episodes repeat one portfolio and teach one direction; the variety comes from the ε-random episodes. A direction with eigenvalue λ of E[φφᵀ] over the uniform grid is roughly finished once α·λ·(uniform episodes) > 1.
+- **How many directions finish.** Counting eigenvalues above 1e-12 of the largest (558 directions, the count the earlier registration used), α·λ·N < 1 for 504 at ε = 3% and 496 at ε = 10%. The count depends on the cutoff (486 directions at 1e-10, 378 at 1e-8), and it says nothing about which directions decide the ranking, so it is a rough guide only. On the 20% grid, unfinished directions are the suspected cause of every FA seed holding too little SPY at γ = 8 (§8.7).
 
 **Settings.**
-- **From `grid10-robustness`.** 10% grid, B = 63, 26M episodes, and ε at 3% halfway (β = 2.697e-7). Master seed 20261016 and 10 seeds per γ, at γ = 5, 3 and 8.
-- **From `fa-spline`.** The additive plus pairwise cubic B-spline features (909 columns). α = 7.11e-6, l2 = 0, and greedy refresh every 100 updates.
-- **α was not re-tuned.** It was tuned on the 20% grid at B = 20 and γ = 5 (§8.1, `AUDIT_2026-11-06.md` M12). The stability bound 2 / max‖φ‖² is the same on this grid, since max‖φ‖² = 45 on both.
-- **Experiments.** `{baseline_g5, robust_g3, robust_g8}_grid10_B63_N26M_eps3_FAspline`.
+- **From `grid10-robustness`.** 10% grid, B = 63, 26M episodes, master seed 20261016 and 10 seeds per γ, at γ = 5, 3 and 8.
+- **From `fa-spline`.** Additive plus pairwise cubic B-spline features (909 columns), l2 = 0, greedy refresh every 100 updates.
+- **α = 2.778e-5, noise-matched, not re-tuned** (`config.ALPHA_SPLINE_GRID10`). `fa-spline`'s tuned 7.11e-6 (§8.1, tuned on the 20% grid at B = 20 and γ = 5) times 63/20, because the reward is a mean over B days and its noise variance falls as 1/B, times 1.240, the ratio of the mean ‖φ‖² over the grid (28.41 on the 20% grid, 22.92 on the 10% grid). This keeps the per-update noise the tuning chose on average over the grid. Most updates are greedy, and the best portfolios have ‖φ‖² of about 30 on both grids, so greedy updates get about 24% more noise than in the tuning (independent review, 2026-11-11); correcting for that would need μ and Σ. It uses the grid's features only, no μ or Σ. It is 6.3e-4 of the stability bound 2 / max‖φ‖² = 2/45 (max‖φ‖² = 45 on both grids). Re-tuning on this grid would take about 2 days and changes to `tune_fa.py`; it is not done, so the α is a reasoned choice and not the best one for this grid.
+- **ε at halfway.** `eps3`: 3% (β = 2.697e-7, 3.70M uniform-equivalent episodes), as `grid10-robustness`. `eps10`: 10% (β = 1.771e-7, 5.59M).
+- **Experiments.** `{baseline_g5, robust_g3, robust_g8}_grid10_B63_N26M_{eps3, eps10}_FAspline`.
 
-**Expected direction, written before running.** All against `grid10-robustness`, paired by seed.
+**Disclosure.** William's mean-field calculation (`NEXT_STEPS_FOR_ALBERT.md`, 2026-11-10) predicts learning gaps of about 33.6 / 0 / 1.3 bps/yr at γ = 5 / 3 / 8 with ε at 3% and 4.4 / 0 / 1.3 with ε at 10%. It uses the true μ and Σ. Both levels are run, so neither was chosen by it. Two predictions below were informed by it: the γ = 5 direction for `eps10`, and `eps3`'s learning gap, where the first registration predicted the γ = 8 bias would persist and this one gives no direction.
 
-How each is judged: a direction holds when the paired mean difference over the 10 seeds has the predicted sign and exceeds 2 SE; with the right sign but under 2 SE it is "not shown"; with the wrong sign beyond 2 SE it failed. Counts of seeds are read directly.
+**Expected direction, written before running.** A direction holds when the paired mean difference over the 10 seeds has the predicted sign and exceeds 2 SE; with the right sign but under 2 SE it is "not shown"; with the wrong sign beyond 2 SE it failed. Counts of seeds are read directly.
 
-- **Q-value fit.** A higher median Spearman correlation over all 43,758 portfolios at every γ. `grid10-robustness` scored 0.543, 0.406 and 0.725 at γ = 5, 3 and 8; `fa-spline` scored 0.950, 0.945 and 0.957 on the 20% grid. This is expected to pass easily, so the sharper registered test is a median Spearman of at least 0.9 at every γ.
-- **Primary rule.** A majority of seeds (at least 6 of 10) meet it at every γ (`grid10-robustness`: 0 of 10 at each; `fa-spline`: 10, 10, 9). A constant α settles the greedy portfolio, so this measures stability and says little about accuracy (§8.7). Neighbouring portfolios are closer in value on the finer grid, which could make the greedy portfolio switch more often, so this can fail.
-- **Learning gap and the γ = 8 pick.**
-  - At γ = 8, most seeds (at least 6 of 10) hold at most 20% SPY, against the best portfolio's 40%, and the mean gap is larger than `grid10-robustness`'s 5.8 bps/yr. This is the 20% grid bias carrying over. Against it: the 10% grid has 2.6× as many uniform exploration episodes (3.71M against 1.41M), which pushes toward a smaller bias.
-  - At γ = 5 and 3, no direction. FA shares information across portfolios, but its unfinished directions bias the pick. `grid10-robustness`'s means are 11.7 and 22.0.
-- **Discretization gap.** Identical to `grid10-robustness`'s (1.3, 2.5 and 6.1 bps/yr), since the grid and μ, Σ are the same.
-- **No direction** for top-10 recall (ten portfolios out of 43,758 is a narrow target for a smooth model), the exactly-best share or training regret.
-- **Against `fa-spline` (20% grid).** No direction. The grid, B, budget and ε all differ, so the comparison is descriptive only.
+`fa-spline-grid10-eps3` against `grid10-robustness` (paired by seed):
+- **Q-value fit.** Median Spearman correlation over all 43,758 portfolios of at least 0.9 at every γ (`grid10-robustness`: 0.543, 0.406 and 0.725; `fa-spline` on the 20% grid: 0.950, 0.945 and 0.957).
+- **Primary rule.** At least 6 of 10 seeds meet it at every γ (`grid10-robustness`: 0 of 10 at each). A constant α settles the greedy portfolio, so this measures stability and says little about accuracy (§8.7). Neighbouring portfolios are closer in value on the finer grid, so it can fail.
+- **Learning gap.** No direction at any γ (`grid10-robustness` means 11.7, 22.0 and 5.8 bps/yr at γ = 5, 3 and 8). For FA: shared information across portfolios. Against: most directions stay unfinished. At γ = 8 the 20% grid bias (seeds holding 20% SPY where the best holds 40%) may carry over; the larger α and 2.6× the uniform episodes of `fa-spline` push against it.
+- **Discretization gap.** Identical (1.3, 2.5 and 6.1 bps/yr), since the grid, μ and Σ are the same.
+- **No direction** for top-10 recall, the exactly-best share or training regret.
 
-**What this run cannot separate.** It changes both the learning rule (constant α against 1/N) and the representation (features against a table) relative to `grid10-robustness`. A tabular constant-α run on the 10% grid would separate them, but it is not planned (about 46 min per seed on Albert's Mac at 1/N).
+`fa-spline-grid10-eps10` against `fa-spline-grid10-eps3` (paired by seed; only ε differs):
+- **Learning gap.** Smaller mean at γ = 5. No direction at γ = 3 and 8.
+- **Training regret.** Higher at γ = 3 and 8, since about 1.9M more episodes are random (about +30 bps/yr per episode on average over the run from random episodes at γ = 5). No direction at γ = 5, where a smaller gap would make the greedy episodes cheaper and could offset that (independent review, 2026-11-11).
+- **Q-value fit.** Higher median Spearman correlation at every γ, from more varied portfolios.
+- Against `grid10-robustness`, descriptive only: it differs in learning rule, representation and exploration.
 
-**Commands.**
+**What these runs cannot separate.** Against `grid10-robustness`, both change the learning rule (constant α against 1/N) and the representation (features against a table) at once. A tabular constant-α run on the 10% grid would separate them; it is not planned.
 
-```powershell
-python -m src.run_experiments --run fa-spline-grid10 --dry-run
-# the three γ in parallel, into one folder, then one pass that reuses them and writes the index
-python -m src.run_experiments --run fa-spline-grid10 --only baseline_g5_grid10_B63_N26M_eps3_FAspline
-python -m src.run_experiments --run fa-spline-grid10 --only robust_g3_grid10_B63_N26M_eps3_FAspline
-python -m src.run_experiments --run fa-spline-grid10 --only robust_g8_grid10_B63_N26M_eps3_FAspline
-python -m src.run_experiments --run fa-spline-grid10
+**Commands.** The six experiments in parallel, two folders dated by the training start, then one pass per folder that reuses them and writes the index. One BLAS thread per process is as fast as four here and avoids contention.
+
+```bash
+export OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1
+for eps in eps3 eps10; do for g in baseline_g5 robust_g3 robust_g8; do
+  d=results/fa-spline-grid10-${eps}_2026-11-11; mkdir -p $d
+  caffeinate -i python -m src.run_experiments --run fa-spline-grid10-$eps --results-dir $d \
+      --only ${g}_grid10_B63_N26M_${eps}_FAspline > $d/train_${g}.log 2>&1 &
+  sleep 5   # staggered, so the first process writes settings.json before the others read it
+done; done; wait
+for eps in eps3 eps10; do python -m src.run_experiments --run fa-spline-grid10-$eps --results-dir results/fa-spline-grid10-${eps}_2026-11-11; done
 ```
 
-**Estimated time and space.**
-- **Time.** A 200,000-episode timing run on William's machine (2026-11-10, one seed, not the reported master seed, other jobs running) took 42 s per 100,000 episodes. That is about 3 hours per 26M-episode seed, or about 30 hours with the three γ in parallel. The 20% grid FA runs came in well under their estimates (§8.6).
-- **Disk.** Training logs are about the size of `grid10-robustness`'s, about 12 GB.
-- **Memory.** About 1.1 to 1.2 GB per process: the logged snapshots (2,600 × 43,758 values, 95% of `MAX_SNAPSHOT_VALUES`) plus the 43,758 × 909 feature matrix. About 3.5 GB for the three γ at once.
-- **Caveat for the report.** The run will show "Training code changed: src/action_space/grid.py, src/train.py" against earlier runs. Those edits are LF writes and the increment guard (`AUDIT_2026-11-06.md` §2.2); `grid_sha256` matches.
+**Estimated time and space (Albert's Mac, 10 cores, 16 GB).**
+- **Time.** A 100,000-episode timing run (2026-11-11, one seed, `baseline_g5`, `eps3`) took 7.3 s of training, about 32 minutes per 26M-episode seed and 5.3 hours per experiment. With six processes sharing the machine, expect about 6 to 8 hours. William's 42 s per 100,000 episodes (2026-11-10) was on another machine with other jobs running.
+- **Disk.** About 455 to 480 MB per seed (2,600 snapshots × 43,758 float32 values, which barely compress), so 4.5 to 4.8 GB per experiment and about 28 GB for both runs. 40 GB was free at registration.
+- **Memory.** About 1.1 to 1.2 GB per process, peaking near 1.4 GB at each checkpoint (a float64 copy of the feature matrix), about 8.5 GB for six.
+- **Caveat for the report.** The runs will show "Training code changed" against earlier runs for `src/action_space/grid.py` and `src/train.py`. Those edits are LF writes, the increment guard and provenance fields (`AUDIT_2026-11-06.md` §2.2 and §8); `grid_sha256` matches.
