@@ -152,6 +152,12 @@ TUNED_ALPHA_QUADRATIC = 0.00032  # fraction 1.6e-4 of 2
 TUNED_ALPHA_SPLINE = 7.111111111111112e-06  # fraction 1.6e-4 of 2/45; l2 = 0 won on 6 seeds (close call)
 FA_GREEDY_REFRESH = 100  # FA_INTEGRATION_NOTES.md §3
 
+# fa-spline's tuned alpha rescaled to keep the same per-update noise, on average over the grid, on the 10% grid with B = 63
+# (EXPERIMENTS.md §8.8). The reward is a mean over B days, so its noise variance scales as 1/B: x 63/20.
+# The noise an update adds also scales with ||phi||^2, whose mean over the grid is 28.4147 on the 20% grid
+# and 22.9153 on the 10% grid: x 1.23999. Built from the grid's features only, no mu or Sigma.
+ALPHA_SPLINE_GRID10 = 2.7775746373405417e-05  # = TUNED_ALPHA_SPLINE * 63/20 * 28.4147016714877/22.91529123590886
+
 
 # Every post-hoc run, by run_id. Each run branch adds its own entry.
 POST_HOC_RUNS: dict[str, RunVariant] = {
@@ -203,6 +209,30 @@ POST_HOC_RUNS: dict[str, RunVariant] = {
         "gap against fa-quadratic (that argument points to larger, the γ = 5 tuning seeds to smaller), nor against "
         "tabular-const or baseline-v1",
         alpha_rule=TUNED_ALPHA_SPLINE, agent="linear", feature_map="spline", l2=0.0,
+        greedy_refresh_every=FA_GREEDY_REFRESH,
+    ),
+    # Function approximation on the 10% grid (AUDIT_2026-11-06.md §6.3 C1; EXPERIMENTS.md §8.8). Same B,
+    # episodes and seeds as grid10-robustness, so seeds pair with it; fa-spline's features, l2 and greedy
+    # refresh; alpha noise-matched, not re-tuned (ALPHA_SPLINE_GRID10). Two exploration levels: eps3 keeps
+    # grid10-robustness's schedule, eps10 tests whether more random portfolios help the FA agent.
+    "fa-spline-grid10-eps3": RunVariant(
+        "fa-spline-grid10-eps3", "B63_N26M_eps3_FAspline", "2026-11-11",
+        "against grid10-robustness (same B, episodes, ε and seeds; paired, 2 SE): a median Spearman correlation over "
+        "all 43,758 portfolios of at least 0.9 at every γ; at least 6 of 10 seeds meeting the primary rule at every γ "
+        "(a constant alpha settles the greedy portfolio, so this measures stability); no direction for the learning "
+        "gap at any γ, top-10 recall, exactly-best share or regret; discretization gap identical",
+        episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.03, increment=0.1,
+        alpha_rule=ALPHA_SPLINE_GRID10, agent="linear", feature_map="spline", l2=0.0,
+        greedy_refresh_every=FA_GREEDY_REFRESH,
+    ),
+    "fa-spline-grid10-eps10": RunVariant(
+        "fa-spline-grid10-eps10", "B63_N26M_eps10_FAspline", "2026-11-11",
+        "against fa-spline-grid10-eps3 (same alpha and seeds; only ε at halfway differs, 10% against 3%; paired, "
+        "2 SE): a smaller mean learning gap at γ = 5; higher training regret at γ = 3 and 8; a higher median Spearman "
+        "correlation at every γ; no direction for the gap at γ = 3 and 8 or regret at γ = 5. Against grid10-robustness "
+        "descriptive only",
+        episode_length=63, n_episodes=26_000_000, epsilon_at_halfway=0.10, increment=0.1,
+        alpha_rule=ALPHA_SPLINE_GRID10, agent="linear", feature_map="spline", l2=0.0,
         greedy_refresh_every=FA_GREEDY_REFRESH,
     ),
 }

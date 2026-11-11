@@ -283,6 +283,40 @@
         "tabular-const",
         "fa-quadratic"
       ]
+    },
+    {
+      "id": "fa-spline-grid10-eps3",
+      "title": "Spline FA on the 10% grid, ε 3%",
+      "date": "2026-11-11",
+      "results_dir": "results/fa-spline-grid10-eps3_2026-11-11",
+      "git_ref": "c0e5494",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Spline function approximation (909 features, l2 = 0, greedy refresh every 100) on the 10% grid (43,758 portfolios) with B = 63, 26M episodes and grid10-robustness's seeds, at the noise-matched alpha = 2.78e-5 (EXPERIMENTS.md §8.8). ε at halfway 3%, as grid10-robustness, so the two pair seed by seed.",
+      "notes": {
+        "tldr": [
+          "Thirty full-budget seeds of the spline FA agent on the 10% grid, paired seed by seed with the tabular grid10-robustness run. FA ranks the 43,758 portfolios far better than the table (median Spearman 0.963 to 0.983 against 0.406 to 0.725) but picks worse portfolios at every γ: mean learning gaps of 78.8, 140.6 and 59.6 bps/yr at γ = 5, 3 and 8, against 11.7, 22.0 and 5.8."
+        ],
+        "takeaways": [
+          "Learning gap, paired against grid10-robustness: +67.1 bps/yr (SE 9.1) at γ = 5, +118.6 (12.2) at γ = 3 and +53.8 (9.8) at γ = 8. FA is worse on 10, 10 and 9 of 10 seeds. No direction was registered for the gap.",
+          "Q-value fit, registered expectation met: median Spearman over all 43,758 portfolios of 0.976, 0.963 and 0.983 (lowest seed 0.916), against 0.543, 0.406 and 0.725 for the table; paired differences +0.427, +0.551 and +0.258 with SEs of 0.0045, 0.0053 and 0.0013. Median top-10 recall is 0%, 0% and 10%, against 10% for the table at every γ (means 0%, 0% and 12% against 6%, 7% and 9%), so FA is lower at γ = 5 and 3 and level at γ = 8.",
+          "Primary convergence rule, registered expectation failed: 0 of 10 seeds meet it at every γ (expected at least 6 of 10). The greedy portfolio keeps changing late; the post-hoc settled point has a median of 1,557M to 1,601M of the 1,638M simulated days.",
+          "Every seed under-weights SPY. The best grid portfolio holds 50%, 60% and 40% SPY at γ = 5, 3 and 8; FA's picks hold 20% to 30%, 20% to 40% and 20% to 30%. On the 20% grid fa-spline under-weighted SPY on every seed only at γ = 8 (7 of 10 at γ = 3, 1 of 10 at γ = 5); here every seed does at every γ. The tabular grid10-robustness run also under-weights SPY by one grid step on 8, 4 and 6 of 10 seeds, so the direction is not specific to the features, but FA's under-weight is larger and on every seed.",
+          "No seed ends on the exactly-best portfolio (grid10-robustness: 0, 4 and 1 of 10), so FA is clearly behind on this measure only at γ = 3. Training regret is higher at every γ: 122.7, 160.0 and 126.5 bps/yr per episode against 78.8, 91.3 and 88.1 (paired +43.9 ± 2.8, +68.8 ± 6.8, +38.4 ± 3.8). No direction was registered for regret or the exactly-best share.",
+          "Discretization gap identical to grid10-robustness's (1.3, 2.5 and 6.1 bps/yr), as registered."
+        ],
+        "caveats": [
+          "Post hoc. α = 2.78e-5 is fa-spline's tuned α rescaled for B = 63 and the 10% grid's features (EXPERIMENTS.md §8.8), not tuned on this grid. A different α could change the gap.",
+          "Against grid10-robustness this run changes the learning rule (constant α against 1/N) and the representation (spline features against a table) at once, so it cannot say which causes the larger gap. The suspected cause, not tested here, is weight directions left unfinished by too little random exploration (about 504 of 558 by the α·λ·N count at a 1e-12 eigenvalue cutoff; the count depends on the cutoff, EXPERIMENTS.md §8.8); fa-spline-grid10-eps10 tests the exploration part.",
+          "The ΔQ rule is met in the first windows by every seed, as in the other constant-α runs, so it carries no information here.",
+          "William's mean-field calculation (true μ and Σ, disclosed in EXPERIMENTS.md §8.8) predicted gaps of about 33.6, 0 and 1.3 bps/yr; the realized gaps are larger at every γ.",
+          "The report flags training-code changes against earlier runs (src/train.py, src/action_space/grid.py, src/environment.py). Since fa-spline these are LF writes, the increment guard, provenance fields and a file-relative processed-data path; against grid10-robustness, train.py also gains the FA agent, which is the change under test. grid_sha256 matches."
+        ]
+      },
+      "compare_with": [
+        "grid10-robustness",
+        "fa-spline"
+      ]
     }
   ]
 }

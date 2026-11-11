@@ -55,6 +55,8 @@ All documentation or data, no code:
 
 H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-quadratic`, `fa-spline`) is written up in `AUDIT_2026-11-06.md` §2.3 with its settings, the five registered checks, the two wrong reasons and what the report can claim. Every number was re-checked against the committed summaries and matches `EXPERIMENTS.md` §8.7, so nothing in your files changes.
 
+**Update 2026-11-11 (Albert):** replaced by two runs, `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10`, both at the noise-matched α = 2.78e-5 and differing only in ε at halfway (`EXPERIMENTS.md` §8.8).
+
 **Run `fa-spline-grid10` is yours (audit C1).** It's registered on branch `run/fa-spline-grid10` (`EXPERIMENTS.md` §8.8) but not trained. Before you train it, update the `RunVariant` in `src/config.py` and the expectations in §8.8, get an independent review, commit, and then run the §8.8 commands (about 30 h for the three γ in parallel).
 
 - **Keep:** the 10% grid, B = 63, 26M episodes, the seeds and all three γ, so the run pairs seed by seed with `grid10-robustness`.
