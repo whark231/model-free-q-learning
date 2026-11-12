@@ -1,0 +1,267 @@
+{
+  "config": {
+    "gamma": 8.0,
+    "episode_length": 63,
+    "n_episodes": 26000000,
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "beta": 1.7712193023031122e-07,
+    "increment": 0.1,
+    "alpha_rule": 2.7775746373405417e-05,
+    "epsilon0": 1.0,
+    "q_init": 0.0,
+    "discount": 0.0,
+    "log_every": 10000,
+    "block_size": 10000,
+    "agent": "linear",
+    "feature_map": "spline",
+    "l2": 0.0,
+    "greedy_refresh_every": 100
+  },
+  "seed_plan": {
+    "master_seed": 20261016,
+    "n_runs": 10,
+    "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+    "streams": {
+      "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+      "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+      "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+    },
+    "numpy_version": "2.3.5"
+  },
+  "n_actions": 43758,
+  "grid_sha256": "bf28b186ec9b4d82a7e7efd90d7170022e2477c2684cb7db21d35a16583598b3",
+  "calibration_sha256": {
+    "summary_statistics.csv": "7f6608cdeb5c505e645a9f688c84a1f99de51ab3f56ec06e4a8f02b161a6eab9",
+    "covariance_daily.csv": "f95eecc418bf0937071109234818d96a3c2d0ae33d5c909ede1b1b337ad1bfe2"
+  },
+  "code_sha256": {
+    "src/train.py": "03b7869b7ca4c82f480aefa114c0ed736305fa4a54189234d80284a398e79f18",
+    "src/agent.py": "19151a9b9ff744fb50b41b062dcb1535931a46a7ea50d1cb1749aaabfc7907b6",
+    "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2",
+    "src/rewards.py": "b6b5fbece06f860d970317241c404856db3cf7e947b9cd2fcef17e52e64de786",
+    "src/action_space/grid.py": "9e75301d8eaeddd2100a3a0fc6ebd2225d4abe558345f4272be81dbcfd863b43",
+    "src/hashing.py": "1d8566c33dc3039008526f2b2dde28e01322e200a4806ec14f3129bb516c1f13",
+    "src/fa_agent.py": "b69eeb2302d172087b7c927c81e6b1649f9968a410a55f9859609b735115b943",
+    "src/features.py": "2a1bc9ab24e92bc4bd546edbe25e49654b5a4a24d3bc729db88bf3fcae4d5dfc"
+  },
+  "git_commit": "c0e549454f256b69cf7b97756b36ae658bd81949",
+  "python": "3.13.9",
+  "numpy": "2.3.5",
+  "scipy": "1.16.3",
+  "pandas": "2.3.3",
+  "log_schema": {
+    "checkpoint_*": "one row per log_every episodes; the last row covers the final, possibly shorter, window",
+    "checkpoint_next_epsilon": "agent.epsilon after this many episodes, the rate for the next episode; epsilon0 * exp(-beta * episodes done) for TabularQAgent",
+    "greedy_change_*": "episode number and new logged greedy action at every change; first entry is episode 0",
+    "logged_greedy": "the agent's cached greedy (float32 scores, random tie-break), refreshed every greedy_refresh_every updates; logging only",
+    "observations": "episodes x episode_length simulated days",
+    "checkpoint_max_abs_dq": "largest |change in Q(chosen action)| in the window; other actions' Q also move",
+    "final_theta": "the learned parameters, one per feature column",
+    "final_greedy": "lowest-index argmax of final_q (float64), also used by evaluation; may differ from the cached training greedy on ties or float32 rounding"
+  },
+  "runs": [
+    {
+      "run": 0,
+      "file": "run_000.npz",
+      "seconds": 2315.12,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 37578,
+      "final_greedy_weights": [
+        0.3,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.3,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8011
+    },
+    {
+      "run": 1,
+      "file": "run_001.npz",
+      "seconds": 2775.39,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 32766,
+      "final_greedy_weights": [
+        0.2,
+        0.0,
+        0.1,
+        0.2,
+        0.0,
+        0.3,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8105
+    },
+    {
+      "run": 2,
+      "file": "run_002.npz",
+      "seconds": 3101.12,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 32022,
+      "final_greedy_weights": [
+        0.2,
+        0.0,
+        0.0,
+        0.3,
+        0.2,
+        0.0,
+        0.2,
+        0.1,
+        0.0
+      ],
+      "greedy_changes": 6128
+    },
+    {
+      "run": 3,
+      "file": "run_003.npz",
+      "seconds": 2970.15,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 34531,
+      "final_greedy_weights": [
+        0.2,
+        0.1,
+        0.0,
+        0.2,
+        0.2,
+        0.0,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 5985
+    },
+    {
+      "run": 4,
+      "file": "run_004.npz",
+      "seconds": 2774.41,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 32062,
+      "final_greedy_weights": [
+        0.2,
+        0.0,
+        0.0,
+        0.4,
+        0.0,
+        0.0,
+        0.3,
+        0.1,
+        0.0
+      ],
+      "greedy_changes": 7655
+    },
+    {
+      "run": 5,
+      "file": "run_005.npz",
+      "seconds": 2823.11,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 37572,
+      "final_greedy_weights": [
+        0.3,
+        0.0,
+        0.0,
+        0.0,
+        0.2,
+        0.2,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 7654
+    },
+    {
+      "run": 6,
+      "file": "run_006.npz",
+      "seconds": 2971.05,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 31775,
+      "final_greedy_weights": [
+        0.2,
+        0.0,
+        0.0,
+        0.2,
+        0.0,
+        0.2,
+        0.3,
+        0.1,
+        0.0
+      ],
+      "greedy_changes": 8327
+    },
+    {
+      "run": 7,
+      "file": "run_007.npz",
+      "seconds": 2605.79,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 39405,
+      "final_greedy_weights": [
+        0.3,
+        0.1,
+        0.0,
+        0.2,
+        0.0,
+        0.2,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 8415
+    },
+    {
+      "run": 8,
+      "file": "run_008.npz",
+      "seconds": 3314.5,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 34587,
+      "final_greedy_weights": [
+        0.2,
+        0.1,
+        0.0,
+        0.3,
+        0.0,
+        0.2,
+        0.2,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 7125
+    },
+    {
+      "run": 9,
+      "file": "run_009.npz",
+      "seconds": 2916.76,
+      "episodes": 26000000,
+      "simulated_days": 1638000000,
+      "final_greedy_action": 34476,
+      "final_greedy_weights": [
+        0.2,
+        0.1,
+        0.0,
+        0.2,
+        0.0,
+        0.2,
+        0.3,
+        0.0,
+        0.0
+      ],
+      "greedy_changes": 6542
+    }
+  ],
+  "n_features": 909,
+  "agent_class": "src.fa_agent.LinearQAgent"
+}

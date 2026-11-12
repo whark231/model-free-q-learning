@@ -317,6 +317,40 @@
         "grid10-robustness",
         "fa-spline"
       ]
+    },
+    {
+      "id": "fa-spline-grid10-eps10",
+      "title": "Spline FA on the 10% grid, ε 10%",
+      "date": "2026-11-11",
+      "results_dir": "results/fa-spline-grid10-eps10_2026-11-11",
+      "git_ref": "c0e5494",
+      "scale": "full",
+      "pre_registered": false,
+      "what_changed": "Spline function approximation (909 features, l2 = 0, greedy refresh every 100) on the 10% grid (43,758 portfolios) with B = 63, 26M episodes and grid10-robustness's seeds, at the noise-matched alpha = 2.78e-5 (EXPERIMENTS.md §8.8). ε at halfway 10% instead of 3%; otherwise identical to fa-spline-grid10-eps3.",
+      "notes": {
+        "tldr": [
+          "Thirty full-budget seeds of the spline FA agent on the 10% grid with ε at halfway 10% instead of 3% (1.5 times the random episodes), paired seed by seed with fa-spline-grid10-eps3. Exploring more did not shrink the learning gap at any γ (78.8 to 81.4, 140.6 to 155.6 and 59.6 to 60.2 bps/yr at γ = 5, 3 and 8, all within noise) and raised training regret by about 25 to 28 bps/yr per episode. The gap stays 54 to 134 bps/yr above the tabular grid10-robustness run."
+        ],
+        "takeaways": [
+          "Learning gap, paired against fa-spline-grid10-eps3: +2.6 bps/yr (SE 11.8) at γ = 5, +15.0 (14.8) at γ = 3 and +0.6 (10.1) at γ = 8. The registered smaller gap at γ = 5 is not shown. The point estimate has the wrong sign, at 0.2 SE, and is about 2.7 SE from the −29.2 bps/yr change William's mean-field calculation predicted. No direction was registered at γ = 3 and 8.",
+          "Training regret, registered higher at γ = 3 and 8: held. 188.2 and 151.2 bps/yr per episode against 160.0 and 126.5 (paired +28.1, SE 4.5, and +24.8, SE 3.4; higher on every seed). At γ = 5, with no direction registered, it is also higher: 147.8 against 122.7 (+25.1, SE 3.9).",
+          "Q-value fit, registered higher Spearman at every γ: held only at γ = 8 (paired +0.0027, SE 0.0011). Not shown at γ = 5 (+0.0068, SE 0.0049) or γ = 3 (+0.0065, SE 0.0066; 5 of 10 seeds higher). Graded on the paired mean per the 2 SE rule; at γ = 5 the median moved the other way. Medians are 0.975, 0.964 and 0.985 against 0.976, 0.963 and 0.983; the lowest seed is 0.940 (γ = 3).",
+          "Against grid10-robustness (descriptive only): learning gap +69.7 (SE 4.7), +133.6 (12.8) and +54.4 (6.4) bps/yr, worse on 10 of 10 seeds at every γ; regret +69.0, +96.9 and +63.1 bps/yr per episode.",
+          "No seed meets the primary rule at any γ, and no seed ever holds one portfolio for 2.6M episodes (fa-spline-grid10-eps3: 4, 3 and 3 seeds did at some point before switching). The post-hoc settled point has a median of 1,607M to 1,626M of the 1,638M simulated days, later than ε = 3%'s 1,557M to 1,601M.",
+          "Every seed under-weights SPY at every γ, as at ε = 3%: picks hold 20% or 30% SPY against 50%, 60% and 40% in the best grid portfolio. No seed ends on the exactly-best portfolio, and median top-10 recall is 0% at every γ. The discretization gap is identical (1.3, 2.5 and 6.1 bps/yr)."
+        ],
+        "caveats": [
+          "Post hoc, with the same α = 2.78e-5 as fa-spline-grid10-eps3 (EXPERIMENTS.md §8.8), not tuned on this grid.",
+          "More exploration finishes few extra weight directions by the α·λ·N count (about 8 more finish at every eigenvalue cutoff, e.g. 504 to 496 of 558 unfinished at 1e-12). So this run is a weak test of the unfinished-directions explanation, and a null result does not rule it out.",
+          "The ΔQ rule is met in the first window (630,000 days) by 6 of 10 seeds at γ = 5 and 8 and 7 of 10 at γ = 3. The rest meet it later, at 39.7M, 73.1M and 336.4M days, plus 749.1M at γ = 5 and 8. The late seeds are the same seeds at the same days at every γ, which points to the shared exploration stream rather than to γ. At ε = 3% every seed met it in the first window. It is not the convergence rule used here.",
+          "William's mean-field calculation (true μ and Σ, disclosed in EXPERIMENTS.md §8.8) predicted gaps of about 4.4, 0 and 1.3 bps/yr at ε = 10%; the realized gaps are 81.4, 155.6 and 60.2, so the calculation does not describe this agent's errors, and its predicted fall at γ = 5 (33.6 to 4.4) did not happen.",
+          "The report flags training-code changes against earlier runs (src/train.py, src/action_space/grid.py, src/environment.py). Since fa-spline these are LF writes, the increment guard, provenance fields and a file-relative processed-data path; against grid10-robustness, train.py also gains the FA agent. Both ε runs trained from the same commit, c0e5494. grid_sha256 matches."
+        ]
+      },
+      "compare_with": [
+        "fa-spline-grid10-eps3",
+        "grid10-robustness"
+      ]
     }
   ]
 }
