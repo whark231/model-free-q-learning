@@ -881,3 +881,28 @@ Registered expectations:
 - **No direction** was registered for the learning gap, top-10 recall, the exactly-best share or regret. The gap and regret came out worse for FA beyond 2 SE at every γ. Median top-10 recall was lower at γ = 5 and 3 (0% against 10%) and tied at γ = 8 (10%; means 12% against 9%). FA ended on the exactly-best portfolio on 0 seeds at every γ, against 0, 4 and 1 for the table, so it is clearly behind only at γ = 3.
 
 This run shows that a good overall ranking (Spearman) does not imply a good pick, because the pick depends on the small differences among the best portfolios. The SPY under-weight on every seed points to a bias shared across seeds rather than noise. On the 20% grid `fa-spline` under-weighted SPY on every seed only at γ = 8 (7 of 10 at γ = 3, 1 of 10 at γ = 5). The tabular `grid10-robustness` run also under-weights SPY, on 8, 4 and 6 of 10 seeds by one grid step (10 points), so the direction is not specific to the features; FA's under-weight is larger (10 to 30 points) and on every seed. The suspected cause, unfinished weight directions, is not tested by this run. William's mean-field calculation (true μ and Σ) predicted gaps of about 33.6, 0 and 1.3 bps/yr; the realized gaps are larger at every γ, so it understates the problem.
+
+#### Outcome for `fa-spline-grid10-eps10`, written after the run (2026-11-11)
+
+**TL;DR / In plain terms:** raising ε at halfway from 3% to 10% (1.5 times the random episodes, 5.59M uniform-equivalent against 3.70M) did not help. The learning gap is within noise of ε = 3% at every γ, training regret rose by about 25 to 28 bps/yr per episode, and the greedy portfolio still never settled. At the same α, this much extra exploration did not close FA's gap to the table on this grid.
+
+Paired by seed against `fa-spline-grid10-eps3` (10 seeds per γ; numbers from each experiment's `evaluation/per_seed.csv`):
+
+| | γ = 5 | γ = 3 | γ = 8 |
+|---|---|---|---|
+| Mean learning gap, ε 10% / ε 3% / table (bps/yr) | 81.4 / 78.8 / 11.7 | 155.6 / 140.6 / 22.0 | 60.2 / 59.6 / 5.8 |
+| ε 10% minus ε 3% (SE) | +2.6 (11.8) | +15.0 (14.8) | +0.6 (10.1) |
+| Median Spearman, ε 10% / ε 3% | 0.975 / 0.976 | 0.964 / 0.963 | 0.985 / 0.983 |
+| Paired Spearman difference (SE) | +0.0068 (0.0049) | +0.0065 (0.0066) | +0.0027 (0.0011) |
+| Training regret per episode, ε 10% / ε 3% (bps/yr) | 147.8 / 122.7 | 188.2 / 160.0 | 151.2 / 126.5 |
+| Paired regret difference (SE) | +25.1 (3.9) | +28.1 (4.5) | +24.8 (3.4) |
+| Primary rule met, ε 10% | 0 of 10 | 0 of 10 | 0 of 10 |
+
+Registered expectations (against `fa-spline-grid10-eps3`):
+- **Smaller learning gap at γ = 5: not shown.** The point estimate has the wrong sign (+2.6) and is 0.2 SE from zero. The gaps at γ = 3 and 8 (no direction registered) are also within noise.
+- **Higher training regret at γ = 3 and 8: held** (6.2 and 7.3 SE; higher on every seed). At γ = 5, where no direction was registered, regret is also higher by 6.4 SE.
+- **Higher Spearman at every γ: held at γ = 8 only** (2.5 SE, 8 of 10 seeds higher). Not shown at γ = 5 (1.4 SE) or γ = 3 (1.0 SE, 5 of 10 seeds higher). Graded on the paired mean, as the 2 SE rule requires; at γ = 5 the median moved the other way (0.975 against 0.976).
+
+Against `grid10-robustness` (descriptive only), the learning gap is larger by +69.7 (SE 4.7), +133.6 (12.8) and +54.4 (6.4) bps/yr, on all 10 seeds at every γ. Every seed still under-weights SPY (picks hold 20% or 30% against the best portfolio's 50%, 60% and 40%), no seed ends on the exactly-best portfolio, median top-10 recall is 0% at every γ, and the discretization gap is identical. No seed holds any portfolio for 2.6M episodes, against 4, 3 and 3 seeds at ε = 3%. The ΔQ rule is met in the first window by 6 or 7 of 10 seeds and later by the rest (up to 749M days), where at ε = 3% every seed met it in the first window. The late seeds are the same seeds at the same days at every γ (runs 0, 5 and 9, plus run 8 at γ = 5 and 8), which points to the exploration stream the γ's share rather than to anything γ-specific.
+
+This run does not settle why FA trails the table. By the α·λ·N count, ε = 10% finishes only about 8 more weight directions at every cutoff (504 to 496 of 558 unfinished at 1e-12, 432 to 424 at 1e-10, 324 to 316 at 1e-8), so it is a weak test of the unfinished-directions explanation, and a null result does not rule that explanation out. William's mean-field calculation, the quantitative form of that explanation, predicted the γ = 5 gap would fall from 33.6 to 4.4 bps/yr (−29.2). The realized change is +2.6 (SE 11.8), about 2.7 SE from that prediction, so the run is evidence against the mean-field version. The realized gaps (81.4, 155.6 and 60.2) are also far above its levels (4.4, 0 and 1.3). A tabular constant-α run on the 10% grid would separate the learning-rule effect from the representation effect; it is not planned.
