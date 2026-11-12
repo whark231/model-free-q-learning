@@ -86,7 +86,7 @@ The list that stood here before tuning is now done, as described in §1:
 The `train.py` CLI still has no FA flags. None are needed, since the runs go through `run_experiments`.
 
 Still open, and not blocking:
-- **A 10% grid FA run** (`fa-spline-grid10`). Not registered; decide after the 20% grid results.
+- ~~**A 10% grid FA run** (`fa-spline-grid10`). Not registered; decide after the 20% grid results.~~ Done 2026-11-11: registered and trained as `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10` (α = 2.78e-5, noise-matched from `fa-spline`; `EXPERIMENTS.md` §8.8). Both have larger learning gaps than the tabular `grid10-robustness` at every γ, and ε 10% did not shrink the gap.
 - ~~**The Windows print crash** in `run_experiments`.~~ Fixed 2026-11-09 (`AUDIT_2026-11-06.md` M1).
 
 ## 3. Speed and the greedy refresh interval

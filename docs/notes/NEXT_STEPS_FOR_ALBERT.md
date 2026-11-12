@@ -57,13 +57,13 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 **Update 2026-11-11 (Albert):** replaced by two runs, `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10`, both at the noise-matched α = 2.78e-5 and differing only in ε at halfway (`EXPERIMENTS.md` §8.8).
 
-**Run `fa-spline-grid10` is yours (audit C1).** It's registered on branch `run/fa-spline-grid10` (`EXPERIMENTS.md` §8.8) but not trained. Before you train it, update the `RunVariant` in `src/config.py` and the expectations in §8.8, get an independent review, commit, and then run the §8.8 commands (about 30 h for the three γ in parallel).
+~~**Run `fa-spline-grid10` is yours (audit C1).** It's registered on branch `run/fa-spline-grid10` (`EXPERIMENTS.md` §8.8) but not trained. Before you train it, update the `RunVariant` in `src/config.py` and the expectations in §8.8, get an independent review, commit, and then run the §8.8 commands (about 30 h for the three γ in parallel).~~ Done 2026-11-11 (Albert): split into `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10`, registered before training, trained and merged to `dev` (PRs #30 and #31; outcomes at the end of `EXPERIMENTS.md` §8.8). Each ε took about 8 h for the three γ in parallel on Albert's machine, not 30 h.
 
 - **Keep:** the 10% grid, B = 63, 26M episodes, the seeds and all three γ, so the run pairs seed by seed with `grid10-robustness`.
 - **α: William suggests the noise-matched 2.8e-5,** 3.9× `fa-spline`'s 7.11e-6. It keeps the noise level the tuning chose, rescaled for B = 63 and the 10% grid's features, and uses no μ or Σ. It isn't re-tuned, because re-tuning means changing `tune_fa.py` and about 2 days of compute.
 - **Your call: ε at halfway, 3% or 10%.**
   - 3% keeps exploration identical to `grid10-robustness`.
-  - 10% gives FA's slow directions more random portfolios to learn from (5.65M uniform episodes against 3.71M). The cost is higher regret, and the comparison then differs in exploration as well as learning rule and representation.
+  - 10% gives FA's slow directions more random portfolios to learn from (5.59M uniform episodes against 3.70M; corrected 2026-11-11 from 5.65M and 3.71M, which are 1/β and ignore the 26M-episode cap, to the (1 − e^(−βN))/β count used in `EXPERIMENTS.md` §8.8). The cost is higher regret, and the comparison then differs in exploration as well as learning rule and representation.
   - A mean-field check predicts gaps of about 33.6 / 0 / 1.3 bps/yr at γ = 5 / 3 / 8 with ε at 3%, and 4.4 / 0 / 1.3 with ε at 10%. It uses the true μ and Σ, so disclose it and don't choose by it.
 - **Either way, rewrite §8.8's γ = 8 prediction.** It says the bias persists, which no longer holds at this α.
 
