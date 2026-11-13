@@ -8,7 +8,7 @@
 
 ## TL;DR / In plain terms
 
-What is left is decisions and writing. The transaction-cost agent scores like a random portfolio even with free trading, so the TC extension needs a design decision before any more TC runs; then pick the final runs and write the report, including the FA expectations that failed.
+What is left is the transaction-cost rebuild and the report. The TC redesign is decided (`TC_DRIFT_DESIGN.md`): three ETFs with drift, realistic costs, an oracle benchmark and a spline agent. Phase 2 builds it in parallel with Albert. Then write the report, including the FA expectations that failed.
 
 **Key concepts to understand**
 
@@ -30,11 +30,16 @@ What is left is decisions and writing. The transaction-cost agent scores like a 
 | F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B) | Low priority; or say it in the report |
 | L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
 | F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
-| TC | H1, H2, M7 to M9, M11, plus F-L12 and Albert's M1 print fix (`sys.stdout.reconfigure`) for `tc_sweep_report.py` | The TC redesign |
+| TC | The redesign replaces the old design, which stays as a negative result. Phase 2: your oracle, agent and features (`TC_DRIFT_DESIGN.md` §10) | Gate Nov 17 |
+| TC D10 | Evaluation size: 90 blocks per path, 1,000 starts | Albert's approval |
 
 ## Your next steps
 
-1. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.
+1. **Build your Phase 2 TC files** (`TC_DRIFT_DESIGN.md` §5, §6, §9, §10):
+   - `src/tc_drift/oracle.py`: value iteration on the 1% lattice with the control variate, and checks 1 to 5. Gate Nov 17: checks 1 and 2 pass.
+   - `src/tc_drift/features.py`: the three-asset spline map.
+   - `src/tc_drift/agent.py`: the shared value model, learned cost terms kept at zero or above, a frozen target copy, uniform exploration over 1,327 actions.
+   - The tuning design. Test with your own small reference loop until Albert's `env.py` lands.
 2. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. FA on the 10% grid (C1) is handed to Albert: it's registered on `run/fa-spline-grid10`, and he picks ε and runs it (`NEXT_STEPS_FOR_ALBERT.md`, 2026-11-10). A γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
    - A run trained from the current `dev` will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
 3. **Write the FA section** from `AUDIT_2026-11-06.md` §2.3 (the experiment, the failed expectations and what can be claimed, all re-checked) and `EXPERIMENTS.md` §8.7, including the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
@@ -43,7 +48,7 @@ What is left is decisions and writing. The transaction-cost agent scores like a 
 
 ## To decide with Albert
 
-**TC redesign** (step 1 above).
+**TC evaluation size** (D10): waiting for Albert.
 
 **Final runs.** `AUDIT_2026-11-06.md` §6. A TC option first, then C1 to C3, P1 and P2 as time allows.
 

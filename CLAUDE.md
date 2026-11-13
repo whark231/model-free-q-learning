@@ -185,6 +185,7 @@ Existing docs (`docs/README.md` is the index; docs cite each other by file name)
 | `docs/notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps (William) |
 | `docs/methods/FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning (William) |
 | `docs/methods/TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations (Albert) |
+| `docs/methods/TC_DRIFT_DESIGN.md` | Transaction costs with drift: redesign, oracle, agent, frozen interface `src/tc_drift/spec.py` (William and Albert) |
 | `docs/reviews/RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan |
 | `docs/reviews/AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs |
 | `docs/reviews/REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |

@@ -402,7 +402,8 @@ def test_seed_record_is_json_serializable(master_seed, n_runs):
 # split across more modules later, add them to AGENT_MODULES.
 # ---------------------------------------------------------------------------
 
-AGENT_MODULES = ["src.agent", "src.features", "src.fa_agent"]  # the last two: function-approximation extension
+AGENT_MODULES = ["src.agent", "src.features", "src.fa_agent",  # the last two: function-approximation extension
+                 "src.tc_drift.agent", "src.tc_drift.features"]  # transaction costs with drift (TC_DRIFT_DESIGN.md)
 FORBIDDEN_MODULES = ("src.benchmarks", "src.data.clean")
 FORBIDDEN_NAMES = {"load_calibration", "simulate_returns"}
 # A path into the repo's data directory (either slash), or a processed file name.

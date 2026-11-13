@@ -1,7 +1,7 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-09
+**Date:** 2026-11-06, updated 2026-11-12
 **Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
 
 ---
@@ -67,6 +67,71 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
   - A mean-field check predicts gaps of about 33.6 / 0 / 1.3 bps/yr at γ = 5 / 3 / 8 with ε at 3%, and 4.4 / 0 / 1.3 with ε at 10%. It uses the true μ and Σ, so disclose it and don't choose by it.
 - **Either way, rewrite §8.8's γ = 8 prediction.** It says the bias persists, which no longer holds at this α.
 
+## From William, 2026-11-12: the transaction-cost redesign, Phase 2 starts now
+
+**TL;DR / In plain terms:** the TC extension is redesigned so it can actually work. Three ETFs (SPY, IEF, GLD), holdings that drift between quarterly decisions, realistic trading costs, an oracle benchmark, and an agent that learns costs from its rewards. The design and the shared interface are on branch `feature/tc-redesign`. You build the environment, the training loop and the evaluation; I build the oracle and the agent, in parallel. One decision waits for you (D10, below).
+
+**Key concepts to understand**
+- **Block.** One decision period, 63 trading days (about a quarter). At the start the agent looks at what it holds and either holds or trades to one of 1,326 target portfolios on a 2% grid. Then the shares sit for 63 days, the weights drift with returns, and it is scored: the block's mean daily return minus γ/2 times the variance, minus the trading cost spread over the 63 days.
+- **HOLD.** Not trading. Free, and the weights keep drifting.
+- **Oracle.** The best possible policy, computed with the true μ and Σ. It is the benchmark, used for evaluation only; the agent never sees it.
+- **Realistic costs.** A 1 bp spread plus market impact that grows with the square root of trade size over daily volume, at four portfolio sizes: zero (the control), $100M, $1B (headline) and $10B.
+
+**Key takeaways**
+- Read `docs/methods/TC_DRIFT_DESIGN.md`: §3 (the model), §7 (evaluation, yours), §8 (the cost levels), §10 (who owns which file and the frozen signatures), §11 (timeline and gate).
+- The old design (`src/transaction_costs.py`, `results/tc-quadratic-cost/`, `TRANSACTION_COSTS.md`) stays untouched as a labelled negative result.
+
+**Decided** (William, 2026-11-12; §13 of the design has the reasons):
+- **Universe.** The three ETFs the nine-asset optimum holds, chosen to keep the oracle computable. The report discloses this as a benchmark-informed restriction.
+- **Drift and timing.**
+  - Drift on excess returns: the risk-free rate moves end weights by at most 7.1e-6, and `ENVIRONMENT.md` §4 now says so.
+  - The discount is 0.95 per block, a 5-year investor.
+- **Your interface.**
+  - The environment is split into `draw_returns` and `block_outcome`, so the oracle can score every starting portfolio on the same paths.
+  - Evaluation starts are drawn uniformly from the 2% grid.
+- **The agent.**
+  - One shared value model for trades and HOLD.
+  - Exploration draws uniformly from all 1,327 actions.
+  - Its learned cost coefficients are kept at zero or above.
+- **Convergence.** The baseline's rule, applied on fixed probe holdings.
+
+**Needs your approval: D10, the evaluation size.** 90 blocks per path (about 22 years; at 0.95 per block the rest of the future carries about 1% of the weight) and 1,000 starting holdings. Every policy runs on the same paths, so the gaps between policies are much less noisy than the values. The paths take 136 MB. Check the gap's standard error in your pilot and add paths if it is over a few bps/yr. Say yes, or propose other numbers.
+
+**Your Phase 2 work** (signatures are frozen in `src/tc_drift/*.py` and checked by `src/tests/test_tc_drift_spec.py`; change them only by a PR we both approve):
+1. **`src/tc_drift/env.py`**
+   - `load_market()`: the SPY, IEF, GLD sub-block of μ and Σ.
+   - `draw_returns(market, rng, m, block_length)`: daily excess returns, shape (m, 63, 3).
+   - `block_outcome(w0, excess_returns, gamma, drift)`: the block's reward and end weights. With `drift=False` it must equal `episodic_mean_variance_reward` row by row; test that.
+   - `simulate_block(...)`: the wrapper.
+2. **`src/tc_drift/train.py`.** The loop:
+   1. pick an action;
+   2. play the block;
+   3. charge `spec.trade_cost`;
+   4. pass the agent `spec.net_reward` and the drifted holdings;
+   5. restart from a random 2% target every `restart_every` blocks;
+   6. log the greedy action on `probe_states` every `checkpoint_every` blocks.
+
+   Until my agent lands, test it with stub agents (random, always HOLD, always rebalance) that implement `spec.TCAgent`.
+3. **`src/tc_drift/evaluate.py`**
+   - `evaluate_policy`, with the metrics in design §7: discounted net reward, oracle gap in bps/yr, hold fraction, trades, turnover per block, mean trade size, mean held weights.
+   - The adapters `agent_policy` and `oracle_policy`.
+   - The reference policies `always_rebalance_policy` and `never_trade_policy`. The myopic reference is my `oracle.solve(..., discount=0)`, scored through `oracle_policy`, so you need no code for it.
+4. **Run config** (your choice: `src/tc_drift/config.py` or JSON under `experiments/tc-drift/`). Not in `src/config.py`, which is fingerprinted in every run's evaluation record. The cost levels come from `src/tc_drift/calibration.py` (`cost_settings()`).
+5. **Random streams** (design §4): reported run i uses `SeedPlan(20261016, 10).run_streams(i)` for returns and agent, with starts from `agent_rng.spawn(1)[0]`. Evaluation paths come from the evaluation stream; tuning uses master seed 20261112.
+
+**How we work in parallel:**
+- Branch from `feature/tc-redesign` (or from `dev` once it merges), for example `feature/tc-drift-env`.
+- Edit only your files; anything in mine goes through a PR.
+- Whoever merges second writes the cross-test that checks your `block_outcome` against my reference loop on the same random numbers.
+
+**Dates** (design §11):
+- **Nov 13:** design and `spec.py` merged into `dev`.
+- **Nov 13 to 16:** your environment, my oracle.
+- **Nov 16 to 18:** your train/evaluate/config, my agent; then run the oracle on all four cost levels.
+- **Nov 18 to 19:** smoke runs, timing pilot, tuning.
+- **Nov 20 to 26:** full runs (4 levels × 10 seeds).
+- **Gate Nov 17:** your environment plus my oracle's first two checks must pass, or we fall back to the no-drift design.
+
 ## Your next steps
 
 **Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: pushing or deleting the local `grid10-robustness` tag (F-L13), and caveating post-convergence weights in the report text (F-L10).
@@ -79,7 +144,7 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 ## To decide together
 
-**TC redesign** (step 2), and **the final runs** (`AUDIT_2026-11-06.md` §6).
+**D10, the TC evaluation size** (above). **The final runs** (`AUDIT_2026-11-06.md` §6).
 
 **Which post-hoc runs go in the report.** My suggestion:
 - `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;

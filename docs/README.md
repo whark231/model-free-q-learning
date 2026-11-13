@@ -21,6 +21,7 @@ predate this folder (moved 2026-11-09) and are left unchanged.
 | `methods/EXPERIMENTS.md` | Fixed experiment settings, every registered run, how to run them, outcomes | Albert |
 | `methods/FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning | William |
 | `methods/TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations | Albert |
+| `methods/TC_DRIFT_DESIGN.md` | Transaction costs with drift: the redesign, oracle, agent, interfaces, sweep and risks (Phase 1) | William and Albert |
 | `reviews/AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs | William (with Claude), for both |
 | `reviews/RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan | Claude, for Albert |
 | `reviews/REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas | Both |
