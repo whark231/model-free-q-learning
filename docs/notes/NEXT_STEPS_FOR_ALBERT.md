@@ -97,6 +97,8 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 **Needs your approval: D10, the evaluation size.** 90 blocks per path (about 22 years; at 0.95 per block the rest of the future carries about 1% of the weight) and 1,000 starting holdings. Every policy runs on the same paths, so the gaps between policies are much less noisy than the values. The paths take 136 MB. Check the gap's standard error in your pilot and add paths if it is over a few bps/yr. Say yes, or propose other numbers.
 
+*Update 2026-11-13 (Albert):* yes, 90 blocks and 1,000 starts. A pilot with simple reference policies gives paired-gap SEs from 0.5 to 7.4 bps/yr, growing with how far apart the policies' holdings get (`TC_DRIFT_DESIGN.md` §7). It cannot tell whether each rebalance pays (every 2 blocks is within 0.4 ± 0.5 bps/yr of every block at $10B), so we revisit m once your oracle exists. For `solve()`: `block_outcome` with drift on uses about 10 KB per path, so score the lattice one point at a time or in chunks of about 1e5 rows, never 5,151 × 2,000 rows in one call. `src/tc_drift/env.py` is implemented and tested (`src/tests/test_tc_drift_env.py`), including the cross-test against your `design_numbers.buy_and_hold_block` loop.
+
 **Your Phase 2 work** (signatures are frozen in `src/tc_drift/*.py` and checked by `src/tests/test_tc_drift_spec.py`; change them only by a PR we both approve):
 1. **`src/tc_drift/env.py`**
    - `load_market()`: the SPY, IEF, GLD sub-block of μ and Σ.
@@ -144,7 +146,7 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 ## To decide together
 
-**D10, the TC evaluation size** (above). **The final runs** (`AUDIT_2026-11-06.md` §6).
+~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13. **The final runs** (`AUDIT_2026-11-06.md` §6).
 
 **Which post-hoc runs go in the report.** My suggestion:
 - `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;

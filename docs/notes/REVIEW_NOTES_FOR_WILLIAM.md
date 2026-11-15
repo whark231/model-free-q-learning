@@ -31,7 +31,7 @@ What is left is the transaction-cost rebuild and the report. The TC redesign is 
 | L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
 | F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
 | TC | The redesign replaces the old design, which stays as a negative result. Phase 2: your oracle, agent and features (`TC_DRIFT_DESIGN.md` §10) | Gate Nov 17 |
-| TC D10 | Evaluation size: 90 blocks per path, 1,000 starts | Albert's approval |
+| TC D10 | Evaluation size: 90 blocks per path, 1,000 starts | Approved by Albert 2026-11-13 (`TC_DRIFT_DESIGN.md` §7 pilot) |
 
 ## Your next steps
 
@@ -48,7 +48,7 @@ What is left is the transaction-cost rebuild and the report. The TC redesign is 
 
 ## To decide with Albert
 
-**TC evaluation size** (D10): waiting for Albert.
+~~**TC evaluation size** (D10): waiting for Albert.~~ Approved 2026-11-13: 90 blocks and 1,000 starts, as you proposed. `env.py` is built on `feature/tc-drift-env` (see `NEXT_STEPS_FOR_ALBERT.md`).
 
 **Final runs.** `AUDIT_2026-11-06.md` §6. A TC option first, then C1 to C3, P1 and P2 as time allows.
 
