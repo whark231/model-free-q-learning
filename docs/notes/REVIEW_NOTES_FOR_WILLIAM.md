@@ -36,7 +36,7 @@ What is left is the transaction-cost rebuild and the report. The TC redesign is 
 ## Your next steps
 
 1. **Build your Phase 2 TC files** (`TC_DRIFT_DESIGN.md` §5, §6, §9, §10):
-   - `src/tc_drift/oracle.py`: value iteration on the 1% lattice with the control variate, and checks 1 to 5. Gate Nov 17: checks 1 and 2 pass.
+   - `src/tc_drift/oracle.py`: built on `feature/tc-drift-oracle`; checks 1 and 2 pass (the Nov 17 gate). Left: fix check 3 to 5 tolerances, then run them at production size (`TC_DRIFT_DESIGN.md` §5).
    - `src/tc_drift/features.py`: the three-asset spline map.
    - `src/tc_drift/agent.py`: the shared value model, learned cost terms kept at zero or above, a frozen target copy, uniform exploration over 1,327 actions.
    - The tuning design. Test with your own small reference loop until Albert's `env.py` lands.
