@@ -1,6 +1,6 @@
 # Transaction Costs with Drift: Design (Phase 1)
 
-**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Branch:** `feature/tc-redesign` · **Status (2026-11-12):** Phase 1, decisions recorded (§13); Phase 2 can start. This document, the frozen interface `src/tc_drift/spec.py`, signature-only stubs and contract tests. Nothing is implemented beyond `spec.py`. One independent review is done and its findings are applied (§16). Waiting for William's and Albert's review. **Post hoc** relative to `baseline-v1`; label every result that way.
+**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Branch:** `feature/tc-redesign` · **Status (2026-11-13):** Phase 1, decisions recorded (§13); Phase 2 has started. This document, the frozen interface `src/tc_drift/spec.py`, signature-only stubs and contract tests. `env.py` is implemented and tested on `feature/tc-drift-env`, and D10 is decided with a pilot (§7); the other modules are still stubs. One independent review is done and its findings are applied (§16). Waiting for William's and Albert's review. **Post hoc** relative to `baseline-v1`; label every result that way.
 
 ---
 
@@ -23,7 +23,7 @@ The new design uses the assignment's original three ETFs (SPY, IEF, GLD). It let
 - The oracle is affordable because three assets make the state a two-dimensional triangle. A 1% lattice has 5,151 states, and the 1,326 trade targets are all lattice points.
 - One block's reward is very noisy: a standard deviation of 2,390 bps/yr at the optimum under buy-and-hold. The oracle therefore needs the control variate, which cuts that to 103 bps/yr on the same paths.
 - The decisions are small next to that noise. Letting the optimum drift for one block costs 1.3 bps/yr, and for 20 blocks 26 bps/yr. The agent gets no control variate, so whether it can resolve these decisions is the main risk (§14).
-- §13 lists 15 conflicts with the repo (C1 to C15) and 12 decisions (D1 to D12). All are decided except D10 (the evaluation horizon and path count), which waits for Albert.
+- §13 lists 15 conflicts with the repo (C1 to C15) and 12 decisions (D1 to D12). All are decided; D10 (the evaluation horizon and path count) was approved by Albert on 2026-11-13.
 - The costs are realistic: about 1 bp spreads plus square-root market impact from our own volume data, at portfolio sizes of $100M, $1B (headline) and $10B (§8).
 
 ---
@@ -189,7 +189,24 @@ All policies are scored from the same start holdings on the same simulated paths
 - mean held weights against the static optimum, which Part V asks for.
 
 - **Start holdings** (decided D4): drawn uniformly from the 2% grid, matching the main project's grid and keeping lucky off-grid starts out of the comparison. Also report the paths that start far from the optimum, where costs bite most.
-- **Horizon and paths** (D10, proposed, waiting for Albert's approval): H = 90 blocks (about 22 years; at ρ = 0.95 per block it leaves about 1% of the weight beyond the horizon) and 1,000 starting holdings. Every policy runs on the same paths, so the gaps are much less noisy than the values. Check the gap's standard error in the pilot and add paths if it is over a few bps/yr. Paths of shape (H, m, B, 3) in float64 take 136 MB at H = 90 and m = 1,000, so they fit in memory; generate them block by block if m grows.
+- **Horizon and paths** (D10, approved by Albert 2026-11-13): H = 90 blocks (about 22 years; at ρ = 0.95 per block it leaves about 1% of the weight beyond the horizon) and 1,000 starting holdings. Every policy runs on the same paths, so the gaps are much less noisy than the values. Check the gap's standard error against the size of the effect being measured (pilot below). Paths of shape (H, m, B, 3) in float64 take 136 MB at H = 90 and m = 1,000, so they fit in memory; generate them block by block if m grows.
+
+**D10 pilot** (`python -m src.tc_drift.d10_pilot`, tuning seed, 2026-11-13). Simple policies (always rebalance to the best 2% target, rebalance to it every 2, 4 or 8 blocks, trade to it once then hold, never trade) from the same 1,000 random 2% starts on the same 90-block paths, drift on:
+
+| Gap, bps/yr (SE) | zero | $100M | $1B | $10B |
+|---|---|---|---|---|
+| rebalance minus every 2 | 1.16 (0.53) | 1.05 (0.53) | 0.90 (0.53) | 0.42 (0.52) |
+| rebalance minus every 4 | 3.12 (0.86) | 2.93 (0.86) | 2.65 (0.86) | 1.79 (0.84) |
+| rebalance minus every 8 | 5.21 (1.28) | 4.95 (1.28) | 4.57 (1.27) | 3.38 (1.25) |
+| rebalance minus once | 23.5 (1.7) | 23.0 (1.7) | 22.2 (1.7) | 19.8 (1.7) |
+| rebalance minus never | 140.9 (7.4) | 139.2 (7.4) | 135.9 (7.3) | 125.3 (7.3) |
+
+- The value of one policy has an SE of 12.0 bps/yr. A paired gap's SE grows with how far apart the two policies' holdings get: 0.5 for every 2 blocks, 1.7 for trading once, 7.4 for never trading. These bracket the agent-against-oracle gap's SE but do not predict it.
+- In rebalance minus once the starts drop out exactly (both policies trade to the same target in block 1), so its SE is pure path noise. In the never-trade gap about 86% of the variance is still path noise (within-start variance 50,928 against 8,440 between starts), because the drifting never-trade portfolio is scored on different returns from the rebalanced one.
+- SEs fall as 1/√m: m = 4,000 halves them (paths 544 MB, so generate them block by block).
+- The weight beyond the horizon is ρ^90 = 0.0099, and the paths take 136.1 MB, as proposed.
+- Always rebalancing beats never rebalancing after the first trade by about 20 bps/yr even at $10B. Rebalancing every 2 blocks is within 0.4 ± 0.5 bps/yr of every block at $10B, so the pilot cannot say whether each single rebalance pays; the oracle sweep (§8) will.
+- Design risk: if the oracle beats always-rebalance by only about 1 bp/yr, the agent's gap to the oracle and its gap to always-rebalance will be hard to tell apart at m = 1,000. Revisit m once the oracle exists.
 
 **Reference policies:**
 - the oracle;
@@ -387,7 +404,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - **D7 (C13). Decided:** a one-line pointer to this document in each, added when this design merges into `dev`.
 - **D8 (C15). Decided:** 0.95 per block, described in the report as a 5-year investor (half the weight at 3.4 years). 0.95 per year would need about 350-block evaluation paths and noisier learning.
 - **D9 (§8). Decided:** realistic costs at four portfolio sizes (zero, $100M, $1B headline, $10B), from spreads and square-root impact on our own volume data, fitted across trade sizes.
-- **D10 (§7). Proposed, waiting for Albert:** H = 90 blocks and 1,000 starting holdings.
+- **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE).
 - **D11 (§6). Decided:** θ₁ and θ₂ are kept at zero or above.
 - **D12 (§6). Decided:** the rule mirrors the baseline's `greedy_stable_through_end`, applied to the probe states (§6).
 
