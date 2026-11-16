@@ -1,7 +1,7 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-12
+**Date:** 2026-11-06, updated 2026-11-15
 **Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
 
 ---
@@ -131,6 +131,43 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 - **Nov 18 to 19:** smoke runs, timing pilot, tuning.
 - **Nov 20 to 26:** full runs (4 levels × 10 seeds).
 - **Gate Nov 17:** your environment plus my oracle's first two checks must pass, or we fall back to the no-drift design.
+
+## From William, 2026-11-15: the oracle and the agent are built
+
+**TL;DR / In plain terms:** my side of Phase 2 is written and tested. The oracle passes checks 1 and 2, so with your `env.py` the Nov 17 gate is met. The agent works, but a pilot on your environment shows it cannot yet learn the trading costs through the reward noise, so its tuning waits on a decision I owe you. You can build `train.py` and `evaluate.py` against both now.
+
+**Key concepts to understand**
+- **Numerical oracle.** For each of the 5,151 holdings on the 1% lattice it computes the best action by value iteration, using the true μ and Σ through fixed simulated paths. Its in-sample value is slightly too high (it maximizes over noisy estimates), so gaps must use its policy replayed on your evaluation paths, never its V.
+- **Why the agent struggles.** One block's reward has noise of about 1e-3 per day; the trading cost it must learn is about 6e-6 per unit traded. Learning a number a thousand times smaller than the noise takes a very long average.
+
+**Key takeaways**
+- Both modules accept your `env.block_outcome` unchanged; I checked offline against your branch, and the oracle gives the same solution with it as with my test loop (reward estimates within 3.5e-19).
+- Your timeline is unchanged for `train.py`, `evaluate.py` and the config. The agent runs (Nov 20 to 26) depend on the tuning decision.
+
+**Where the code is.** `feature/tc-drift-oracle` (the oracle) and `feature/tc-drift-agent` (features and agent, built on top of the oracle branch). Details and numbers: `TC_DRIFT_DESIGN.md` §5 and §6, "Implemented".
+
+**What you can call**
+- **Oracle** (`src/tc_drift/oracle.py`):
+  - `solve(market, settings, paths, block_outcome=env.block_outcome)` returns an `OracleSolution`. Paths must have 63 days; draw them with `np.random.default_rng(spec.ORACLE_PATH_SEED)`.
+  - About 2 minutes per cost level at M = 2,000.
+  - `solution.policy(holdings)` takes (3,) or (m, 3) and returns the optimal action(s), so `oracle_policy` can call it directly.
+  - Myopic reference: `solve(..., discount=0.0)`, then score its `policy_table` with the ρ = 0.95 solution's `value_of`, or replay it through `oracle_policy`.
+  - Fields: `V`, `G`, `policy_table`, `r_hat`, `cv_correction`, `next_index`, `U`, `cost`, `block_length`, `n_iterations`.
+- **Agent** (`src/tc_drift/agent.py`):
+  - `DriftAgent(rng, alpha_value=..., alpha_cost=..., beta=..., target_refresh_every=...)`, plus optional `l2`, `n_basis` and `degree`. Any other keyword raises TypeError.
+  - The `spec.TCAgent` methods, and read-only diagnostics you may log: `cost_linear`, `cost_quadratic`, `theta`, `epsilon`, `n_updates`, `q_values(state)`, `holding_values(W)`.
+  - States are (3,) holdings summing to one.
+  - About 0.75 ms per block with your `block_outcome`.
+
+**What `train.py` must do for the agent**
+- Call `update(state, action, spec.net_reward(R, cost), next_state)` with the true drifted end-of-block holdings, even on a block after which you restart. A restart only changes where the next block starts. It is not a terminal state, so the agent still bootstraps from where this block ended.
+- Use `greedy_action` for the probe-state log. It draws no random numbers and changes nothing.
+
+**What is still open**
+- **Cross-test.** Whoever merges second adds a test that `env.block_outcome` and my test loop (`loop_block_outcome` in `src/tests/test_tc_drift_oracle.py`) give the same oracle solution.
+- **Check 5** (continuous replay) needs your `evaluate_policy`. Its tolerance is 0.5 bps/yr, but a direct replay of one policy has an SE of about 12 bps/yr (your pilot), so I proposed a paired form (design §5). Tell me if you see a better one.
+- **Check 3 fails at M = 2,000** at $1B (3.1 bps/yr against 0.5). I decide between more paths and restating it on the policy (design §5).
+- **Agent tuning** is blocked on my choice among the §9 options. Your pilot's risk note (an oracle lead over always-rebalance of about 1 bp/yr) still applies.
 
 ## Your next steps
 

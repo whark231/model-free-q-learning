@@ -36,10 +36,9 @@ What is left is the transaction-cost rebuild and the report. The TC redesign is 
 ## Your next steps
 
 1. **Build your Phase 2 TC files** (`TC_DRIFT_DESIGN.md` §5, §6, §9, §10):
-   - `src/tc_drift/oracle.py`: built on `feature/tc-drift-oracle`; checks 1 and 2 pass (the Nov 17 gate). Left: fix check 3 to 5 tolerances, then run them at production size (`TC_DRIFT_DESIGN.md` §5).
-   - `src/tc_drift/features.py`: the three-asset spline map.
-   - `src/tc_drift/agent.py`: the shared value model, learned cost terms kept at zero or above, a frozen target copy, uniform exploration over 1,327 actions.
-   - The tuning design. Test with your own small reference loop until Albert's `env.py` lands.
+   - `src/tc_drift/oracle.py`: built (`feature/tc-drift-oracle`); checks 1 and 2 pass, so the Nov 17 gate is met. Tolerance for checks 3 to 5: 0.5 bps/yr. Preliminary at $1B: check 4 passes (0.000 bps/yr); **check 3 fails at M = 2,000** (doubling M lowers the mean V by 3.1 bps/yr). Decide: more paths, or restate check 3 on the oracle's policy (`TC_DRIFT_DESIGN.md` §5). Check 5's form is still a proposal and needs Albert's `evaluate.py`.
+   - `src/tc_drift/features.py` and `src/tc_drift/agent.py`: built (`feature/tc-drift-agent`, which includes the oracle branch), reviewed, all tests pass (`TC_DRIFT_DESIGN.md` §6, "Implemented").
+   - **The tuning design is blocked on a decision.** The $1B pilot (§6) shows a constant α cannot learn the cost coefficients at the real noise level: after 500,000 blocks they are off by factors of 3 to 10. Pick from the §9 options (smaller separate α_cost, decaying steps, decorrelated cost features, longer budget), then pilot the D12 rule before fixing the grid.
 2. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. FA on the 10% grid (C1) is handed to Albert: it's registered on `run/fa-spline-grid10`, and he picks ε and runs it (`NEXT_STEPS_FOR_ALBERT.md`, 2026-11-10). A γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
    - A run trained from the current `dev` will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
 3. **Write the FA section** from `AUDIT_2026-11-06.md` §2.3 (the experiment, the failed expectations and what can be claimed, all re-checked) and `EXPERIMENTS.md` §8.7, including the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
