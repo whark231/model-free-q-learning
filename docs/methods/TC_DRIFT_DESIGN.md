@@ -122,7 +122,25 @@ At the γ = 5 optimum this takes the standard deviation from 2,390 to 103 bps/yr
 - G on the lattice is r̂ + ρ·mean_m V(next);
 - V(s) = max(G(s), max_a [G(a) − c(s, a)/B]).
 
-The cost matrix is 5,151 × 1,326, about 27 MB in float32. Each iteration gathers V over the stored next indices: 5,151 × M integers, about 41 MB at M = 2,000 if stored as int32 (`nearest_lattice_index` returns int64, twice that). Time is not measured yet. `discount = 0` gives the myopic reference policy; `value_of(table, discount=0.95)` scores it.
+The cost matrix is 5,151 × 1,326, 55 MB in float64. The next indices are stored as int32, 5,151 × M, 41 MB at M = 2,000. Each iteration multiplies V by a sparse transition matrix built from them (321,395 nonzeros at M = 2,000, because one block of drift moves holdings only a few lattice points). `discount = 0` gives the myopic reference policy; `value_of(table, discount=0.95)` scores it.
+
+**Implemented** (`src/tc_drift/oracle.py`, 2026-11-15; tests in `src/tests/test_tc_drift_oracle.py`):
+- **Time.** At M = 2,000 on the 1% lattice, one setting solves in about 113 s on William's laptop: about 100 s to score the 5,151 lattice points (two `block_outcome` calls each) and about 10 s for 434 value-iteration sweeps. Albert's `env.block_outcome` and the tests' day-by-day loop give the same solution on the same paths.
+- **Stopping rule.** The old grid solver's, max |V_new − V| ≤ 1e-12·(1 − ρ). One final sweep from the converged V produces G, V and the policy table, so V(s) = Q(s, policy(s)) exactly in terms of the returned G. G and the gather r̂ + ρ·mean V(next) then differ by at most the stopping tolerance.
+- **Units.** `solve` rejects paths whose block length is not `spec.BLOCK_LENGTH`, so its cost per day (c/B) matches `spec.net_reward` in the environment and the evaluation.
+- **Validation.** It rejects non-finite paths, returns at or below −100% (even with drift off, when the paths are otherwise unused), and a `block_outcome` that returns the wrong shapes or non-finite values.
+- **Memory.** The cost matrix, the sweeps and the transition matrix are processed 1,024 rows at a time. On the 0.5% lattice (check 4) at M = 2,000 the solve peaks at 474 MB (tracemalloc) and takes about 6.4 minutes.
+- **Extra fields** on `OracleSolution`, beyond those in §10: `U`, the cost matrix, `block_length` and `n_iterations`.
+- **Checks 1 and 2 pass** (the gate). Check 1 runs at $1B on the 1% lattice and at $10B and a steep cost on the 2% lattice; values agree with the old solver to 1e-11, and policies agree on every state whose best two destinations differ by more than 1e-11. In check 2 with drift, the oracle's lead over always rebalancing to the best target is 0.008 bps/yr at the median lattice state (M = 2,000; at most 0.012).
+- **Checks 3 and 4, preliminary** (2026-11-15, $1B only, Albert's `env.block_outcome` from his unmerged branch, the oracle's fixed-path seed; to be rerun on all levels once `env.py` merges):
+  - **Check 4 passes.** The 0.5% lattice changes the mean V over the 2% starts by 0.000 bps/yr (largest change at one start 0.002). Rounding to the 1% lattice costs nothing measurable.
+  - **Check 3 fails at M = 2,000.** Doubling to M = 4,000 lowers the mean V over the 2% starts by 3.09 bps/yr (largest change at one start 3.14), against the 0.5 tolerance, and changes the policy at 13% of the 2% starts. The drop is in the direction of the maximization bias (§5). Its size is close to the sampling error of r̂: the control-variate correction's SE is 0.73 bps/yr at 20,000 paths (§12), so about 2.3 at 2,000.
+  - **Options (William to decide; this comes after seeing the failure, so whichever is chosen is post hoc):**
+    1. More paths. If the change shrinks like 1/√M, 0.5 bps/yr needs about 38 times the paths (M ≈ 77,000, about an hour and 1.6 GB per setting); if like 1/M, about 6 times (M ≈ 12,000).
+    2. Restate check 3 on what the evaluation uses, the oracle's policy rather than its in-sample V: score the M = 2,000 and M = 4,000 policy tables on the same M = 4,000 model (`value_of`), so the shared level noise cancels.
+- **Not done yet.** Check 5 needs Albert's `evaluate.py`, and its form is still a proposal (below). Check 5 needs Albert's `evaluate.py`. After `env.py` merges, a test that `env.block_outcome` and the tests' loop give the same solution is still to be added; offline they agree to 3.5e-19 in r̂, with identical next states and policy (independent review, 2026-11-15).
+
+**First look at the policy** (M = 1,000, Albert's `block_outcome`, γ = 5; a sanity check, not a result). The best target is (0.46, 0.14, 0.40) at every level. The share of lattice states within an L1 distance of 0.04 of it where the oracle holds rises with portfolio size: zero cost 0.16, $100M 0.47, $1B 0.63, $10B 1.00. At $10B, trades from within 0.10 of the best target stop about 0.046 short of it rather than going all the way. Both match the §8 expected directions. The zero-cost holds are the noise-driven ones §8 anticipates.
 
 `OracleSolution` carries V, G, the policy table, r̂, the control-variate correction per lattice point and the next-state indices, so the checks and the report can read them directly.
 
@@ -138,6 +156,8 @@ The cost matrix is 5,151 × 1,326, about 27 MB in float32. Each iteration gather
 3. **Path count.** Doubling M changes the value by less than a tolerance fixed before running.
 4. **Lattice size.** The 0.5% lattice (20,301 points) changes the value by less than a tolerance fixed before running.
 5. **Continuous replay.** Replaying the oracle's policy on continuous, unrounded holdings, on fresh paths, gives a value close to V. Expect V to be slightly above the replay, because of the maximization bias above. The difference bounds the error the evaluation will see.
+
+**Tolerances for checks 3 to 5 (decided William, 2026-11-15, before any of them ran): 0.5 bps/yr.** Checks 3 and 4 compare the mean over the 1,326 2% starts (the evaluation's start distribution, D4) of the annualized V; the largest change at a single start is reported too. Check 5 cannot be held to 0.5 bps/yr as worded: one policy's replayed value has a standard error of about 12 bps/yr at the D10 size (§7 pilot), so a direct "replay against V" comparison cannot resolve it. Proposed, not decided: apply the 0.5 bps/yr to a paired quantity, the oracle's lead over always rebalancing, in the replay on the evaluation paths against the same lead in the oracle's own model (V − `value_of` of the always-rebalance table). The pilot's paired SEs (0.5 to 1.7 bps/yr) mean this may need more than 1,000 starts.
 
 ## 6. Agent (William)
 
@@ -177,6 +197,23 @@ By §3 both are the post-decision value G, evaluated at the weights the agent en
 - the net rewards.
 
 The two distance features build in the cost family's shape (linear and quadratic in the trade) but not its size, which the agent learns. It never receives μ, Σ, κ, λ, γ or the oracle (§10).
+
+**Implemented** (`src/tc_drift/agent.py` and `src/tc_drift/features.py`, 2026-11-15; tests in `src/tests/test_tc_drift_agent.py`):
+- **Features.** 87 columns, rank 45 on the 2% grid, max ‖φ‖² = 6, as above. The pair products kept are those that can be nonzero on the simplex, decided from the knots, so the columns never depend on the input; `src/features.py` instead drops columns that are zero on the rows it is given, which works only because it is always called on the whole grid. The basis is evaluated as piecewise cubics fitted once from `src.features.bspline_basis` (scipy costs about 0.5 ms a call); it matches scipy to 1.6e-15, tested. Degree 0 is rejected.
+- **Hyperparameters.** Required: `alpha_value`, `alpha_cost`, `beta`, `target_refresh_every`. Optional: `l2` (0), `n_basis` (5), `degree` (3). Anything else raises TypeError. The constructor rejects step sizes with α_value·(6 + l2) + α_cost·8 ≥ 2 (the stability bound above; it never binds at sensible values).
+- **Ties.** A trade must beat HOLD by more than 1e-14 (daily units). Trading to the point already held differs from HOLD by at most 4e-18 at the real scale, and real decisions by about 1e-8. Greedy choices use no random numbers.
+- **Interface for `train.py` and `evaluate.py`.** The `spec.TCAgent` methods, plus read-only diagnostics: `theta`, `cost_linear` (c1), `cost_quadratic` (c2), `epsilon`, `n_updates`, `q_values(state)` and `holding_values(W)` (the implied G, for the divergence check at evaluation only).
+- **Speed.** About 0.4 to 0.7 ms a step for the agent alone, measured before a cache of each state's target distances that saves about 0.09 ms; about 0.75 ms a block including Albert's `block_outcome` in the pilot, so 1 million blocks take about 12 minutes per seed.
+- **Checked against independent code.** A reference written directly from this section steps side by side with the agent (off-grid states, HOLD and trades, l2 > 0, a frozen copy). Nine deliberately broken versions of the agent all fail the tests. A noise-free toy world with known costs, solved exactly by the old grid solver, checks learning: across five seeds the agent recovers both cost coefficients to within 11% and loses 0.1% to 0.2% of what never trading loses.
+
+**Pilot on the real environment** (2026-11-15, $1B, tuning seed 20261112, my own loop in place of `train.py`, Albert's unmerged `env.block_outcome`, 500,000 blocks, ε decaying to e⁻¹⁰, one α for both blocks). The true coefficients are c1 = κ/B = 6.2e-6 and c2 = λ/(2B) = 1.13e-4.
+
+| α | Greedy target at the optimum, last 3 checkpoints | c1, last 3 checkpoints | c2, last 3 checkpoints |
+|---|---|---|---|
+| 0.01 | (0.28, 0.58, 0.14), (0.40, 0.42, 0.18), (0.34, 0.52, 0.14) | 7.0e-5, 1.3e-4, 1.3e-4 | 1.3e-5, 3.4e-5, 3.3e-5 |
+| 0.001 | (0.38, 0.26, 0.36), (0.38, 0.24, 0.38), (0.38, 0.24, 0.38) | 1.8e-5, 3.7e-5, 4.1e-5 | 6.0e-6, 7.7e-6, 1.3e-5 |
+
+The optimum is (0.46, 0.14, 0.40). At α = 0.001 the value model is close to it, but neither cost coefficient is resolved: c1 runs 3 to 7 times too high, and c2 10 times too low. The independent review found the same at α_value = 0.01 and α_cost = 2e-4 over 30,000 blocks: every probe state's greedy action still changed in the last 20%, so the D12 rule would not be met. Its two diagnoses: the two cost features are 0.97 correlated under uniform exploration (eigenvalues of E[dd′] 0.52 and 0.0039), and the reward noise (about 1e-3 a block) is a hundred times c2 and a thousand times c1. This is §14 risk 1, now measured; the tuning design (§9) has to address it before any agent run.
 
 ## 7. Evaluation and reference policies (Albert)
 
@@ -269,7 +306,13 @@ One block's drift from the optimum is a transfer of about 2.6% (§12). Holding t
 - **Choosing rule, fixed before running:**
   1. The highest mean over 3 tuning seeds wins.
   2. If the runner-up is within one paired standard error, add 3 seeds and decide on 6. This is the rule `src/tune_fa.py` used.
-- **Candidate grid:** William, Phase 2.
+- **Candidate grid:** William, Phase 2. Not fixed yet: the pilot (§6) shows that one constant α for both blocks cannot resolve the cost coefficients at the real noise level. Options to decide before tuning, none tried yet:
+  - separate, smaller α_cost (the two blocks already have separate step sizes), with a much longer budget;
+  - decaying step sizes, α_t ∝ 1/t from some point on, which average the noise away (the assignment allows them, and the tabular baseline used 1/N);
+  - decorrelating the two cost features, for example ‖u‖₁ and ‖u‖₂² − b‖u‖₁ for a fixed b, which changes only how they are parameterized, not what the agent can represent;
+  - a longer training budget, at about 12 minutes per million blocks per seed.
+
+  Then pilot the D12 convergence rule on the tuning seed before fixing the grid.
 
 ## 10. Roles, files and frozen interfaces
 
@@ -339,9 +382,9 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 | Counts | 1,326 targets; 5,151 lattice points (1%); 20,301 (0.5%); every target on the 1% lattice |
 
 **Not verified:**
-- oracle run time and memory;
+- oracle run time on the 0.5% lattice (the 1% lattice is measured in §5);
 - the path count M that check 3 needs;
-- the agent's speed;
+- the agent's speed on the merged `train.py` (§6 gives the pilot's);
 - how often the oracle holds at each cost level (§8 gives an estimate only).
 
 ## 13. Conflicts with the repo, and questions
@@ -412,7 +455,7 @@ C4, C10, C11 and C14 are already settled in the stubs; C5 and C12 need only the 
 
 ## 14. Risks
 
-1. **The agent may not resolve the decisions.** One block's reward has a standard deviation of 2,390 bps/yr, while one block of drift from the optimum costs 1.3 bps/yr. To resolve that loss at one standard error the agent would need about (2,390/1.3)², roughly 3 million, blocks spent on the comparison. The oracle sweep should pick costs where decisions matter, and the agent's expected directions are registered only after tuning. A null agent result against a working oracle is still a reportable finding.
+1. **The agent may not resolve the decisions.** One block's reward has a standard deviation of 2,390 bps/yr, while one block of drift from the optimum costs 1.3 bps/yr. To resolve that loss at one standard error the agent would need about (2,390/1.3)², roughly 3 million, blocks spent on the comparison. The oracle sweep should pick costs where decisions matter, and the agent's expected directions are registered only after tuning. A null agent result against a working oracle is still a reportable finding. **Measured 2026-11-15 (§6 pilot):** after 500,000 blocks at constant α the cost coefficients are still off by factors of 3 to 10.
 2. **Divergence (§6).** Checked against the oracle's G after training.
 3. **The oracle is approximate.** Rounding and finite paths are bounded by checks 3 to 5, and its in-sample V is biased upward. Gaps use its replayed value, and a policy on continuous holdings can beat it slightly, so small negative gaps are possible.
 4. **Compute and the gate.** Oracle time is unmeasured, and the 0.5% lattice check is four times the work. If checks 1 and 2 fail by Nov 17, fall back (§11).
