@@ -1,7 +1,7 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-15
+**Date:** 2026-11-06, updated 2026-11-17
 **Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
 
 ---
@@ -134,6 +134,24 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 - **Nov 20 to 26:** full runs (4 levels × 10 seeds).
 - **Gate Nov 17:** your environment plus my oracle's first two checks must pass, or we fall back to the no-drift design.
 
+## From William, 2026-11-17: the oracle has run, and I agree with the paired check 5
+
+**TL;DR / In plain terms:** the oracle is solved for all four portfolio sizes and the two $1B illustrations, and checks 3 and 4 pass everywhere, so 2,000 paths and the 1% lattice are enough (check 3 can say little at zero cost and $100M, where the oracle barely beats always rebalancing). I agree with the paired form of check 5 (design §5), so you can build it into `evaluate.py` as written. The oracle's lead over always rebalancing at $1B is about 1.3 bps/yr, which probably means more than 1,000 evaluation starts.
+
+**Key concepts to understand**
+- **Check 3 on the policy.** It asks whether more paths would change what the oracle does. Both policies (from 2,000 and 4,000 paths) are scored in a third, independent model; their mean values differ by at most 0.003 bps/yr, and by at most 0.014 at a single start.
+- **A shared level shift.** Doubling the paths lowers the oracle's values by about 3.1 bps/yr, mostly because every portfolio's reward is estimated on the same paths and shares their sampling error. Decisions depend only on differences, so the policy does not move. It does mean the oracle's own V is about 5 bps/yr too high at 2,000 paths, which is one more reason gaps must use its replayed policy (and check 5 the paired form).
+
+**Key takeaways**
+- **Check 5:** decided as the paired form. Apply the 0.5 bps/yr to the oracle's lead over always rebalancing, replayed on your evaluation paths, against the same lead in the oracle's model. The in-model leads are in `results/tc-drift/oracle/summary.json` (`lead_over_always_rebalance_bps`). If you find a better form while building `evaluate.py`, tell me.
+- **D10:** the $1B lead is 1.32 bps/yr in-model (an upper estimate), so D10's rule wants the agent-against-oracle gap's SE below about 0.44. Your pilot's paired SEs at m = 1,000 were 0.5 to 1.7, which puts m between about 1,300 and 15,000. Measure it once `evaluate.py` runs.
+- **Results and how to get an `OracleSolution`.** `results/tc-drift/oracle/summary.json` is committed. The per-setting `.npz` files (policy table, V, G, r̂ and the myopic table) stay local, since `.gitignore` excludes `results/**/*.npz`; `python -m src.tc_drift.oracle_runs` rewrites them (about 1 to 2.5 hours on my machine), or I can send them. `evaluate.oracle_policy(solution)` needs a full `OracleSolution`; rebuild it with `market = env.load_market()`, `s = calibration.cost_settings()["aum_1b"]`, then `oracle.solve(market, s, env.draw_returns(market, np.random.default_rng(spec.ORACLE_PATH_SEED), 2000), block_outcome=env.block_outcome)` (about 5 minutes; by construction it gives the saved table, since the run used the same paths and the same solve, but I have not rerun it). For several settings, `oracle.score` once and `oracle.solve_scored` per setting is faster.
+- **A naming clash to avoid in the report.** `oracle_runs.py`'s "never trade" holds the start forever (as in your D10 pilot). Your `evaluate.never_trade_policy(first_target)` trades once, then holds. Its signature is frozen, so I suggest calling it "trade once, then hold" in tables and text.
+- **The cross-test is done** (`src/tests/test_tc_drift_oracle.py`): your `env.block_outcome`, `load_market` and `draw_returns` give the same oracle as my test loop.
+- **Two of my registered oracle directions failed** (design §8): trading once does not come closer to the oracle as costs grow (it misses the first trade's cost from far starts), and myopic holds slightly less than the oracle under λ only. Both are reported as not met.
+
+Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8 (results).
+
 ## From William, 2026-11-15: the oracle and the agent are built
 
 **TL;DR / In plain terms:** my side of Phase 2 is written and tested. The oracle passes checks 1 and 2, so with your `env.py` the Nov 17 gate is met. The agent works, but a pilot on your environment shows it cannot yet learn the trading costs through the reward noise, so its tuning waits on a decision I owe you. You can build `train.py` and `evaluate.py` against both now.
@@ -176,14 +194,21 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 **Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: pushing or deleting the local `grid10-robustness` tag (F-L13), and caveating post-convergence weights in the report text (F-L10).
 
 1. ~~**Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`**~~ Done 2026-11-09 (H3), plus `fa-spline`. Every earlier number came back identical. The `baseline-v1` Q fit matches the numbers in `fa-spline`'s notes (Spearman 0.821, 0.710, 0.920; top-10 recall 35%, 20%, 20% at γ = 5, 3, 8). `b63`, `eps-decay`, `tabular-const` and `fa-quadratic` need William, who holds their logs.
-2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). On hold. Do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11).
+2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The redesign is decided (`TC_DRIFT_DESIGN.md`); its Phase 2 tasks are step 6. For the old design: do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11).
 3. ~~**Small code fixes**~~ Done 2026-11-09: M1 (except `tc_sweep_report.py`), M2, M3, M4, M5, plus L2.
 4. ~~**`RUN_ISSUES` §4 steps 1 to 3** (M10)~~ Done 2026-11-09: total gap, post-hoc `settled` and `near_optimal_every_episode`, provenance in `summary.json`, definitions in `EVALUATION.md` §2.
 5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Use the post-hoc `settled` measure next to the pre-registered rule, labelled post hoc. Who writes the TC section is proposed in the prospectus (you, since you built it) and is yours to accept or change.
+6. **TC Phase 2, your side** (updated 2026-11-17; details in the 2026-11-15 and 2026-11-17 sections above):
+   1. `train.py`, `evaluate.py` and the config against the frozen `src/tc_drift/spec.py` (Nov 16 to 18). The oracle, agent and environment are all merged or on `feature/tc-drift-oracle-runs`.
+   2. Build check 5 into `evaluate.py` in the paired form, and compare with the in-model leads in `results/tc-drift/oracle/summary.json`.
+   3. Measure D10's m: raise it until the agent-against-oracle gap's SE is below a third of the oracle's lead over always rebalancing (expected between about 1,300 and 15,000 at $1B).
+   4. Call `never_trade_policy` "trade once, then hold" in tables and text.
+   5. D7: add a one-line pointer to `TC_DRIFT_DESIGN.md` in `TRANSACTION_COSTS.md` (your file) and `AUDIT_2026-11-06.md` §6.2. Due since the design merged; I have not added them.
+   6. Smoke runs and the timing pilot with me (Nov 18 to 19). The agent's tuning is still my open choice (design §9); I will tell you when it changes `agent.py`.
 
 ## To decide together
 
-~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13. **The final runs** (`AUDIT_2026-11-06.md` §6).
+~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13; m still to be measured (step 6). **The final runs** (`AUDIT_2026-11-06.md` §6). **D7 pointers** (step 6). **How the TC report presents the two oracle directions that were not met** (design §8).
 
 **Which post-hoc runs go in the report.** My suggestion:
 - `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;

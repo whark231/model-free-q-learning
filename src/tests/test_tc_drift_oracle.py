@@ -21,7 +21,7 @@ import pytest
 
 from src.environment import ReturnSimulator, load_calibration
 from src.rewards import episodic_mean_variance_reward
-from src.tc_drift import calibration, oracle, spec
+from src.tc_drift import calibration, env, oracle, spec
 
 B = spec.BLOCK_LENGTH
 RHO = spec.DISCOUNT
@@ -299,6 +299,50 @@ def test_common_random_numbers_across_settings(market, paths, drift_solution):
     # The reward estimates and next states depend on the paths, not on the cost setting.
     coarse = spec.nearest_lattice_index(spec.lattice(0.02))
     np.testing.assert_array_equal(other.r_hat, drift_solution.r_hat[coarse])
+
+
+# ---------------------------------------------------------------------------
+# Cross-test with Albert's environment (§10: whoever merges second owns it)
+# ---------------------------------------------------------------------------
+
+def test_env_draws_the_same_market_and_paths_as_these_tests(market, paths):
+    m = env.load_market()
+    np.testing.assert_array_equal(m.mu, market.mu)
+    np.testing.assert_array_equal(m.sigma, market.sigma)
+    np.testing.assert_array_equal(env.draw_returns(m, np.random.default_rng(spec.ORACLE_PATH_SEED), len(paths)), paths)
+
+
+def test_env_block_outcome_and_the_reference_loop_give_the_same_solution(market, paths, headline, drift_solution):
+    """The production oracle (env.block_outcome) against the one these tests
+    check (the day-by-day loop), on the same paths."""
+    sol = oracle.solve(market, headline, paths, block_outcome=env.block_outcome)
+    np.testing.assert_array_equal(sol.next_index, drift_solution.next_index)
+    np.testing.assert_allclose(sol.r_hat, drift_solution.r_hat, rtol=0, atol=1e-15)
+    np.testing.assert_allclose(sol.V, drift_solution.V, rtol=0, atol=1e-13)
+    np.testing.assert_array_equal(sol.policy_table, drift_solution.policy_table)
+
+
+# ---------------------------------------------------------------------------
+# One scoring for several settings (oracle_runs.py)
+# ---------------------------------------------------------------------------
+
+def test_solve_scored_equals_solve(market, paths, headline, drift_solution):
+    scores = oracle.score(market, headline.gamma, paths, block_outcome=loop_block_outcome)
+    for settings, discount, reference in [(headline, RHO, drift_solution),
+                                          (calibration.cost_settings()["aum_10b"], 0.0, None)]:
+        got = oracle.solve_scored(scores, settings, discount=discount)
+        if reference is None:
+            reference = oracle.solve(market, settings, paths, block_outcome=loop_block_outcome, discount=discount)
+        for field in ("V", "G", "policy_table", "r_hat", "cv_correction", "next_index", "U", "cost"):
+            np.testing.assert_array_equal(getattr(got, field), getattr(reference, field))
+        assert (got.settings, got.discount, got.n_iterations) == (reference.settings, reference.discount,
+                                                                  reference.n_iterations)
+
+
+def test_solve_scored_rejects_another_gamma(market, paths):
+    scores = oracle.score(market, 5.0, paths, block_outcome=loop_block_outcome, lattice_increment=0.02)
+    with pytest.raises(ValueError, match="gamma"):
+        oracle.solve_scored(scores, spec.TCSettings(0.0, 0.0, gamma=3.0))
 
 
 def test_coarse_and_fine_lattices_share_the_targets(market):
