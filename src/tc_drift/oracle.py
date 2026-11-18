@@ -133,6 +133,23 @@ class OracleSolution:
         raise RuntimeError("policy evaluation did not converge")
 
 
+@dataclass(frozen=True)
+class LatticeScores:
+    """The expensive, cost-free part of a solve: every lattice point scored on
+    the fixed paths. It depends on the market, gamma, the paths, drift and the
+    lattice, but not on kappa, lambda or the discount, so one scoring serves
+    every cost setting and the myopic reference (oracle_runs.py)."""
+
+    r_hat: np.ndarray
+    cv_correction: np.ndarray
+    next_index: np.ndarray
+    U: np.ndarray
+    gamma: float
+    drift: bool
+    lattice_increment: float
+    block_length: int
+
+
 def solve(market: Market, settings: TCSettings, excess_paths: np.ndarray, *, block_outcome: BlockOutcome,
           discount: float = DISCOUNT, drift: bool = True,
           lattice_increment: float = LATTICE_INCREMENT) -> OracleSolution:
@@ -140,8 +157,19 @@ def solve(market: Market, settings: TCSettings, excess_paths: np.ndarray, *, blo
 
     excess_paths (M, B, 3) are the fixed paths, drawn once from
     np.random.default_rng(spec.ORACLE_PATH_SEED) and reused for every setting.
-    discount = 0 gives the myopic reference policy."""
+    discount = 0 gives the myopic reference policy.
+
+    The same as score() followed by solve_scored()."""
     rho = _check_discount(discount)
+    scores = score(market, settings.gamma, excess_paths, block_outcome=block_outcome, drift=drift,
+                   lattice_increment=lattice_increment)
+    return solve_scored(scores, settings, discount=rho)
+
+
+def score(market: Market, gamma: float, excess_paths: np.ndarray, *, block_outcome: BlockOutcome,
+          drift: bool = True, lattice_increment: float = LATTICE_INCREMENT) -> LatticeScores:
+    """Step 1 of the solve: r_hat, the control-variate correction and the
+    next-state indices for every lattice point, on the fixed paths."""
     if not isinstance(drift, (bool, np.bool_)):
         raise TypeError(f"drift must be True or False, got {type(drift).__name__}")
     paths = np.asarray(excess_paths, dtype=float)
@@ -152,21 +180,32 @@ def solve(market: Market, settings: TCSettings, excess_paths: np.ndarray, *, blo
     mu, sigma = _check_market(market)
 
     states = lattice(lattice_increment)
-    targets = target_grid()
     target_idx = target_lattice_index(lattice_increment)
-    if not np.allclose(states[target_idx], targets, rtol=0, atol=1e-12):
+    if not np.allclose(states[target_idx], target_grid(), rtol=0, atol=1e-12):
         raise ValueError(f"every 2% target must be a lattice point; increment {lattice_increment!r} does not divide 0.02")
 
-    U = states @ mu - 0.5 * settings.gamma * np.einsum("ni,ij,nj->n", states, sigma, states)
-    r_hat, correction, next_index = _score_lattice(states, paths, settings.gamma, drift, block_outcome,
-                                                   lattice_increment, U)
-    cost = _cost_matrix(states, targets, target_idx, settings)
-    B = paths.shape[1]
-    G, V, policy_table, n_iter = _value_iteration(r_hat, _transition_matrix(next_index), cost, B, target_idx, rho)
+    U = states @ mu - 0.5 * gamma * np.einsum("ni,ij,nj->n", states, sigma, states)
+    r_hat, correction, next_index = _score_lattice(states, paths, gamma, drift, block_outcome, lattice_increment, U)
+    return LatticeScores(r_hat=r_hat, cv_correction=correction, next_index=next_index, U=U, gamma=float(gamma),
+                         drift=bool(drift), lattice_increment=lattice_increment, block_length=paths.shape[1])
 
-    return OracleSolution(V=V, G=G, policy_table=policy_table, r_hat=r_hat, cv_correction=correction,
-                          next_index=next_index, settings=settings, discount=rho, drift=bool(drift),
-                          lattice_increment=lattice_increment, U=U, cost=cost, block_length=B, n_iterations=n_iter)
+
+def solve_scored(scores: LatticeScores, settings: TCSettings, *, discount: float = DISCOUNT) -> OracleSolution:
+    """Step 2 of the solve: costs and value iteration on an existing scoring.
+    settings.gamma must be the gamma the lattice was scored with."""
+    rho = _check_discount(discount)
+    if settings.gamma != scores.gamma:
+        raise ValueError(f"settings.gamma {settings.gamma!r} differs from the scoring's gamma {scores.gamma!r}")
+    inc = scores.lattice_increment
+    states = lattice(inc)
+    target_idx = target_lattice_index(inc)
+    cost = _cost_matrix(states, target_grid(), target_idx, settings)
+    B = scores.block_length
+    G, V, policy_table, n_iter = _value_iteration(scores.r_hat, _transition_matrix(scores.next_index), cost, B,
+                                                  target_idx, rho)
+    return OracleSolution(V=V, G=G, policy_table=policy_table, r_hat=scores.r_hat, cv_correction=scores.cv_correction,
+                          next_index=scores.next_index, settings=settings, discount=rho, drift=scores.drift,
+                          lattice_increment=inc, U=scores.U, cost=cost, block_length=B, n_iterations=n_iter)
 
 
 # ---------------------------------------------------------------------------

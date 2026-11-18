@@ -1,7 +1,7 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-11-09
+**Date:** 2026-11-09, updated 2026-11-17
 **Status:** open items only. Closed items are in `REVIEW_HISTORY.md` and `AUDIT_2026-11-06.md` §2.
 
 ---
@@ -30,15 +30,30 @@ What is left is the transaction-cost rebuild and the report. The TC redesign is 
 | F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B) | Low priority; or say it in the report |
 | L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
 | F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
-| TC | The redesign replaces the old design, which stays as a negative result. Phase 2: your oracle, agent and features (`TC_DRIFT_DESIGN.md` §10) | Gate Nov 17 |
-| TC D10 | Evaluation size: 90 blocks per path, 1,000 starts | Approved by Albert 2026-11-13 (`TC_DRIFT_DESIGN.md` §7 pilot) |
+| TC | The redesign replaces the old design, which stays as a negative result. Phase 2: oracle, agent and features built; oracle run done; agent tuning not designed yet (`TC_DRIFT_DESIGN.md` §9) | Your §9 choice; Albert's `train.py` and `evaluate.py` |
+| TC D10 | Evaluation size: 90 blocks per path, 1,000 starts; the oracle's $1B lead (1.3 bps/yr) puts m between about 1,300 and 15,000 (`TC_DRIFT_DESIGN.md` §8) | Albert measures it with `evaluate.py` |
+| TC tuning | Which §9 option the agent uses. Recommended: recursive least squares on the cost block, after a constant-α burn-in or with a forgetting factor (§9). Not yet tested in the agent | Your choice, then a $1B pilot |
+| TC exploration | Even at the least-squares floor, a drift trade's cost is uncertain by about two thirds after 500,000 exploring trades; the current β explores only about 50,000 blocks (§9) | Part of the tuning pilot |
+| TC check 5 | Paired form decided 2026-11-17 | Albert's `evaluate.py` |
+| TC D7 | One-line pointers to `TC_DRIFT_DESIGN.md` in `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md` §6.2. Due when the design merged; not added, because both files are on Claude's do-not-touch list | Albert adds them, or you lift the restriction |
+| TC C12 | Prospectus §4 (TC ownership) and §5 week 9 (draft date against the Nov 20 to 26 TC runs) are out of date (`TC_DRIFT_DESIGN.md` C12) | You; it is your file |
+| TC report | Two registered oracle directions not met (trade-once does not approach the oracle as costs grow; myopic holds less than the oracle under λ only). The oracle's in-sample V is about 5 bps/yr high at M = 2,000 | The TC section |
 
 ## Your next steps
 
 1. **Build your Phase 2 TC files** (`TC_DRIFT_DESIGN.md` §5, §6, §9, §10):
-   - `src/tc_drift/oracle.py`: built (`feature/tc-drift-oracle`); checks 1 and 2 pass, so the Nov 17 gate is met. Tolerance for checks 3 to 5: 0.5 bps/yr. Preliminary at $1B: check 4 passes (0.000 bps/yr); **check 3 fails at M = 2,000** (doubling M lowers the mean V by 3.1 bps/yr). Decide: more paths, or restate check 3 on the oracle's policy (`TC_DRIFT_DESIGN.md` §5). Check 5's form is still a proposal and needs Albert's `evaluate.py`.
+   - `src/tc_drift/oracle.py`: merged. Checks 1 to 4 pass; the Nov 17 gate is met. Check 3 restated on the policy (decided 2026-11-17, post hoc) and scored in an independent model: mean difference at most 0.003 bps/yr at every setting (0.014 at one start), but uninformative at zero cost and $100M, where the oracle's own lead over always rebalancing is under the tolerance. M stays at 2,000. The V-based failure was a shared level shift in r̂, not maximization bias (`TC_DRIFT_DESIGN.md` §5).
+   - **Oracle run on all six settings done** (`feature/tc-drift-oracle-runs`, `results/tc-drift/oracle/`, `TC_DRIFT_DESIGN.md` §8). Two registered directions failed: trade-once does not approach the oracle as costs grow, and myopic holds slightly less than the oracle under λ only. Report both.
+   - Check 5: the paired form is decided (2026-11-17); Albert is told. It runs once his `evaluate.py` exists.
    - `src/tc_drift/features.py` and `src/tc_drift/agent.py`: built (`feature/tc-drift-agent`, which includes the oracle branch), reviewed, all tests pass (`TC_DRIFT_DESIGN.md` §6, "Implemented").
-   - **The tuning design is blocked on a decision.** The $1B pilot (§6) shows a constant α cannot learn the cost coefficients at the real noise level: after 500,000 blocks they are off by factors of 3 to 10. Pick from the §9 options (smaller separate α_cost, decaying steps, decorrelated cost features, longer budget), then pilot the D12 rule before fixing the grid.
+   - **The tuning design is blocked on a decision.** The $1B pilot (§6) shows a constant α cannot learn the cost coefficients at the real noise level: after 500,000 blocks they are off by factors of 3 to 10. §9 now has a synthetic analysis of the cost block (`src/tc_drift/cost_learning_analysis.py`): decorrelating and decaying together reach the least-squares floor only with a b taken from the optimum (benchmark information); recursive least squares on the cost block reaches it model-free. Even the floor leaves a drift trade's cost uncertain by about two thirds after 500,000 exploring trades, so exploration length is the next limit. Pick the option, then pilot the D12 rule. D12 may be changed if the pilot fails it, before any final result is examined, labelled as a change (decided 2026-11-17).
+   - **TC next steps, in order:**
+     1. Open a PR from `feature/tc-drift-oracle-runs` into `dev` (oracle split into `score` and `solve_scored`, `oracle_runs.py`, the cross-test, the results and the cost-learning analysis).
+     2. Choose the tuning option. If recursive least squares: add it to the cost block in `agent.py` with a burn-in or forgetting factor, keep it model-free (it uses only the agent's own trades), and test it against `cost_learning_analysis.py`'s synthetic case.
+     3. Pilot at $1B on Albert's `train.py`: check the learned c1 and c2 against the calibration offline, the exploration length, and whether D12 fires. Change D12 only before any final result is seen, and label the change.
+     4. Run check 5 with Albert once `evaluate.py` exists, and help him set D10's m.
+     5. Edit the prospectus for C12. Agree D7 with Albert.
+     6. Full runs (4 levels × 10 seeds), Nov 20 to 26 on the current timeline.
 2. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. FA on the 10% grid (C1) is handed to Albert: it's registered on `run/fa-spline-grid10`, and he picks ε and runs it (`NEXT_STEPS_FOR_ALBERT.md`, 2026-11-10). A γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
    - A run trained from the current `dev` will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
 3. **Write the FA section** from `AUDIT_2026-11-06.md` §2.3 (the experiment, the failed expectations and what can be claimed, all re-checked) and `EXPERIMENTS.md` §8.7, including the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
