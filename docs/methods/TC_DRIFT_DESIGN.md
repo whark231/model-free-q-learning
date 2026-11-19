@@ -220,6 +220,10 @@ By §3 both are the post-decision value G, evaluated at the weights the agent en
 - **Descriptive:** the change in θ between checkpoints, and, at evaluation only, the replayed oracle gap over training.
 - `train()` records the probe-state greedy actions every `checkpoint_every` blocks, so the rule can be applied without rerunning.
 - **Changing the rule (William, 2026-11-17).** The review's 30,000-block run already failed it (below). If the tuning pilot shows the rule cannot be met, it may be changed, but only before any final run's results are examined, which is what Part IV requires. A change is labelled as one, here and in the report, with its date, the reason and the pilot evidence, and the original rule's verdict is reported next to the new one's.
+- **Changed 2026-11-19 (William), before the tuning pilot and before any final run, labelled as a change.** The probe rule above would almost certainly fail: the 2026-11-15 review's 30,000-block run changed every probe in the last 20%, the first TC design's equivalent rule failed on every seed (`AUDIT_2026-11-06.md` M7), and the oracle itself changes its action at 11% to 23% of the 2% starts when its path count doubles, between actions worth nearly the same (§5). The new rule:
+  - **Primary:** at every checkpoint over the final 10% of training, the favourite target (the target with the highest θ·φ, where the agent would trade with free trading) lies within L1 distance 0.04 (one 2% step) of the final checkpoint's favourite target.
+  - **Secondary:** at least 95% of the probe states keep their greedy action at every checkpoint over that window, which covers the hold-or-trade decision.
+  - The original probe rule's verdict is reported next to both. All three measure stability, not accuracy (`AUDIT_2026-11-06.md` §2.3). They need θ at each checkpoint in the training log (`AUDIT_2026-11-06.md` TC-6).
 
 **What to disclose.** The agent receives:
 - the target grid's weights, which are action definitions;
@@ -369,6 +373,11 @@ Leads in bps/yr. Turnover is one-way, ‖t − s‖₁/2. Always rebalancing hol
 
   Then pilot the D12 convergence rule on the tuning seed before fixing the grid.
 
+  **Decided 2026-11-19 (William), after the cost-block analysis below and before any tuning run:**
+  - **Rule:** recursive least squares on the cost block (c1, c2), started after a burn-in at constant α_cost; θ keeps a constant α_value. The burn-in length is not fixed yet. The choice was informed by benchmark information (the true c1 and c2, and the pilot's target error computed from μ and Σ); disclose it with §14 risk 5.
+  - **Budget:** 4 million blocks per seed, with ε_t = e^{−βt} reaching 1% at the halfway point: β = ln 100 / 2,000,000 ≈ 2.30e-6, about 434,000 exploring blocks.
+  - **Candidate grid:** proposed α_value ∈ {3e-4, 1e-3}, 3 tuning seeds, chosen by the rule above; not fixed yet.
+
 **The cost block in isolation** (2026-11-17, `python -m src.tc_drift.cost_learning_analysis`, seed 20261117; synthetic, not a pilot of the agent). The cost part of the agent is a two-coefficient regression: the net reward falls by c1‖u‖₁ + c2‖u‖₂² for a trade u. The script runs only that regression with SGD, on trades drawn uniformly over the targets from holdings near the γ = 5 optimum, with noise of SD 1e-3 per block (the block reward's). It leaves out θ and the bootstrapped target, so the agent is expected to do worse.
 - The two features are 0.97 correlated; E[dd′] has eigenvalues 0.67 and 0.0068, a ratio of 98. A step size small enough for the large direction moves the small one 98 times slower.
 - **The floor.** No unbiased linear estimator beats least squares on the same trades (Gauss–Markov); a biased one, like the decaying row below or the D11 clamp, can have a smaller SD. After 500,000 exploring trades its SEs are 6.4e-6 for c1 (the size of c1, 6.2e-6) and 1.6e-5 for c2 (14% of 1.13e-4). The cost of a typical one-block drift trade (‖u‖₁ = 0.052, ‖u‖₂² = 0.00135; 4.7e-7 a day) has SE 3.1e-7, two thirds of itself. SEs fall as 1/√N: 1.6e-7 at 2 million trades, 7.0e-8 at 10 million. With ε_t = e^{−βt} the agent explores only about 1/β blocks in all (50,000 in the §6 pilot), so it is far from even 500,000.
@@ -436,6 +445,8 @@ They may not use star imports, `importlib`, `__import__`, `open`, `eval`, `np.lo
 | Nov 18 to 19 | Integration smoke runs, timing pilot, then tuning on separate seeds |
 | Nov 20 to 26 | Full runs; Thanksgiving buffer |
 | Nov 26 to 30 | Analysis and the report |
+
+**Go/no-go for the agent runs, Nov 24 (William, 2026-11-19).** If the learning rule is implemented and tuned by Nov 24, run the agent at the four levels; otherwise report the oracle results and a diagnosed null agent result (prospectus §7).
 
 **Gate, Nov 17.** The environment plus oracle checks 1 and 2 must pass. If not, fall back to the no-drift design with "learn each target's reward, then plan" (`AUDIT_2026-11-06.md` §6.2, T1), plus the negative result. The prospectus (week 9: "first full report draft") assumes a draft by Nov 19; this timeline moves TC results past that (C12).
 
@@ -522,7 +533,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - **D9 (§8). Decided:** realistic costs at four portfolio sizes (zero, $100M, $1B headline, $10B), from spreads and square-root impact on our own volume data, fitted across trade sizes.
 - **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE). *Measured 2026-11-17 (§5):* the lead is 1.30 ± 0.70 bps/yr at $1B and 7.10 ± 1.26 at $10B, so at $1B the rule asks for an agent-gap SE of about 0.43 or less. Albert decides m once the agent's gap SE is known; m = 4,000 is the likely answer.
 - **D11 (§6). Decided:** θ₁ and θ₂ are kept at zero or above.
-- **D12 (§6). Decided:** the rule mirrors the baseline's `greedy_stable_through_end`, applied to the probe states (§6). It may be revised after the tuning pilot, before any final results are examined, and labelled as a change (William, 2026-11-17).
+- **D12 (§6). Decided:** the rule mirrors the baseline's `greedy_stable_through_end`, applied to the probe states (§6). It may be revised after the tuning pilot, before any final results are examined, and labelled as a change (William, 2026-11-17). **Changed 2026-11-19 (William), before the tuning pilot:** favourite target within one 2% step over the final 10% (primary), 95% of probes stable (secondary), original verdict reported alongside (§6).
 
 C4, C10, C11 and C14 are already settled in the stubs; C5 and C12 need only the edits described.
 
