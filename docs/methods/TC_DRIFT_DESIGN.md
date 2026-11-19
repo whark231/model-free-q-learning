@@ -1,6 +1,6 @@
 # Transaction Costs with Drift: Design (Phase 1)
 
-**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-17):** Phase 2. Merged into `dev`: `spec.py`, `calibration.py`, `env.py` (Albert), `oracle.py`, `features.py` and `agent.py` (William). On `feature/tc-drift-oracle-runs`: the oracle run on every setting with checks 3 and 4 (§5, §8). Still stubs: `train.py` and `evaluate.py` (Albert). Agent tuning waits on the §9 choice. **Post hoc** relative to `baseline-v1`; label every result that way.
+**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-18):** Phase 2. Merged into `dev`: `spec.py`, `calibration.py`, `env.py` (Albert), `oracle.py`, `features.py`, `agent.py` and the oracle runs with checks 3 and 4 (William). On `feature/tc-drift-train` (Albert): `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py`, with check 5 measured (§5). Agent tuning waits on the §9 choice. **Post hoc** relative to `baseline-v1`; label every result that way.
 
 ---
 
@@ -150,7 +150,24 @@ The cost matrix is 5,151 × 1,326, 55 MB in float64. The next indices are stored
   - **Why the V-based form failed.** Doubling M lowers V by about 3.1 bps/yr at every start and every setting. Most of that is sampling error in r̂ shared by every lattice point; the preliminary note (2026-11-15) put it down to the maximization bias. At the best target alone, a fixed portfolio with no maximization involved, the control-variate correction falls by 3.13 bps/yr from the first 2,000 paths (+4.37, SE 2.39) to all 4,000 (+1.24), matching the 3.09 drop in V at $1B. Every lattice point is scored on the same paths, so the error is shared: it moves V at the 2% starts by nearly the same amount (the per-point correction itself ranges from 0 at the corners to 4.6 bps/yr), and decisions depend only on differences. The correction near the optimum is about −0.5 ± 0.7 bps/yr when −0.08 (independent 4,000 paths) and −0.62 ± 0.73 (20,000 paths at the continuous optimum, another seed, §12) are pooled, so on the M = 2,000 paths the oracle's in-sample V is about 4.9 ± 0.7 bps/yr too high, on top of the maximization bias. Gaps never use it, and check 5's paired form cancels it.
   - **M stays at 2,000.**
 - **Cross-test done** (`src/tests/test_tc_drift_oracle.py`): `env.load_market` and `env.draw_returns` give the tests' market and paths, and `env.block_outcome` gives the same solution as the tests' loop (identical next states and policy, r̂ within 1e-15).
-- **Not done yet.** Check 5 needs Albert's `evaluate.py`; its form is decided (below).
+- **Cross-test, second copy** (Albert, `src/tests/test_tc_drift_train_evaluate.py`, written before William's landed): also checks V agrees to 1e-12. Either can be dropped later.
+- **Check 5 measured** (Albert, 2026-11-17, `python -m src.tc_drift.oracle_replay --path-count`; results in `results/tc-drift/checks/oracle_replay_2026-11-17.json`). M = 2,000 oracle paths; replay on H = 90 blocks from 1,000 grid starts, tuning seed's evaluation stream. It uses the paired form decided below, with one change: the model side is the finite-horizon value over the same 90 blocks (`evaluate.model_value`), not V and `value_of`, so both sides discount and truncate the same way (ρ^90 is about 1% of the value).
+
+  | bps/yr (SE) | zero | $100M | $1B | $10B |
+  |---|---|---|---|---|
+  | Oracle lead over always-rebalance, replay | −0.03 (0.08) | −0.17 (0.43) | 1.30 (0.70) | 7.10 (1.26) |
+  | Same lead in the oracle's model | 0.01 | 0.21 | 1.29 | 6.79 |
+  | **Check 5: replay minus model** | **−0.03 (0.08)** | **−0.38 (0.43)** | **0.01 (0.70)** | **0.31 (1.25)** |
+  | Lattice rounding: rounded replay minus continuous | −0.04 (0.04) | −0.10 (0.06) | −0.09 (0.07) | −0.04 (0.13) |
+  | Unpaired, as worded: replayed value minus model value | −22.4 (12.0) | −22.7 (12.0) | −22.3 (11.9) | −21.9 (11.8) |
+  | Oracle hold fraction in the replay | 0.15 | 0.28 | 0.32 | 0.45 |
+  | Turnover per block, oracle / always-rebalance | 2.9% / 3.0% | 2.2% / 3.0% | 2.1% / 3.0% | 1.5% / 3.0% |
+
+  - Every check-5 mean is inside 0.5 bps/yr, but only the zero-cost one is resolved: at $1B and $10B the SE is above the tolerance, so a pass there rules out errors only to about ±1.4 and ±2.5 bps/yr (two SEs). The SE covers the evaluation paths only, not the oracle's own fixed-path noise.
+  - Rounding holdings to the 1% lattice costs at most about 0.1 bps/yr, consistent with check 4.
+  - The unpaired comparison is about −22 at every level because the levels share the evaluation paths; at 1.9 SEs it is the path noise §7 predicts, not a measured bias.
+- **Check 3 in the replay** (Albert, $1B, a second form of William's restated check): the M = 4,000 policy minus the M = 2,000 policy, paired on the same evaluation paths, is −0.11 ± 0.15 bps/yr. It agrees with William's independent-model form above (−0.003).
+- **The oracle's trading in a continuous replay at M = 2,000** (the replay above, 1,000 starts, against William's in-model numbers in §8): hold fraction 0.15 / 0.28 / 0.32 / 0.45 against 0.156 / 0.272 / 0.308 / 0.443, and turnover 2.9% / 2.2% / 2.1% / 1.5% against 2.95% / 2.26% / 2.13% / 1.57%. The in-model statistics hold up off the lattice.
 
 **First look at the policy** (M = 1,000, Albert's `block_outcome`, γ = 5; a sanity check, not a result). The best target is (0.46, 0.14, 0.40) at every level. The share of lattice states within an L1 distance of 0.04 of it where the oracle holds rises with portfolio size: zero cost 0.16, $100M 0.47, $1B 0.63, $10B 1.00. At $10B, trades from within 0.10 of the best target stop about 0.046 short of it rather than going all the way. Both match the §8 expected directions. The zero-cost holds are the noise-driven ones §8 anticipates.
 
@@ -169,7 +186,7 @@ The cost matrix is 5,151 × 1,326, 55 MB in float64. The next indices are stored
 4. **Lattice size.** The 0.5% lattice (20,301 points) changes the value by less than a tolerance fixed before running.
 5. **Continuous replay.** Replaying the oracle's policy on continuous, unrounded holdings, on fresh paths, gives a value close to V. Expect V to be above the replay, because of the maximization bias above and, at M = 2,000, the shared sampling error in r̂ (about 5 bps/yr; checks 3 and 4 above). The difference bounds the error the evaluation will see.
 
-**Tolerances for checks 3 to 5 (decided William, 2026-11-15, before any of them ran): 0.5 bps/yr.** Checks 3 and 4 compare the mean over the 1,326 2% starts (the evaluation's start distribution, D4) of the annualized V; the largest change at a single start is reported too. Check 5 cannot be held to 0.5 bps/yr as worded: one policy's replayed value has a standard error of about 12 bps/yr at the D10 size (§7 pilot), so a direct "replay against V" comparison cannot resolve it. Decided (William, 2026-11-17; Albert told in `NEXT_STEPS_FOR_ALBERT.md`): apply the 0.5 bps/yr to a paired quantity, the oracle's lead over always rebalancing, in the replay on the evaluation paths against the same lead in the oracle's own model (V − `value_of` of the always-rebalance table). The pilot's paired SEs (0.5 to 1.7 bps/yr) mean this may need more than 1,000 starts. Albert may still propose a better form once `evaluate.py` exists.
+**Tolerances for checks 3 to 5 (decided William, 2026-11-15, before any of them ran): 0.5 bps/yr.** (Check 5 has since been measured; see "Check 5 measured" above.) Checks 3 and 4 compare the mean over the 1,326 2% starts (the evaluation's start distribution, D4) of the annualized V; the largest change at a single start is reported too. Check 5 cannot be held to 0.5 bps/yr as worded: one policy's replayed value has a standard error of about 12 bps/yr at the D10 size (§7 pilot), so a direct "replay against V" comparison cannot resolve it. Decided (William, 2026-11-17; Albert told in `NEXT_STEPS_FOR_ALBERT.md`): apply the 0.5 bps/yr to a paired quantity, the oracle's lead over always rebalancing, in the replay on the evaluation paths against the same lead in the oracle's own model (V − `value_of` of the always-rebalance table). The pilot's paired SEs (0.5 to 1.7 bps/yr) mean this may need more than 1,000 starts. Albert may still propose a better form once `evaluate.py` exists.
 
 ## 6. Agent (William)
 
@@ -257,6 +274,11 @@ All policies are scored from the same start holdings on the same simulated paths
 - The weight beyond the horizon is ρ^90 = 0.0099, and the paths take 136.1 MB, as proposed.
 - Always rebalancing beats never rebalancing after the first trade by about 20 bps/yr even at $10B. Rebalancing every 2 blocks is within 0.4 ± 0.5 bps/yr of every block at $10B, so the pilot cannot say whether each single rebalance pays; the oracle sweep (§8) will.
 - Design risk: if the oracle beats always-rebalance by only about 1 bp/yr, the agent's gap to the oracle and its gap to always-rebalance will be hard to tell apart at m = 1,000. Revisit m once the oracle exists.
+- **Measured 2026-11-17 (§5, check 5):** the oracle's lead over always-rebalance is −0.17 ± 0.43 at $100M, 1.30 ± 0.70 at $1B and 7.10 ± 1.26 at $10B. At $100M and $1B the risk is real: the oracle and always-rebalance are within about two SEs of each other at m = 1,000.
+
+**Implemented** (`src/tc_drift/evaluate.py`, 2026-11-17; tests in `src/tests/test_tc_drift_train_evaluate.py`): `evaluate_policy` and the four adapters as frozen, plus `best_static_target`, `draw_evaluation_set` (the pilot's draw order), `paired_gap`, `model_value` (finite-horizon value of a lattice policy in the oracle's model), `lattice_table` and `probe_convergence` (D12). `evaluate_policy` is checked against a separate share-and-price loop for four policies, and `model_value` against `value_of` and hand-computed one- and two-step values. The policy gets a copy of the holdings. A trade of zero size counts as a hold; turnover is one-way.
+
+`src/tc_drift/train.py` (same date) follows §6 and William's note: the agent is updated with the true drifted end holdings even on the block before a restart, the first block and every `restart_every`-th start from a draw from the start states, and probes are read with `greedy_action` after the checkpoint block's update. It is checked against a separate replay that redraws the returns one block at a time and recomputes every (s, a, r, s′) with the share loop and the cost formula. Returns are drawn 1,024 blocks at a time, which gives the same numbers as one at a time (tested). `src/tc_drift/config.py` holds H, m, the oracle's M, 10 seeds, restarts every 90 blocks (the evaluation horizon; Albert's proposal), the training starts (the 2% grid, D4), the probe states (the 1,326 targets plus 200 off-grid lattice points from seed (20261112, 1)) and the seed layout. N_BLOCKS, the checkpoint interval and the hyperparameters stay pending until tuning (`config.pending()`). `probe_convergence` checks probes only at checkpoints, so a flip that reverts between two checkpoints is not seen; the baseline's rule tracked every change. Disclose it.
 
 **Reference policies:**
 - the oracle;
@@ -335,7 +357,7 @@ Leads in bps/yr. Turnover is one-way, ‖t − s‖₁/2. Always rebalancing hol
   - the target-refresh interval;
   - the greedy-refresh interval, if one is used.
 - **Setting:** the $1B headline level only. The same values are used for every setting, and the report says so.
-- **Criterion:** the final greedy policy's realized discounted net reward on fresh evaluation paths from the tuning seed. Never the oracle gap.
+- **Criterion:** the final greedy policy's realized discounted net reward on fresh evaluation paths from the tuning seed. Never the oracle gap. The tuning seed's evaluation stream is the one the D10 pilot and check 5 used; that is not leakage, since the agent never sees those paths.
 - **Choosing rule, fixed before running:**
   1. The highest mean over 3 tuning seeds wins.
   2. If the runner-up is within one paired standard error, add 3 seeds and decide on 6. This is the rule `src/tune_fa.py` used.
@@ -436,8 +458,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 
 **Not verified:**
 - oracle run time on the 0.5% lattice (the 1% lattice is measured in §5);
-- the agent's speed on the merged `train.py` (§6 gives the pilot's);
-- the oracle's trading statistics in a continuous replay at M = 2,000 (§8 gives them in the oracle's model; the reviewer compared the two at M = 300 only).
+- the agent's speed on the final tuned agent: measured 2026-11-17 on `train.py` at 0.57 ms a block with the current `DriftAgent` at $1B (about 9.5 minutes per million blocks), and 0.22 s per checkpoint over the 1,526 probe states; a recursive-least-squares cost block (§9) would add a 2×2 solve per update.
 
 ## 13. Conflicts with the repo, and questions
 
@@ -499,7 +520,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - **D7 (C13). Decided:** a one-line pointer to this document in each, added when this design merges into `dev`.
 - **D8 (C15). Decided:** 0.95 per block, described in the report as a 5-year investor (half the weight at 3.4 years). 0.95 per year would need about 350-block evaluation paths and noisier learning.
 - **D9 (§8). Decided:** realistic costs at four portfolio sizes (zero, $100M, $1B headline, $10B), from spreads and square-root impact on our own volume data, fitted across trade sizes.
-- **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE).
+- **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE). *Measured 2026-11-17 (§5):* the lead is 1.30 ± 0.70 bps/yr at $1B and 7.10 ± 1.26 at $10B, so at $1B the rule asks for an agent-gap SE of about 0.43 or less. Albert decides m once the agent's gap SE is known; m = 4,000 is the likely answer.
 - **D11 (§6). Decided:** θ₁ and θ₂ are kept at zero or above.
 - **D12 (§6). Decided:** the rule mirrors the baseline's `greedy_stable_through_end`, applied to the probe states (§6). It may be revised after the tuning pilot, before any final results are examined, and labelled as a change (William, 2026-11-17).
 
