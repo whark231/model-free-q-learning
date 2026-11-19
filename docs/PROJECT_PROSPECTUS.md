@@ -2,13 +2,13 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** living plan, updated 2026-11-10. The required work (Parts I to VI) is done. Both extensions are built; function approximation has results, transaction costs needs a redesign. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). H4 closed 2026-11-10 (`AUDIT_2026-11-06.md` §2.3). Still open: M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set) and F-L13 (a tag on Albert's Mac). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC decision, choosing the final runs, and the report.
+**Status:** living plan, updated 2026-11-18 (Albert; TC rows, timeline and risks). The required work (Parts I to VI) is done. Function approximation has results. The transaction-cost redesign (with drift, `TC_DRIFT_DESIGN.md`) is built: environment, oracle, agent, training and evaluation, with the oracle run on every setting and all five oracle checks run; the agent's tuning is the remaining TC blocker. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). H4 closed 2026-11-10 (`AUDIT_2026-11-06.md` §2.3). Still open: M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set) and F-L13 (a tag on Albert's Mac). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC agent's tuning and runs, choosing the final runs, and the report.
 
 ---
 
 ## TL;DR / In plain terms
 
-Everything the assignment requires has been built, run and independently checked. The function-approximation extension has results; the transaction-cost extension runs but its agent learns nothing yet, so it needs a design decision. The next three weeks are: decide the last runs, run them, write the 10 to 15 page report, and fix the small issues the audit found.
+Everything the assignment requires has been built, run and independently checked. The function-approximation extension has results. The transaction-cost extension was redesigned (holdings now drift between quarterly decisions, against a numerical oracle) and its code is built and checked; its agent cannot yet learn the trading costs through the reward noise, so its tuning is the open decision. The next three weeks are: decide the last runs, run them, write the 10 to 15 page report, and fix the small issues the audit found.
 
 **Key concepts to understand**
 
@@ -18,7 +18,7 @@ Everything the assignment requires has been built, run and independently checked
 **Key takeaways**
 
 - `baseline-v1` is the headline result for Parts IV and V.
-- The transaction-cost design decision (`AUDIT_2026-11-06.md` §6.2) blocks any further TC run and should be made first.
+- The TC agent's tuning (`TC_DRIFT_DESIGN.md` §9, William) blocks the TC agent runs and should be decided first. The oracle results can be reported regardless.
 
 ---
 
@@ -56,7 +56,7 @@ Full suite: 442 tests passing on 2026-11-09 (`python -m pytest src/tests -q`).
 ### Extensions (bonus)
 | # | Component | Notes | Status (2026-11-06) |
 |---|---|---|---|
-| 11 | Transaction costs: state = previous target, quadratic cost on the move | `TRANSACTION_COSTS.md`, `src/transaction_costs.py` | 🔶 Built; quadratic-cost sweep run (0, 1, 2, 5 bp; 10 seeds). The code is correct but the agent learns nothing: at zero cost it scores like a random portfolio, 468 bps/yr below the oracle. Discount and learning-rate comparisons registered, **not run**, and should not be run as designed. Needs a redesign decision (`AUDIT_2026-11-06.md` H1, H2, §6.2) |
+| 11 | Transaction costs: state = previous target, quadratic cost on the move | `TRANSACTION_COSTS.md`, `src/transaction_costs.py` | 🔶 Built; quadratic-cost sweep run (0, 1, 2, 5 bp; 10 seeds). The code is correct but the agent learns nothing: at zero cost it scores like a random portfolio, 468 bps/yr below the oracle. Discount and learning-rate comparisons registered, **not run**, and should not be run as designed. Kept as a labelled negative result. **Redesigned 2026-11-12 as TC with drift** (`TC_DRIFT_DESIGN.md`, `src/tc_drift/`): three ETFs, 63-day blocks, realistic costs at $100M, $1B and $10B. As of 2026-11-17: environment, oracle, agent, training and evaluation built and tested; the oracle is solved at all four sizes plus the κ-only and λ-only illustrations (William, PR #36); checks 1 to 4 pass (check 3 restated on the policy, post hoc), and check 5 is inside tolerance but resolved only at zero cost. The oracle beats always-rebalancing by 1.3 ± 0.7 bps/yr at $1B and 7.1 ± 1.3 at $10B. The agent's tuning is undecided: a pilot could not learn the costs at constant α (§6, §9) |
 | 12 | Function approximation: linear Q over quadratic or spline features | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 | ✅ Built, step size tuned on separate seeds, and run 2026-11-06: `tabular-const`, `fa-quadratic`, `fa-spline` (30 seeds each). Both FA models beat the constant-α tabular agent at γ = 5 and 3 and ranked the reward landscape better (Spearman); of the registered expectations, split into five checks, four failed in whole or part (`EXPERIMENTS.md` §8.7). Every run now carries Q-fit numbers and shows them in its report (2026-11-09) |
 
 ### Deliverables
@@ -77,7 +77,7 @@ Full suite: 442 tests passing on 2026-11-09 (`python -m pytest src/tests -q`).
 | Tabular Q-learning core | Agent (`agent.py`): William; training runner (`train.py`): Albert | Each reviews the other's PR |
 | Convergence analysis & visualizations | Albert | William |
 | Robustness checks | Split: one each | Cross-review |
-| Transaction-cost extension | Albert built it; redesign paired (proposed 2026-11-06, to agree) | William |
+| Transaction-cost extension | First design: Albert. Redesign with drift: William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) | Each reviews the other |
 | Function approximation extension | William | Albert (reviewed the edits to his files) |
 | Report: Data/Calibration section | Albert | William |
 | Report: Theory/Benchmark section | William (derivation) + Albert (writing) | |
@@ -92,8 +92,8 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 
 | Week | Dates | Focus | Target output |
 |---|---|---|---|
-| 8 (rest) | Nov 6 to 12 | Done by Nov 9: every run re-evaluated with Q fit, audit fixes M1 to M5, M10 and the flow-audit items. Still to do: decide the final runs and the TC redesign (`AUDIT_2026-11-06.md` §6, §7). `dev` merged into `main` Nov 9 (PR #28) | Final run list registered with expected directions |
-| 9 | Nov 13 to 19 | Run the final runs; build their reports; first full report draft | All figures and tables final; draft complete |
+| 8 (rest) | Nov 6 to 12 | Done: every run re-evaluated with Q fit, audit fixes M1 to M5, M10 and the flow-audit items; `dev` merged into `main` Nov 9 (PR #28); the TC redesign decided and its interface frozen (PR #33). Not done: the final run list | Final run list registered with expected directions |
+| 9 | Nov 13 to 19 | TC with drift built (PRs #34, #35, #36, and `feature/tc-drift-train`); the Nov 17 gate is met and the oracle has run on every setting. Still to do this week: William's tuning decision, the tuning pilot on separate seeds, the final run list, and the first report draft | All non-TC figures and tables final; draft complete |
 | 10 | Nov 20 to 26 | Thanksgiving buffer: light schedule | Report polish, code cleanup, README |
 | Final | Nov 27 to 30 | Final review and submission | Report, code and README submitted |
 
@@ -105,7 +105,10 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 - [x] Higher-B episode-length check: run as `b63` (2026-10-28), with `n26m`, `eps-decay` and `all-three`. B = 252 not run
 - [x] FA learning rate: a constant α for FA and a separately tuned constant α for the tabular comparison, agreed with the professor 2026-11-05
 - [x] TC cost penalty and state: swept at 0, 1, 2 and 5 bp per 20-point transfer, with the exact previous grid target as the state (`TRANSACTION_COSTS.md`)
-- [ ] **TC redesign** before any further TC run: split learning and planning, add drift, a negative result, or a mix (`AUDIT_2026-11-06.md` §6.2)
+- [x] **TC redesign:** drift, a numerical oracle and a cost-learning agent, with the first design kept as a negative result (`TC_DRIFT_DESIGN.md`, decided 2026-11-12)
+- [ ] **TC agent tuning** (William): one of the §9 options (smaller separate α for the costs, decaying steps, decorrelated cost features, a longer budget); then the D12 pilot
+- [x] **TC oracle check 3:** restated on the policy, M stays at 2,000 (William, 2026-11-17; post hoc)
+- [ ] **TC evaluation size** (Albert): 1,000 or 4,000 starts, once the agent's gap SE is known
 - [ ] **Final runs** from the candidates in `AUDIT_2026-11-06.md` §6 (for example FA on the 10% grid, a γ = 8 FA check, three versus nine assets)
 - [ ] Which post-hoc runs the report covers in full and which in a sentence (decide before writing Part VI)
 
@@ -113,7 +116,7 @@ The Q-learning core's decisions (γ, the convergence rule, episode length, episo
 
 ## 7. Known Risks
 
-- **Transaction costs may not reach a credible result in time.** The audit found the current design cannot learn. Fallback: report it as a carefully diagnosed negative result and put the bonus weight on function approximation. A correctly scoped smaller extension beats a broken ambitious one under the rubric.
+- **Transaction costs may not reach a credible result in time.** The redesign's code and oracle work, but the agent has not yet learned the costs (`TC_DRIFT_DESIGN.md` §14 risk 1), and at $100M and $1B the oracle is within about 1 bp/yr of always-rebalancing, so the agent's result may not separate from the simple rule. Fallback: report the oracle's results and a diagnosed null agent result, and put the bonus weight on function approximation. A correctly scoped smaller extension beats a broken ambitious one under the rubric.
 - **Run time competes with writing.** A 30-seed run takes 2.5 to 7.5 hours per machine. Register and start the final runs early in week 9 so the draft is written while they train.
 - **Thanksgiving week reduces available time** right before the deadline, so the draft should be finished by Nov 19.
 - **Reproducibility.** The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1), so a plain clone gets the current code; merge `dev` into `main` again after each later change.
