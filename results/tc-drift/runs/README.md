@@ -1,6 +1,6 @@
 # TC with drift: final agent runs (2026-11-20, post hoc)
 
-**TL;DR / In plain terms:** the agent loses to the oracle at every cost level, mostly because it heads for the wrong portfolio. At zero cost, $100M and $1B it is 10 to 13 bps/yr behind and also loses to plain rebalancing. At $10B, where trading costs are largest, it learns when to trade: it beats always-rebalancing by 5.0 bps/yr and is 2.8 behind the oracle. Of the 12 expectations registered before the runs, 8 are met, 3 partly and 1 not.
+**TL;DR / In plain terms:** the agent loses to the oracle at every cost level, mostly because it heads for the wrong portfolio. At zero cost, $100M and $1B it is 10 to 13 bps/yr behind and also loses to plain rebalancing. At $10B, where trading costs are largest, it learns when to trade: it beats always-rebalancing by 5.0 bps/yr and is 2.8 behind the oracle. Of the 12 expectations registered before the runs, 8 are met and 4 partly met.
 
 **Key concepts to understand**
 - **Favourite-target error versus timing.** The agent's gap to the oracle splits exactly into (agent − rebalance to its own favourite target) + (own target − rebalance to the best target) − (oracle − rebalance to the best target). The second term measures where the agent heads, the first when it trades (`TC_DRIFT_DESIGN.md` §7, TC-3).
@@ -54,9 +54,11 @@ Learned costs against the truth, per seed (`c1_over_true`, `c2_over_true` in `pe
 | E8 | Met | c2 within a factor of 2 on at least 7 of 10 at $1B and $10B (10 and 10); c1 off by more than 2 on at least 3 of 10 at every cost level |
 | E9 | Partly met | 0 converge under the original and exact-action rules, as predicted; under the operative rule 5, 7, 7 and 4 converge, so "fewer than 5" holds only at $10B |
 | E10 | Met | Tail average − last iterate within ±1 at every level (−0.35 to 0.42) |
-| E11 | Not met as stated | D10 is missed at $1B and met at $10B, and does not apply at zero and $100M, as predicted; but the $1B SE is 0.94, outside the predicted 0.5 to 0.8, and the replay's oracle lead (1.78) puts the target at 0.59, not 0.43 |
+| E11 | Partly met | D10 is missed at $1B and met at $10B, and does not apply at zero and $100M, as predicted; but the $1B SE is 0.94, outside the predicted 0.5 to 0.8 (and the replay's oracle lead, 1.78, puts the target at 0.59, not about 0.43) |
 | E12 | Met | Across-seed SD at $1B is 4.32 |
 
 Under "what would change the story" (§7): E1 failed away from zero, not toward it, and at $10B E4 holds while E2's favourite-target error is small (−1.1), so there the agent learned both when to trade and roughly where to head.
+
+The HTML report is `reports/tc-drift/report.html` (`python -m src.tc_drift.report`); it applies each expectation's clauses as written, and its verdicts are the ones above.
 
 Not yet done: the report's interpretation, the "trade once, then hold" naming in tables, and why the favourite-target error is so much smaller at $10B (not investigated).
