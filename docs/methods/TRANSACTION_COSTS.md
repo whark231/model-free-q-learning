@@ -3,6 +3,8 @@
 **Owner:** Albert (design and runs), paired with William · **Code:** `src/transaction_costs.py`, `src/tc_sweep_report.py` · **Tests:** `src/tests/test_transaction_costs.py` (2 tests)
 **Status (2026-11-06):** implemented. The quadratic-cost sweep ran at full scale (commit `da2b0fa`; `results/tc-quadratic-cost/`, `reports/tc-quadratic-cost/`). The discount and learning-rate comparisons are registered but **not run**, and should not be run as designed (see Outcome below and `AUDIT_2026-11-06.md` H1).
 
+**Superseded (D7, 2026-11-12; pointer added 2026-11-20):** this first design is kept as a labelled negative result. The transaction-cost extension that is run and reported is the redesign with drift, in `TC_DRIFT_DESIGN.md` (`src/tc_drift/`).
+
 **TL;DR / In plain terms:** the agent starts each 20-day block holding its previous target, picks a new one, and pays a quadratic cost for the move. The code is correct, but in the sweep the trained agent did no better than picking a random portfolio, even when trading was free. Most of its 1.66 million (holding, target) pairs were tried once or never, which is far too little data for rewards this noisy. The design needs to change before the extension can be reported as a success.
 
 **Key concepts to understand**

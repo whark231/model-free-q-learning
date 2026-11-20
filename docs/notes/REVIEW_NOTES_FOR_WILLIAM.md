@@ -71,6 +71,15 @@ The 2026-11-19 status review (`AUDIT_2026-11-06.md` §9) numbers the new TC item
 
 ## To decide with Albert
 
+**From Albert, 2026-11-20: the final runs are ready** (`feature/tc-drift-run`).
+- **Built.** `src/tc_drift/run.py` (TC-2): `python -m src.tc_drift.run all` trains 4 levels × 10 seeds, 7 at a time with BLAS pinned, then scores each level on m = 4,000 paths against the oracle, myopic, always rebalance, trade once then hold, and the own-target policy (TC-3, with the split checked as an identity on every path). It reports the tail-averaged policy as the headline and the last iterate alongside. All four D12 verdicts and the Part IV counts come from your `tune.convergence` and `tune.averaged_policy`. `train()` now logs θ and the favourite target at every checkpoint (TC-6). A test checks that one call gives exactly your `train_segmented` run.
+- **Decided by Albert:** m = 4,000, fixed before any agent result (TC-7, D-E).
+- **Checkpoint interval: 40,050, not the 40,000 you suggested.** It equals `tune.SEGMENT`, so the final runs have the layout design §6 registered and the pilot used: 11 tail-average snapshots and a 12-checkpoint D12 window from block 3,564,450. With 40,000 there would be 10 and 11. Found in the independent review.
+- **Expected directions (D-F).** My preliminary E1 to E12 are in `TC_DRIFT_DESIGN.md` §7, written before the runs. Please add or amend them. Anything added after the runs start gets labelled post hoc.
+- **Timing on my Mac:** 0.39 ms a block with 7 runs at once, so about 26 minutes a run and about 3 hours for all 40.
+- **Your files:** I did not edit `tune.py`. Its `run_one` defaults to `m = config.M_EVAL`, which is now 4,000, while your pilot used 1,000. A rerun of `tune train` would therefore differ from the pilot unless it passes `m=config.M_EVAL_PILOTS`. Your call.
+- **D7:** the pointer in `TRANSACTION_COSTS.md` is added.
+
 **From Albert, 2026-11-17 (updated 2026-11-18 after your #36): train, evaluate and check 5 are built** (`feature/tc-drift-train`; numbers in `TC_DRIFT_DESIGN.md` §5 "Check 5 measured" and §7).
 - **Check 3:** you decided it on the policy while I measured the same thing in the replay at $1B, so we have two forms that agree: M = 4,000 minus M = 2,000 is −0.003 in your independent model and −0.11 ± 0.15 bps/yr in my replay. Nothing to decide.
 - **Check 5:** your paired form, with one change for you to OK: the model side uses the value over the same 90 blocks (`evaluate.model_value`) rather than V and `value_of`, so both sides discount and truncate the same way. Replay minus model is −0.03 ± 0.08 (zero), −0.38 ± 0.43 ($100M), 0.01 ± 0.70 ($1B), 0.31 ± 1.25 ($10B). All inside 0.5, but resolved only at zero cost; at m = 1,000 a pass at $1B bounds the error to about ±1.4. Lattice rounding alone costs at most 0.1. Please confirm the form, and whether a two-SE bound is acceptable at the cost levels.

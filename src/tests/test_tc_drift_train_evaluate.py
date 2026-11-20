@@ -426,8 +426,8 @@ def test_run_streams_are_distinct_and_reproducible():
 
 
 def test_pending_settings_are_listed():
-    assert set(config.pending()) <= {"N_BLOCKS", "CHECKPOINT_EVERY", "HYPERPARAMETERS"}
-    assert config.RESTART_EVERY == config.H_EVAL == 90 and config.M_EVAL == 1000
+    assert config.pending() == []            # all set 2026-11-20 (test_tc_drift_run.py checks the values)
+    assert config.RESTART_EVERY == config.H_EVAL == 90 and config.M_EVAL == 4000 and config.M_EVAL_PILOTS == 1000
 
 
 class Counter(Recorder):

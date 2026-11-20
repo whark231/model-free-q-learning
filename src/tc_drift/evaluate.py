@@ -22,9 +22,9 @@ from typing import Callable
 import numpy as np
 
 from src.tc_drift import env
-from src.tc_drift.spec import (BLOCK_LENGTH, DISCOUNT, HOLD, N_ACTIONS, N_ASSETS, N_TARGETS, Market, TCAgent,
-                               TCSettings, annualized_bps, check_holdings, net_reward, post_trade_weights,
-                               target_grid, trade_cost)
+from src.tc_drift.spec import (BLOCK_LENGTH, DISCOUNT, HOLD, LATTICE_INCREMENT, N_ACTIONS, N_ASSETS, N_TARGETS,
+                               Market, TCAgent, TCSettings, annualized_bps, check_holdings, nearest_lattice_index,
+                               net_reward, post_trade_weights, target_grid, trade_cost)
 
 # (holdings (m, 3), block index t) -> actions (m,). Stationary policies (the
 # agent's greedy policy, the oracle) ignore t; "trade once, then hold" needs it.
@@ -122,6 +122,30 @@ def always_rebalance_policy(best_target: int) -> Policy:
 
     def policy(holdings: np.ndarray, t: int) -> np.ndarray:
         return np.full(len(holdings), target, dtype=np.int64)
+    return policy
+
+
+def own_target_rebalance_policy(agent) -> Policy:
+    """Trade every block to the agent's own favourite target, the target with
+    the highest learned theta . phi (AUDIT_2026-11-06.md TC-3). Built from the
+    agent alone, so it uses no benchmark information. Splits the agent's gap
+    to the oracle exactly:
+      agent - oracle = (agent - own_target) + (own_target - always_rebalance_best)
+                       - (oracle - always_rebalance_best),
+    the second term being the cost of the favourite-target error."""
+    return always_rebalance_policy(int(agent.favourite_target()))
+
+
+def oracle_table_policy(policy_table: np.ndarray, increment: float = LATTICE_INCREMENT) -> Policy:
+    """The oracle's (or the myopic oracle's) saved policy table as a policy:
+    the action at the nearest lattice point, exactly as OracleSolution.policy
+    does, for tables loaded from results/tc-drift/oracle/<setting>.npz."""
+    table = np.asarray(policy_table)
+    if table.ndim != 1 or not np.issubdtype(table.dtype, np.integer) or ((table < 0) | (table > HOLD)).any():
+        raise ValueError(f"policy_table must be 1-D integer actions in [0, {HOLD}]")
+
+    def policy(holdings: np.ndarray, t: int) -> np.ndarray:
+        return table[nearest_lattice_index(holdings, increment)].astype(np.int64)
     return policy
 
 
@@ -242,5 +266,5 @@ def _target_index(value, name: str) -> int:
 
 
 __all__ = ["Policy", "evaluate_policy", "agent_policy", "oracle_policy", "always_rebalance_policy",
-           "never_trade_policy", "best_static_target", "draw_evaluation_set", "paired_gap", "model_value",
+           "own_target_rebalance_policy", "oracle_table_policy", "never_trade_policy", "best_static_target", "draw_evaluation_set", "paired_gap", "model_value",
            "lattice_table", "probe_convergence"]
