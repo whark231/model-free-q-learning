@@ -95,7 +95,7 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 |---|---|---|---|
 | 8 (rest) | Nov 6 to 12 | Done: every run re-evaluated with Q fit, audit fixes M1 to M5, M10 and the flow-audit items; `dev` merged into `main` Nov 9 (PR #28); the TC redesign decided and its interface frozen (PR #33). Not done: the final run list | Final run list registered with expected directions |
 | 9 | Nov 13 to 19 | Done: TC with drift built (PRs #34 to #37), the Nov 17 gate met, the oracle run on every setting, tuning decided and piloted (PR #39). Not done: the first report draft | All non-TC figures and tables final; draft complete |
-| 10 | Nov 20 to 26 | TC agent runs (40 runs, projected at about 3 hours on Albert's Mac) and their analysis; TC go/no-go Nov 24 (William, D-H); the report draft. Proposed by Albert, to agree with William (D-H): draft sections by Nov 24, full draft by Nov 26 | All results final; full draft |
+| 10 | Nov 20 to 26 | TC agent runs (40 runs, projected at about 3 hours on Albert's Mac) and their analysis; TC go/no-go Nov 24 (William, D-H); the report draft. Report schedule (D-H, proposed by Albert, agreed by William 2026-11-20): draft sections by Nov 24, full draft by Nov 26 | All results final; full draft |
 | Final | Nov 27 to 30 | Final review and submission | Report, code and README submitted |
 
 ## 6. Open Decisions
@@ -113,7 +113,7 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 - [x] **TC expected directions** (D-F): Albert's E1 to E12 registered 2026-11-20 (`TC_DRIFT_DESIGN.md` §7); William kept them unchanged the same day
 - [ ] **How the first TC design is reported** (D-G, both): a paragraph, or with its tables (then M8 and M9 must be fixed first)
 - [x] **Check 5's form** (D-I, William, 2026-11-20): yes to the 90-block model side and a two-SE bound at the cost levels, labelled post hoc (`TC_DRIFT_DESIGN.md` §5)
-- [ ] **Report schedule** (D-H, both): the TC go/no-go is Nov 24 (William); sections and dates still to agree
+- [x] **Report schedule** (D-H, both): the TC go/no-go is Nov 24 (William); draft sections by Nov 24 and a full draft by Nov 26 (Albert's proposal, agreed 2026-11-20)
 - [ ] **Final runs** from the candidates in `AUDIT_2026-11-06.md` §6. FA on the 10% grid (C1) ran 2026-11-11; the rest are probably not run (audit D-H)
 - [ ] Which post-hoc runs the report covers in full and which in a sentence (decide before writing Part VI)
 

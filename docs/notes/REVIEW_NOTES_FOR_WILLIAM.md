@@ -29,7 +29,7 @@ Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6,
 | Item | What | Waits on |
 |---|---|---|
 | TC runs | Albert runs the 40 final agent runs and scores them (`python -m src.tc_drift.run all`; `TC_DRIFT_DESIGN.md` §7). Go/no-go Nov 24 | Albert |
-| TC-4, D-H | The report is not started. Albert proposed draft sections by Nov 24 and a full draft by Nov 26 (prospectus §5); answer him | You, then both |
+| TC-4 | The report is not started. Schedule agreed 2026-11-20 (Albert's proposal): draft sections by Nov 24, full draft by Nov 26 (D-H) | Both |
 | Close the old PR | The PR from `feature/tc-drift-runs` is superseded by Albert's driver; close it unmerged | You |
 | TC-8, D-G | How the first TC design is reported. M7, M8, M9, M11 and the TC halves of M1 and F-L12 wait on it | Both |
 | M12, F-L10 | Report text: the FA tuning disclosure; caveats on weights where no seed converged | The report draft |
@@ -48,7 +48,7 @@ Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6,
 
 ## To decide with Albert
 
-- **The report schedule** (D-H) and **how the first TC design is reported** (D-G).
+- **How the first TC design is reported** (D-G). The report schedule is agreed (D-H, 2026-11-20).
 - **Final runs** (above).
 - **`all-three`'s comparison set** (L7).
 

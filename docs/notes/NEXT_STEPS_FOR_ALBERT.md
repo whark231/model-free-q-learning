@@ -19,7 +19,8 @@
 | Item | What |
 |---|---|
 | TC runs | After `feature/docs-closeout` merges (it changes `tune.py`, one of the files `run.py` hashes): `git worktree add -b run/tc-drift-final ../mfq-runs origin/dev`; copy `results/tc-drift/oracle/*.npz` into `../mfq-runs/results/tc-drift/oracle/` (git-ignored, so the worktree lacks them; `load_oracle_tables` re-checks them against the committed summary); run `python -m src.tc_drift.run all` there; commit the results on `run/tc-drift-final` once all 40 are scored, and keep `values.npz`. Go/no-go Nov 24 |
-| D-G, D-H | With me: how the first TC design is reported, the report schedule (your proposal, sections by Nov 24 and a full draft by Nov 26, waits on my answer), and who writes the TC section (prospectus §4) |
+| D-G | With me: how the first TC design is reported, and who writes the TC section (prospectus §4) |
+| Report schedule | Agreed 2026-11-20, as you proposed: draft sections by Nov 24, full draft by Nov 26 (D-H) |
 | Report scope | With me: final non-TC runs (probably none), which post-hoc runs the report covers in full, and how the two unmet oracle directions are presented (design §8) |
 | Report text | Call `never_trade_policy` "trade once, then hold" in tables and text; caveat post-convergence weights (F-L10); mark E1 to E12 met or not met |
 | Your report sections | Data/Calibration, and convergence analysis and visualizations (prospectus §4) |
