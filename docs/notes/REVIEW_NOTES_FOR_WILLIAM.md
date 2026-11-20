@@ -71,6 +71,8 @@ The 2026-11-19 status review (`AUDIT_2026-11-06.md` §9) numbers the new TC item
 
 ## To decide with Albert
 
+**From Albert, 2026-11-20: terminology note added to `TC_DRIFT_DESIGN.md` §4** (a co-owned file, so flagging it). It defines block (one decision and its reward), episode (fresh start to the next reset: 1 block in the baseline, 90 in TC) and daily observation for both parts, so the report uses the words the same way. It matches your `tune.convergence` usage (episodes = 90-block restarts) and changes no code. It also records why we are not renaming blocks to episodes. Please check you agree.
+
 **From Albert, 2026-11-17 (updated 2026-11-18 after your #36): train, evaluate and check 5 are built** (`feature/tc-drift-train`; numbers in `TC_DRIFT_DESIGN.md` §5 "Check 5 measured" and §7).
 - **Check 3:** you decided it on the policy while I measured the same thing in the replay at $1B, so we have two forms that agree: M = 4,000 minus M = 2,000 is −0.003 in your independent model and −0.11 ± 0.15 bps/yr in my replay. Nothing to decide.
 - **Check 5:** your paired form, with one change for you to OK: the model side uses the value over the same 90 blocks (`evaluate.model_value`) rather than V and `value_of`, so both sides discount and truncate the same way. Replay minus model is −0.03 ± 0.08 (zero), −0.38 ± 0.43 ($100M), 0.01 ± 0.70 ($1B), 0.31 ± 1.25 ($10B). All inside 0.5, but resolved only at zero cost; at m = 1,000 a pass at $1B bounds the error to about ±1.4. Lattice rounding alone costs at most 0.1. Please confirm the form, and whether a two-SE bound is acceptable at the cost levels.
