@@ -294,6 +294,29 @@ All policies are scored from the same start holdings on the same simulated paths
 
 A policy is a function of (holdings, block index); only "trade once, then hold" uses the index (C10). `evaluate.agent_policy(agent)` and `evaluate.oracle_policy(solution)` adapt the agent and the oracle to this form (Albert).
 
+### Expected directions for the agent runs (D-F; registered by Albert 2026-11-20, before any final run)
+
+**In plain terms:** what we expect the 40 final runs (4 cost levels × 10 seeds) to show, written down before they start, so each result can be marked met or not met. The short version: the agent will lose to the oracle by a few bps/yr at every level, mostly because it heads for a slightly wrong portfolio, and it will lose to plain rebalancing at $100M and $1B. Its cost-aware timing should show up only at $10B. Fewer than half the seeds will converge.
+
+**Basis and disclosure.** These are preliminary and Albert's. They lean on the $1B tuning pilot (§9: 3 seeds on the tuning seed, α_value = 3e-4), including its benchmark diagnostics (oracle gaps, the favourite target's utility loss, the true c1 and c2), so they are informed by benchmark information about the same agent on other seeds. William may add to or amend them before the runs start. Anything added after the runs start is labelled post hoc. Units: bps/yr, paired over m = 4,000 paths. "Agent" is the tail-averaged policy (§6). Each expectation names the number in `results/tc-drift/runs/<level>/summary.json` that tests it.
+
+| # | Expectation | Tested by |
+|---|---|---|
+| E1 | The agent loses to the oracle at every level: the across-seed mean of agent − oracle is between −1 and −8 bps/yr at each level, negative on at least 8 of 10 seeds. Pilot at $1B: −3.9, −2.8, −3.2 | `agent_minus_oracle_mean`, and per seed in `per_seed.csv` |
+| E2 | The favourite-target error is most of that gap at zero cost, $100M and $1B: own target − always rebalance is negative and larger in size than agent − own target, in the across-seed means | the two `split_*` means |
+| E3 | The agent loses to always rebalancing to the best target at $100M and $1B (across-seed mean below 0; pilot at $1B: −2.6, −1.5, −1.9), and does relatively better as costs grow: agent − always rebalance at $10B is above its value at $1B. Its sign at $10B is not predicted | `agent_minus_always_rebalance_mean` |
+| E4 | The agent's own decisions add value as costs grow: agent − own target rises from $1B to $10B and is positive at $10B. At zero cost and $100M it is within ±1 (pilot at $1B: +0.6, −0.5, +0.7) | `split_agent_minus_own_target_mean` |
+| E5 | The agent beats "trade once, then hold" at every level and on every seed (that policy is about 25 bps/yr behind the oracle, §8) | `agent_minus_trade_once_then_hold` per seed |
+| E6 | The agent loses to the myopic oracle at every level: it knows μ and Σ, and the agent's favourite-target error alone exceeds myopic's shortfall (at most 2.6, §8) | `agent_minus_myopic_mean` |
+| E7 | The agent's hold fraction varies widely across seeds (pilot at $1B: 12%, 55%, 16%). Its across-seed mean is higher at $10B than at zero cost. The $100M and $1B ordering is not predicted. At zero cost it holds more than the oracle does in the same replay (`references.oracle.hold_fraction`; 0.15 in check 5), because the D11 clamp keeps learned costs at zero or above while the true costs are zero | `agent_hold_fraction` |
+| E8 | Costs, a benchmark diagnostic: c2 is learned better than c1. At $1B and $10B, c2 is within a factor of 2 of the truth on at least 7 of 10 seeds. c1 is off by more than a factor of 2 on at least 3 of 10 seeds at every level with costs. Pilot at $1B: c2/true 0.94, 0.49, 1.01; c1/true 0.41, 3.19, 0.00 | `c1_over_true`, `c2_over_true` |
+| E9 | Convergence: under the operative 2026-11-20 rule, fewer than 5 of 10 seeds converge at each level (pilot: 1 of 3). Under the original 2026-11-12 rule and the 2026-11-19 exact-action rule on the last iterate, none do | `d12_converged_count` |
+| E10 | The tail average and the last iterate differ by less than 1 bps/yr in the across-seed mean at each level, sign not predicted (pilot: −1.7, 0.0, +0.7) | `agent_minus_last_iterate_mean` |
+| E11 | D10 (read "does not apply" from `d10.applicable`): at $1B the mean agent − oracle SE is 0.5 to 0.8 (the pilot's 1.1 to 1.5 at m = 1,000, halved), so it misses the target of a third of the oracle's lead (about 0.43). At $10B (target about 2.3) the rule is met. At zero cost and $100M it does not apply | `d10` |
+| E12 | Seeds differ: the across-seed SD of agent − oracle at $1B is at least 0.5 bps/yr, so the across-seed spread, not the paired SE alone, sets how precisely the agent's gap is known | `sd_across_seeds` |
+
+**What would change the story.** If E1 fails toward zero (the agent within 1 bp/yr of the oracle on most seeds at $1B), the agent learned more than the pilot suggested. If E4 holds at $10B but E2 also holds there, the agent learned when to trade but not where to head. If E3 shows the agent beating always-rebalance at $1B, the cost learning matters more than the pilot showed.
+
 ## 8. Cost levels and the oracle sweep (decided D9, 2026-11-12)
 
 **In plain terms:** the costs are what trading these three ETFs costs in practice, for portfolios of different sizes. The spread is about 1 bp for all three. Market impact grows with the square root of the trade's size relative to the ETF's daily volume, so a bigger portfolio pays more per dollar.

@@ -41,7 +41,7 @@ from src.tc_drift import config, env, evaluate, oracle, spec
 from src.tc_drift.calibration import cost_settings
 
 H = config.H_EVAL
-M_EVAL = config.M_EVAL
+M_EVAL = config.M_EVAL_PILOTS   # check 5 was run at m = 1,000 (results/tc-drift/checks/); kept so it reproduces
 M_ORACLE = config.M_ORACLE
 
 
