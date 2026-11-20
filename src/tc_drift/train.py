@@ -59,6 +59,9 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
       mean_net_reward    mean net reward per block in the window, daily units
       diagnostics        {name: (n_checkpoints,)} for the names in _DIAGNOSTICS the agent has,
                          plus theta_norm when it exposes theta
+      theta              (n_checkpoints, n_theta), when the agent exposes theta: the
+                         snapshots the tail-averaged policy and D12 read (AUDIT TC-6)
+      favourite_target   (n_checkpoints,), when the agent has favourite_target()
       n_blocks, block_length, simulated_days, n_restarts, drift
     """
     n_blocks = _positive_int(n_blocks, "n_blocks")
@@ -93,6 +96,9 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
     diagnostics = {name: np.empty(n_ckpt) for name in diag_names}
     if hasattr(agent, "theta"):
         diagnostics["theta_norm"] = np.empty(n_ckpt)
+        log["theta"] = np.empty((n_ckpt, len(np.ravel(agent.theta))))
+    if callable(getattr(agent, "favourite_target", None)):
+        log["favourite_target"] = np.empty(n_ckpt, dtype=np.int64)
 
     state = starts[start_rng.integers(len(starts))]
     n_restarts = 0
@@ -136,8 +142,12 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
             log["probe_greedy"][ckpt] = [agent.greedy_action(p.copy()) for p in probes]
             for name in diag_names:
                 diagnostics[name][ckpt] = float(getattr(agent, name))
-            if "theta_norm" in diagnostics:
-                diagnostics["theta_norm"][ckpt] = float(np.linalg.norm(agent.theta))
+            if "theta" in log:
+                theta = np.ravel(agent.theta)
+                log["theta"][ckpt] = theta
+                diagnostics["theta_norm"][ckpt] = float(np.linalg.norm(theta))
+            if "favourite_target" in log:
+                log["favourite_target"][ckpt] = int(agent.favourite_target())
             window[:] = 0.0
             window_start = k + 1
             ckpt += 1
