@@ -28,7 +28,7 @@ Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6,
 
 | Item | What | Waits on |
 |---|---|---|
-| TC runs | The 40 final agent runs: `python -m src.tc_drift.run queue --workers 6` from a git worktree pinned to the run commit, about 16 to 17 hours. Then, after Albert's review, `run evaluate --level L` for each level once its 10 seeds are saved, and `run report` (`TC_DRIFT_DESIGN.md` §10). Go/no-go Nov 24 | You |
+| TC runs | Albert runs the 40 final agent runs after his review of `run.py` (decided 2026-11-20), then scores each level (`TC_DRIFT_DESIGN.md` §10; his notes have the steps). Go/no-go Nov 24 | Albert |
 | TC review | Albert reviews `run.py` and every edit to his files listed in `NEXT_STEPS_FOR_ALBERT.md` (2026-11-20 section), before any level is scored | Albert |
 | TC-4, D-H | The report is not started. The report schedule is still to agree with Albert | Both |
 | TC-8, D-G | How the first TC design is reported. M7, M8, M9, M11 and the TC halves of M1 and F-L12 wait on it | Both |
@@ -41,7 +41,7 @@ Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6,
 
 ## Your next steps
 
-1. **Launch the TC agent runs** (above), then, after Albert's review, score each level and check the scoring's own checks pass (the rebuilt agents reproduce the logged probe actions and favourite targets).
+1. **TC agent runs: Albert's** (above). Answer his review questions on `run.py` and `agent.py` quickly, since the runs wait on them.
 2. **Final non-TC runs.** C2, C3, P1 and P2 (`AUDIT_2026-11-06.md` §6) are not run; the 2026-11-19 review recommends none, except P2 if one of us has a free day (§9.4 D-H). Register any run with an expected direction before it starts.
    - A run trained from the current `dev` will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
 3. **Write the FA section** from `AUDIT_2026-11-06.md` §2.3 (the experiment, the failed expectations and what can be claimed, all re-checked) and `EXPERIMENTS.md` §8.7 and §8.8, including the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).

@@ -8,7 +8,7 @@
 
 ## Open for you, 2026-11-20
 
-**TL;DR / In plain terms:** your earlier items are done. What is open for you now: review the TC run driver and the edits I made to your files, add the one-line pointer in `TRANSACTION_COSTS.md`, settle two decisions with me, and write your report sections.
+**TL;DR / In plain terms:** your earlier items are done. What is open for you now: review the TC run driver and the edits I made to your files, then run and score the 40 TC agent runs (yours, decided 2026-11-20), add the one-line pointer in `TRANSACTION_COSTS.md`, settle two decisions with me, and write your report sections.
 
 **Key concepts to understand**
 - **Where the TC work stands.** Built, checked and tuned. The 40 final agent runs are the last compute; scoring them should wait for your review of `run.py`.
@@ -19,11 +19,19 @@
 | Item | What |
 |---|---|
 | TC review | Review `src/tc_drift/run.py` and every edit to your files in the 2026-11-20 section below (`config.py`, `train.py`, `evaluate.py`, `oracle_replay.py`, your test file, the shared `.gitignore`, the README's TC-drift section and the `RUN_ISSUES` status line), before the runs are scored |
+| TC runs | After your review: the 40 final agent runs, then scoring. Steps below. Go/no-go Nov 24 |
 | D7 | A one-line pointer to `TC_DRIFT_DESIGN.md` in `TRANSACTION_COSTS.md` (your file) |
 | D-G, D-H | With me: how the first TC design is reported, the report schedule, and who writes the TC section (prospectus §4) |
 | Report text | Call `never_trade_policy` "trade once, then hold" in tables and text; caveat post-convergence weights (F-L10) |
 | Your report sections | Data/Calibration, and convergence analysis and visualizations (prospectus §4) |
 | F-L9, F-L13, L7 | The episodes column (partly fixed, low priority); the `grid10-robustness` tag on your Mac; `all-three`'s comparison set (with me) |
+
+**Running the TC agent runs** (`TC_DRIFT_DESIGN.md` §10):
+1. **A separate copy of the repo, pinned to one commit.** After `feature/tc-drift-runs` merges into `dev`: `git fetch`, then `git worktree add -b run/tc-drift-final ../mfq-runs origin/dev`, and run everything from `../mfq-runs`. Edits in your main checkout then cannot reach jobs that start later.
+2. **Train:** `python -m src.tc_drift.run queue --workers N`, with N about one fewer than your cores and enough free memory. The queue pins BLAS to one thread per job and trains the $1B level first. On my laptop a run took about 2.4 hours with 6 in parallel, so 40 took about 17 hours; your machine timed faster on `train.py` (0.57 ms a block, before the recursive-least-squares cost block), so re-time it on the first wave. If it stops, run the same command again: finished seeds are kept, and a record trained with other settings is refused.
+3. **Do not commit in `../mfq-runs` until all 40 have finished.** Each run records the commit checked out when it starts, and scoring refuses seeds from different commits, so a commit mid-queue would split the runs.
+4. **Score:** the oracle tables (`results/tc-drift/oracle/*.npz`) are not in git. Copy yours from your 2026-11-17 check 5 work into `../mfq-runs/results/tc-drift/oracle/`, or rebuild them with `python -m src.tc_drift.oracle_runs` (about 1 to 2.5 hours). Then `python -m src.tc_drift.run evaluate --level L` for each level, one at a time (544 MB of paths each), and `python -m src.tc_drift.run report`. Scoring checks that each rebuilt agent reproduces its logged probe actions and favourite target, and stops if not.
+5. **Commit** `results/tc-drift/runs/` (each seed's JSON and `.npz`, each level's `summary.json`, `per_seed.csv`) on `run/tc-drift-final` and open a PR. `values.npz` is ignored by git unless we decide otherwise.
 
 ## From William, 2026-11-06: the audit (every item below is now closed or listed above)
 
