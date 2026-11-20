@@ -1,6 +1,6 @@
 # Transaction Costs with Drift: Design
 
-**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-18):** Phase 2. Merged into `dev`: `spec.py`, `calibration.py`, `env.py` (Albert), `oracle.py`, `features.py`, `agent.py` and the oracle runs with checks 3 and 4 (William). On `feature/tc-drift-train` (Albert): `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py`, with check 5 measured (§5). Agent tuning waits on the §9 choice. **Post hoc** relative to `baseline-v1`; label every result that way.
+**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-20):** Phase 2 built and tuned. Merged into `dev`: `spec.py`, `calibration.py`, `env.py`, `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py` (Albert), `oracle.py`, `features.py`, `agent.py`, the oracle runs and the tuning pilot (`tune.py`, William). On `feature/tc-drift-run` (Albert, PR #41): the run driver `run.py`, θ in the training log, the own-target reference policy, the final settings in `config.py` and the expected directions (§7). The 40 agent runs have not started. **Post hoc** relative to `baseline-v1`; label every result that way.
 
 ---
 
@@ -33,7 +33,7 @@ The new design uses the assignment's original three ETFs (SPY, IEF, GLD). It let
 - **What is new:** the package `src/tc_drift/` and `src/tests/test_tc_drift_spec.py`.
 - **What is untouched, by instruction:**
   - `src/transaction_costs.py`, `src/tc_sweep_report.py` and `results/tc-quadratic-cost/`;
-  - `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md`. *Updated 2026-11-20:* the audit has since been edited at William's request (the D7 pointer in §6.2 and the 2026-11-19 status review in §9); `TRANSACTION_COSTS.md` still waits on its pointer (Albert).
+  - `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md`. *Updated 2026-11-20:* the audit has since been edited at William's request (the D7 pointer in §6.2 and the 2026-11-19 status review in §9); `TRANSACTION_COSTS.md` has its pointer too (Albert, 2026-11-20).
 - **Three shared files changed, each by one line or one table row:**
   - `src/tests/test_environment.py`: the two new agent modules are added to `AGENT_MODULES`, so the existing leakage scan covers them.
   - `CLAUDE.md` and `docs/README.md` list this document.
@@ -284,7 +284,7 @@ All policies are scored from the same start holdings on the same simulated paths
 
 **Implemented** (`src/tc_drift/evaluate.py`, 2026-11-17; tests in `src/tests/test_tc_drift_train_evaluate.py`): `evaluate_policy` and the four adapters as frozen, plus `best_static_target`, `draw_evaluation_set` (the pilot's draw order), `paired_gap`, `model_value` (finite-horizon value of a lattice policy in the oracle's model), `lattice_table` and `probe_convergence` (the original D12 rule only; the operative D12 is `tune.convergence` with probes, §6). `evaluate_policy` is checked against a separate share-and-price loop for four policies, and `model_value` against `value_of` and hand-computed one- and two-step values. The policy gets a copy of the holdings. A trade of zero size counts as a hold; turnover is one-way.
 
-`src/tc_drift/train.py` (same date) follows §6 and William's note: the agent is updated with the true drifted end holdings even on the block before a restart, the first block and every `restart_every`-th start from a draw from the start states, and probes are read with `greedy_action` after the checkpoint block's update. It is checked against a separate replay that redraws the returns one block at a time and recomputes every (s, a, r, s′) with the share loop and the cost formula. Returns are drawn 1,024 blocks at a time, which gives the same numbers as one at a time (tested). `src/tc_drift/config.py` holds H, m, the oracle's M, 10 seeds, restarts every 90 blocks (the evaluation horizon; Albert's proposal), the training starts (the 2% grid, D4), the probe states (the 1,326 targets plus 200 off-grid lattice points from seed (20261112, 1)) and the seed layout. N_BLOCKS, the checkpoint interval and the hyperparameters stay pending until tuning (`config.pending()`). `probe_convergence` checks probes only at checkpoints, so a flip that reverts between two checkpoints is not seen; the baseline's rule tracked every change. Disclose it.
+`src/tc_drift/train.py` (same date) follows §6 and William's note: the agent is updated with the true drifted end holdings even on the block before a restart, the first block and every `restart_every`-th start from a draw from the start states, and probes are read with `greedy_action` after the checkpoint block's update. It is checked against a separate replay that redraws the returns one block at a time and recomputes every (s, a, r, s′) with the share loop and the cost formula. Returns are drawn 1,024 blocks at a time, which gives the same numbers as one at a time (tested). `src/tc_drift/config.py` holds H, m, the oracle's M, 10 seeds, restarts every 90 blocks (the evaluation horizon; Albert's proposal), the training starts (the 2% grid, D4), the probe states (the 1,326 targets plus 200 off-grid lattice points from seed (20261112, 1)) and the seed layout. *2026-11-20:* N_BLOCKS (4M), the checkpoint interval (40,050, so the checkpoints match `tune.py`'s), the hyperparameters (§9) and m = 4,000 are set; `config.pending()` is empty. `probe_convergence` checks probes only at checkpoints, so a flip that reverts between two checkpoints is not seen; the baseline's rule tracked every change. Disclose it.
 
 **Reference policies:**
 - the oracle;
@@ -293,6 +293,8 @@ All policies are scored from the same start holdings on the same simulated paths
 - myopic (the oracle solved with ρ = 0 when choosing, scored with ρ = 0.95).
 
 A policy is a function of (holdings, block index); only "trade once, then hold" uses the index (C10). `evaluate.agent_policy(agent)` and `evaluate.oracle_policy(solution)` adapt the agent and the oracle to this form (Albert).
+
+**Run driver** (`src/tc_drift/run.py`, Albert, 2026-11-20; tests in `src/tests/test_tc_drift_run.py`). `python -m src.tc_drift.run all --workers 7` trains every level and seed that has no finished record (seed by seed, $1B first within each seed), one process per run with BLAS pinned to one thread, then scores each level. Each run writes `results/tc-drift/runs/<level>/seed<i>.npz` (the log with θ at every checkpoint) and `seed<i>.json` (settings, seeds, code hashes, the npz hash, speed). Scoring rebuilds each agent from its log, checks it against the logged greedy actions, and scores the tail-averaged policy, the last iterate and the own-target policy against the oracle, myopic, always-rebalance and trade-once-then-hold on the same m = 4,000 paths. It applies all four D12 versions and the D10 rule, and writes `summary.json`, `per_seed.csv` and `values.npz` per level. It refuses to mix seeds trained with different settings or code, and checks the oracle tables against the committed `oracle/summary.json`. Timed on Albert's Mac (10 cores) at the final settings on short runs (2026-11-20, not committed): 0.26 ms a block alone, 0.31 (exploring) to 0.39 (greedy) with seven in parallel. Projected from that: about 26 minutes a 4M-block run and about 2.6 hours of training for the 40 in six waves, plus scoring (not timed at m = 4,000 for every reference; the agent alone took about 27 s).
 
 ### Expected directions for the agent runs (D-F; registered by Albert 2026-11-20, before any final run)
 
@@ -491,6 +493,8 @@ They may not use star imports, `importlib`, `__import__`, `open`, `eval`, `np.lo
 | Nov 20 to 26 | Full runs; Thanksgiving buffer |
 | Nov 26 to 30 | Analysis and the report |
 
+*Status 2026-11-20:* on schedule to Nov 19, apart from tuning, which finished on Nov 20 (William). The run driver is ready (PR #41) and the 40 runs take about 3 hours, so the Nov 24 go/no-go can be met.
+
 **Go/no-go for the agent runs, Nov 24 (William, 2026-11-19).** If the learning rule is implemented and tuned by Nov 24, run the agent at the four levels; otherwise report the oracle results and a diagnosed null agent result (prospectus §7).
 
 **Gate, Nov 17.** The environment plus oracle checks 1 and 2 must pass. If not, fall back to the no-drift design with "learn each target's reward, then plan" (`AUDIT_2026-11-06.md` §6.2, T1), plus the negative result. The prospectus (week 9: "first full report draft") assumes a draft by Nov 19; this timeline moves TC results past that (C12).
@@ -514,7 +518,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 
 **Not verified:**
 - oracle run time on the 0.5% lattice (the 1% lattice is measured in §5);
-- the agent's speed on the final tuned agent: measured 2026-11-17 on `train.py` at 0.57 ms a block with the current `DriftAgent` at $1B (about 9.5 minutes per million blocks), and 0.22 s per checkpoint over the 1,526 probe states; a recursive-least-squares cost block (§9) would add a 2×2 solve per update.
+- the agent's speed is machine-dependent: on Albert's Mac at the final settings (RLS cost block, BLAS pinned) 0.26 ms a block alone and 0.31 to 0.39 with seven in parallel (2026-11-20); on William's machine 2.4 hours a 4M-block run with six in parallel (about 2.2 ms a block; §9). The earlier 0.57 ms (2026-11-17, Albert's Mac) was measured on older code without BLAS pinned; the cause of the difference was not isolated.
 
 ## 13. Conflicts with the repo, and questions
 
@@ -558,7 +562,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - §4: "Transaction-cost extension | Albert built it; redesign paired" becomes this split;
 - §5, week 9: the draft date against the Nov 20 to 26 TC runs.
 
-**C13. Two documents still describe the old options as current.** `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md` §6.2 were not touched, by instruction. *Updated 2026-11-20:* the audit's §6.2 now carries the pointer (2026-11-19); the one in `TRANSACTION_COSTS.md` is Albert's.
+**C13. Two documents still describe the old options as current.** `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md` §6.2 were not touched, by instruction. *Updated 2026-11-20:* the audit's §6.2 now carries the pointer (2026-11-19); the one in `TRANSACTION_COSTS.md` was added by Albert on 2026-11-20. Closed.
 - *Open (D7):* add a one-line pointer to this document in each after approval?
 
 **C14. A one-line edit in Albert's test file.** `src/tests/test_environment.py` `AGENT_MODULES` gains `src.tc_drift.agent` and `src.tc_drift.features`.
