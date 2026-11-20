@@ -283,3 +283,9 @@ def test_rescore_matches_scoring_during_the_run(tmp_path):
     path.write_text(json.dumps(old), encoding="utf-8")
     with pytest.raises(RuntimeError):
         tune.rescore(tmp_path)
+
+
+def test_a_rerun_of_the_pilot_scores_on_the_pilots_1000_paths():
+    """config.M_EVAL is the final runs' 4,000; the pilot's records were scored at 1,000."""
+    import inspect
+    assert inspect.signature(tune.run_one).parameters["m"].default == config.M_EVAL_PILOTS == 1000

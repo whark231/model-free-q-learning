@@ -283,7 +283,7 @@ def provenance() -> dict:
 
 
 def run_one(candidate: str, seed: int, out_dir: Path = OUT_DIR, n_blocks: int = N_BLOCKS,
-            segment: int = SEGMENT, m: int = config.M_EVAL) -> dict:
+            segment: int = SEGMENT, m: int = config.M_EVAL_PILOTS) -> dict:   # the pilot ran at m = 1,000
     market = env.load_market()
     settings = cost_settings()[LEVEL]
     hp = hyperparameters(candidate)
