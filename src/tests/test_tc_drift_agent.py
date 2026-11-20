@@ -362,3 +362,157 @@ def test_learns_costs_and_a_near_optimal_policy_without_noise():
     greedy = np.array([a.greedy_action(t) for t in TARGETS])
     greedy = np.where(greedy == spec.HOLD, np.arange(n), greedy)
     assert (best - value(greedy)).mean() <= 0.01 * (best - never).mean()
+
+
+# ---------------------------------------------------------------------------
+# Recursive least squares on the cost block (decided 2026-11-19, TC_DRIFT_DESIGN.md §9)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("override", [
+    {"cost_rls_after": -1}, {"cost_rls_after": 1.5}, {"cost_rls_after": True},
+    {"cost_rls_prior": 0.0}, {"cost_rls_prior": -1e-3}, {"cost_rls_prior": np.inf}, {"cost_rls_prior": True},
+])
+def test_rejects_bad_rls_settings(override):
+    with pytest.raises(ValueError):
+        make(**override)
+
+
+def _drive(agents, steps=120, seed=21, cost=(0.05, 0.2)):
+    """Feed every agent the same random transitions: trades and HOLDs from
+    off-grid states, net reward = noise - k1 ||u||_1 - k2 ||u||_2^2."""
+    rng = np.random.default_rng(seed)
+    s = rng.dirichlet(np.ones(3) * 3)
+    for _ in range(steps):
+        action = spec.HOLD if rng.random() < 0.2 else int(rng.integers(spec.N_TARGETS))
+        u = spec.post_trade_weights(s, action) - s
+        r = float(rng.normal(0.0, 0.05) - cost[0] * np.abs(u).sum() - cost[1] * (u * u).sum())
+        s_next = rng.dirichlet(np.ones(3) * 3)
+        for a in agents:
+            a.update(s, action, r, s_next)
+        s = s_next
+
+
+def test_rls_is_off_by_default_and_identical_to_sgd_before_the_switch():
+    sgd = make(seed=1, alpha_value=0.02, alpha_cost=0.02, target_refresh_every=7)
+    rls = make(seed=1, alpha_value=0.02, alpha_cost=0.02, target_refresh_every=7, cost_rls_after=60)
+    assert sgd.cost_rls_after is None and not sgd.cost_rls_active
+    _drive([sgd, rls], steps=60)
+    assert not rls.cost_rls_active
+    np.testing.assert_array_equal(rls.theta, sgd.theta)
+    assert (rls.cost_linear, rls.cost_quadratic) == (sgd.cost_linear, sgd.cost_quadratic)
+    _drive([sgd, rls], steps=5, seed=22)
+    assert rls.cost_rls_active
+    assert (rls.cost_linear, rls.cost_quadratic) != (sgd.cost_linear, sgd.cost_quadratic)
+
+
+class RidgeReference(ReferenceAgent):
+    """ReferenceAgent with the cost block re-solved from scratch after the switch:
+    w = argmin sum_i (z_i - d_i . w)^2 + prior ||w - c0||^2, where
+    z_i = x_i . theta_i - y_i is the part of the error the costs must explain
+    (theta_i before its update) and c0 the costs at the switch; the costs used
+    are max(0, w) (D11 on read). A batch solve, not a recursion, so it checks
+    the agent's rank-one updates independently."""
+
+    def __init__(self, alpha_value, alpha_cost, l2, refresh, after, prior):
+        super().__init__(alpha_value, alpha_cost, l2, refresh)
+        self.after, self.prior = after, prior
+        self.rows, self.c0, self.unclamped = [], None, []
+
+    def update(self, s, a, r, s_next):
+        if self.n < self.after:
+            return super().update(s, a, r, s_next)
+        if self.c0 is None:
+            self.c0 = np.array(self.c)
+        trades, hold = self.q(s_next, *self.frozen)
+        y = r + spec.DISCOUNT * max(trades.max(), hold)
+        if a == spec.HOLD:
+            x, d = features.spline_features(s)[0], (0.0, 0.0)
+        else:
+            x, d = self.phi_t[a], self.dist(TARGETS[a], s)
+        e = y - (x @ self.theta - self.c[0] * d[0] - self.c[1] * d[1])
+        self.rows.append((np.array(d), x @ self.theta - y))
+        self.theta = self.theta + self.av * (e * x - self.l2 * self.theta)
+        D = np.array([row[0] for row in self.rows])
+        z = np.array([row[1] for row in self.rows])
+        c = np.linalg.solve(D.T @ D + self.prior * np.eye(2), D.T @ z + self.prior * self.c0)
+        self.unclamped.append(c)
+        self.c = [max(c[0], 0.0), max(c[1], 0.0)]
+        self.n += 1
+        if self.n % self.refresh == 0:
+            self.frozen = (self.theta.copy(), list(self.c))
+
+
+@pytest.mark.parametrize("cost, binds", [((0.05, 0.2), False), ((0.0, 0.0), True)])
+def test_rls_cost_block_equals_a_batch_ridge_solve(cost, binds):
+    """Before the switch the agent is the plain reference; after it, its costs
+    equal max(0, the batch ridge solution) over every update since the switch,
+    while theta keeps its constant step. With zero true costs the unclamped fit
+    goes negative, so the clamp binds; feeding the clamp back into the
+    recursion (the first version, 2026-11-19) fails that case."""
+    after, prior = 30, 0.5
+    a = make(seed=11, alpha_value=0.03, alpha_cost=0.03, l2=0.1, target_refresh_every=4,
+             cost_rls_after=after, cost_rls_prior=prior)
+    ref = RidgeReference(0.03, 0.03, 0.1, 4, after, prior)
+    _drive([a, ref], steps=150, cost=cost)
+    assert a.cost_rls_active and len(ref.rows) == 150 - after
+    assert (min(c.min() for c in ref.unclamped) < 0) == binds
+    np.testing.assert_allclose(a.theta, ref.theta, rtol=1e-9, atol=1e-12)
+    assert (a.cost_linear, a.cost_quadratic) == pytest.approx(tuple(ref.c), rel=1e-9, abs=1e-15)
+
+
+def test_rls_matches_the_isolated_regression_of_the_cost_analysis():
+    """With theta held at (numerically) zero by a 1e-300 step, the agent's cost
+    block is the regression in cost_learning_analysis.rls (which has no clamp),
+    read through max(0, .) as D11 requires. Feed both the same trades and noise
+    from the analysis's setting (holdings near the optimum, uniform targets,
+    noise SD 1e-3): the same estimate, to rounding."""
+    from src.tc_drift.cost_learning_analysis import NOISE_SD
+    rng = np.random.default_rng(31)
+    c_true = np.array([6.18e-6, 1.13e-4])
+    a = make(seed=0, alpha_value=1e-300, alpha_cost=0.0, cost_rls_after=0, cost_rls_prior=1e-3)
+    w, A = np.zeros(2), 1e-3 * np.eye(2)
+    near = np.array([0.46, 0.14, 0.40])
+    for _ in range(3000):
+        s = near + rng.normal(0, 0.02, 3)
+        s = np.clip(s, 0, None) / np.clip(s, 0, None).sum()
+        action = int(rng.integers(spec.N_TARGETS))
+        u = TARGETS[action] - s
+        d = np.array([np.abs(u).sum(), (u * u).sum()])
+        noise = rng.normal(0.0, NOISE_SD)
+        # The agent sees net reward -c.d + noise. Its bootstrapped next-state value is
+        # max(trades -c_frozen . d' <= 0, HOLD theta . phi ~ 1e-300), so zero to rounding.
+        a.update(s, action, float(-d @ c_true + noise), s)
+        # cost_learning_analysis.rls on the same row: y = d.c + noise' with noise' = -noise
+        e = d @ c_true - noise - d @ w
+        A += np.outer(d, d)
+        w = w + np.linalg.solve(A, e * d)
+    assert (a.cost_linear, a.cost_quadratic) == pytest.approx(tuple(np.maximum(w, 0.0)), rel=1e-8, abs=1e-15)
+
+
+def test_learns_costs_without_noise_with_rls():
+    """The noise-free toy world above, with the cost block switching to
+    recursive least squares partway through: the costs are still recovered."""
+    x_star = np.array([0.5, 0.2, 0.3])
+    k1, k2 = 0.02, 0.05
+    n = spec.N_TARGETS
+    a = make(seed=7, alpha_value=0.05, alpha_cost=0.05, beta=4e-5, target_refresh_every=200, cost_rls_after=20_000)
+    rng = np.random.default_rng(8)
+    s = TARGETS[0]
+    for step in range(60_000):
+        if step % 50 == 0:
+            s = TARGETS[rng.integers(n)]
+        act = a.select_action(s)
+        x = spec.post_trade_weights(s, act)
+        u = x - s
+        a.update(s, act, -((x - x_star) ** 2).sum() - (k1 * np.abs(u).sum() + k2 * (u * u).sum()), x)
+        s = x
+    assert a.cost_rls_active
+    assert a.cost_linear == pytest.approx(k1, rel=0.25)
+    assert a.cost_quadratic == pytest.approx(k2, rel=0.25)
+
+
+def test_favourite_target_is_the_argmax_of_the_value_model():
+    a = _trained()
+    g = a.holding_values(TARGETS)
+    assert a.favourite_target() == int(np.argmax(g))
+    assert make().favourite_target() == 0                  # all values 0: lowest index

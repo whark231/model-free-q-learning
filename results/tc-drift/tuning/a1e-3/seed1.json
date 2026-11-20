@@ -1,0 +1,196 @@
+{
+  "candidate": "a1e-3",
+  "seed": 1,
+  "level": "aum_1b",
+  "hyperparameters": {
+    "alpha_value": 0.001,
+    "alpha_cost": 0.001,
+    "beta": 2.302585092994046e-06,
+    "target_refresh_every": 1000,
+    "l2": 0.0,
+    "cost_rls_after": 301030
+  },
+  "n_blocks": 4000000,
+  "segment": 40050,
+  "m_eval": 1000,
+  "horizon": 90,
+  "final_c1": 2.4203740466985567e-05,
+  "final_c2": 7.658048499429585e-05,
+  "train_seconds": 8737.2,
+  "eval_seconds": 75.9,
+  "provenance": {
+    "commit": "bed6d173e49772c1fd551dce29ff18dd0ef99a2d",
+    "src_dirty": true,
+    "sha256": {
+      "src/tc_drift/tune.py": "409256d7dbfdfb66749b568d2a25decc02c06e681e9a70906332abacd6a09113",
+      "src/tc_drift/agent.py": "103c3b0fed048ebb20a444f3e1807277c5baf21857dd1b96eb2d16478da5225c",
+      "src/tc_drift/features.py": "33e25e3235f86da5d4f086e6652fb746b2210e37ef6ee335fd5ac858ff43a525",
+      "src/tc_drift/train.py": "ad941298fc780c18605b7483fc4e184b3cbedae30f1c07707d6c28d3efe35642",
+      "src/tc_drift/env.py": "4e8efcd86b48ac0b7c810e1f9dadb12598a532a109311d87a73831f21efed007",
+      "src/tc_drift/evaluate.py": "f8baf7ec350caa731f830bf90a2bc3cd49d6b07b3919ad1879fdb476dbe89199",
+      "src/tc_drift/config.py": "d7654c62a91171af6b698b5d0e09aa04300355a089f9fad768bfcf2a5e4362d5",
+      "src/tc_drift/spec.py": "1ec87813e61d11a1c42c6bf46b26f859146f8a5ad0ee742f340a6bb117bf7e01",
+      "src/tc_drift/calibration.py": "9fc9c75f0c7e5622b899459a218da686abb403c9c25dbd1499943964130079c3",
+      "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2"
+    },
+    "python": "3.10.2",
+    "numpy": "2.2.6",
+    "seed_plan": {
+      "master_seed": 20261112,
+      "n_runs": 10,
+      "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+      "streams": {
+        "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+        "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+        "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+      },
+      "numpy_version": "2.2.6"
+    },
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "policy": "tail_average",
+  "averaged_post_hoc": true,
+  "criterion_mean_value_bps": 484.1199556192154,
+  "hold_fraction": 0.4140111111111111,
+  "turnover_per_block": 0.017765106567894727,
+  "favourite_rebalance_mean_value_bps": 481.67424700244607,
+  "final_favourite_index": 783,
+  "final_favourite_target": [
+    0.36,
+    0.36,
+    0.28
+  ],
+  "convergence": {
+    "window_first_block": 3564450,
+    "n_checkpoints": 12,
+    "primary_favourite_within_one_step": true,
+    "favourite_max_l1_from_final": 0.03999999999999998,
+    "favourite_distinct": 2,
+    "secondary_exact_action_95pct_2026_11_19": false,
+    "original_all_probes_unchanged": false,
+    "probes_unchanged_share": 0.20249017038007863,
+    "secondary_95pct_probes_within_one_step": false,
+    "probes_within_one_step_share": 0.9325032765399738,
+    "converged": false,
+    "rules_hold_from_block": 3644550,
+    "converged_from_block": null,
+    "converged_from_episode": null,
+    "converged_from_daily_observations": null,
+    "hold_probes_final": 6,
+    "hold_probes_in_window": 9,
+    "hold_decision_stable_share": 0.3333333333333333,
+    "split_half_favourite_l1": 0.040000000000000036,
+    "split_half_favourite_within_one_step": true,
+    "split_half_sizes": [
+      5,
+      6
+    ],
+    "split_half_probe_agreement": 0.17169069462647443,
+    "split_half_probes_within_one_step": 0.9829619921363041,
+    "n_snapshots_averaged": 11
+  },
+  "last_iterate": {
+    "criterion_mean_value_bps": 479.51593963412614,
+    "hold_fraction": 0.35962222222222223,
+    "turnover_per_block": 0.018165843314394668,
+    "favourite_rebalance_mean_value_bps": 476.70652648599827,
+    "final_favourite_index": 784,
+    "final_favourite_target": [
+      0.36,
+      0.38,
+      0.26
+    ],
+    "convergence": {
+      "window_first_block": 3564450,
+      "n_checkpoints": 12,
+      "primary_favourite_within_one_step": false,
+      "favourite_max_l1_from_final": 0.08000000000000002,
+      "favourite_distinct": 6,
+      "secondary_exact_action_95pct_2026_11_19": false,
+      "original_all_probes_unchanged": false,
+      "probes_unchanged_share": 0.0,
+      "secondary_95pct_probes_within_one_step": false,
+      "probes_within_one_step_share": 0.27916120576671033,
+      "converged": false,
+      "rules_hold_from_block": null,
+      "converged_from_block": null,
+      "converged_from_episode": null,
+      "converged_from_daily_observations": null,
+      "hold_probes_final": 5,
+      "hold_probes_in_window": 17,
+      "hold_decision_stable_share": 0.0
+    }
+  },
+  "rescore_provenance": {
+    "commit": "bed6d173e49772c1fd551dce29ff18dd0ef99a2d",
+    "src_dirty": true,
+    "sha256": {
+      "src/tc_drift/tune.py": "97ba9a2309fd2862d9171ee774dff3f7bbc54f0546f906fdd3d9459b47261c60",
+      "src/tc_drift/agent.py": "fe722d67e4dd2338352e82c481e47fd03a3964346d9548fcc0f313e6e174cd7b",
+      "src/tc_drift/features.py": "33e25e3235f86da5d4f086e6652fb746b2210e37ef6ee335fd5ac858ff43a525",
+      "src/tc_drift/train.py": "ad941298fc780c18605b7483fc4e184b3cbedae30f1c07707d6c28d3efe35642",
+      "src/tc_drift/env.py": "4e8efcd86b48ac0b7c810e1f9dadb12598a532a109311d87a73831f21efed007",
+      "src/tc_drift/evaluate.py": "f8baf7ec350caa731f830bf90a2bc3cd49d6b07b3919ad1879fdb476dbe89199",
+      "src/tc_drift/config.py": "d7654c62a91171af6b698b5d0e09aa04300355a089f9fad768bfcf2a5e4362d5",
+      "src/tc_drift/spec.py": "1ec87813e61d11a1c42c6bf46b26f859146f8a5ad0ee742f340a6bb117bf7e01",
+      "src/tc_drift/calibration.py": "9fc9c75f0c7e5622b899459a218da686abb403c9c25dbd1499943964130079c3",
+      "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2"
+    },
+    "python": "3.10.2",
+    "numpy": "2.2.6",
+    "seed_plan": {
+      "master_seed": 20261112,
+      "n_runs": 10,
+      "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+      "streams": {
+        "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+        "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+        "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+      },
+      "numpy_version": "2.2.6"
+    },
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  },
+  "recheck_provenance": {
+    "commit": "bed6d173e49772c1fd551dce29ff18dd0ef99a2d",
+    "src_dirty": true,
+    "sha256": {
+      "src/tc_drift/tune.py": "f4827a5253e7154d7f0ccd38925dd896a9bff9a88d1d57d8642066fe5eeb9bb7",
+      "src/tc_drift/agent.py": "e92238ce7d13054b1c091f0b15c8e7e1703ad37a1d3aa70b725d8d4bf3f1007c",
+      "src/tc_drift/features.py": "33e25e3235f86da5d4f086e6652fb746b2210e37ef6ee335fd5ac858ff43a525",
+      "src/tc_drift/train.py": "ad941298fc780c18605b7483fc4e184b3cbedae30f1c07707d6c28d3efe35642",
+      "src/tc_drift/env.py": "4e8efcd86b48ac0b7c810e1f9dadb12598a532a109311d87a73831f21efed007",
+      "src/tc_drift/evaluate.py": "f8baf7ec350caa731f830bf90a2bc3cd49d6b07b3919ad1879fdb476dbe89199",
+      "src/tc_drift/config.py": "d7654c62a91171af6b698b5d0e09aa04300355a089f9fad768bfcf2a5e4362d5",
+      "src/tc_drift/spec.py": "1ec87813e61d11a1c42c6bf46b26f859146f8a5ad0ee742f340a6bb117bf7e01",
+      "src/tc_drift/calibration.py": "9fc9c75f0c7e5622b899459a218da686abb403c9c25dbd1499943964130079c3",
+      "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2"
+    },
+    "python": "3.10.2",
+    "numpy": "2.2.6",
+    "seed_plan": {
+      "master_seed": 20261112,
+      "n_runs": 10,
+      "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+      "streams": {
+        "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+        "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+        "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+      },
+      "numpy_version": "2.2.6"
+    },
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    }
+  }
+}
