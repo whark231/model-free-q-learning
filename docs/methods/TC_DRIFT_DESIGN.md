@@ -94,6 +94,21 @@ Trades and HOLD differ only in where G is evaluated and in the cost.
   - c40 = 2·c20 means κ only;
   - c40 = 4·c20 means λ only.
 
+**Terminology: block, episode, observation** (added by Albert, 2026-11-20, for consistency with the baseline; definitions only, nothing in the code or results changes). In plain terms: a block is one decision and its reward, and an episode is everything from a fresh start to the next reset. Under those two definitions the baseline and this extension use the words the same way; only the lengths differ.
+
+| Term | Meaning | Baseline (`src/config.py`) | TC with drift |
+|---|---|---|---|
+| **Block** | One decision period: one action, B days of returns, one reward | B = 20 days. The baseline docs do not use the word: each episode is one block | B = 63 days (`spec.BLOCK_LENGTH`). The end-of-block holdings are the next block's state |
+| **Episode** | From a fresh start to the next reset | 1 block; nothing carries over | 90 blocks (`config.RESTART_EVERY`, equal to the evaluation horizon H). Training restarts from a random 2% target |
+| **Daily observation** | One simulated trading day | episodes × 20 | blocks × 63 |
+| **One training run** | | 13 million episodes = 13 million blocks = 260 million days | 4 million blocks ≈ 44,400 episodes = 252 million days |
+
+- **A TC episode end is a reset, not a terminal state.** The agent still bootstraps from the block's true end holdings on the block before a restart (§6), so the task is a continuing one with periodic resets. Say so wherever TC episodes are counted.
+- **Part IV counts** ("how many observations and episodes are required to reach the criterion") are reported in blocks, episodes (blocks ÷ 90) and daily observations (blocks × 63), as `tune.convergence` does. Example: the tuning pilot's converged run (§9) converges from block 3,284,100 = 36,490 episodes = 206.9 million daily observations.
+- **Evaluation paths** are single 90-block episodes from the m start holdings, one per path, with no reset inside a path (§7).
+- **Not adopted: renaming blocks to episodes.** "Episode" would then suggest independent periods, when the carried-over holdings are the point of the extension; it would also need a new name for the 90-block unit and changes to the frozen `spec.py`, `train()`'s arguments and log keys, `tune.py` and the committed results.
+- **In the report**, give this table once in the TC section next to the baseline's B = 20.
+
 **Ties.** On a lattice state that is itself a 2% target, HOLD and "trade to it" both cost 0 and lead to the same weights. HOLD wins ties, in the oracle and in the agent, and the metrics count a trade of zero size as a hold. This is the tie-breaking rule the assignment asks us to report (Part III).
 
 **Random streams** (`spec.py`):
