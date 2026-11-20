@@ -274,7 +274,7 @@ with probability about 6e-7 per statistic, and below 1e-4 across the suite.
 - **Part VI and bonus.**
   - Calibration windows need a helper that estimates μ and Σ from a date range of `excess_returns.csv`. Re-running `clean.py` would overwrite the baseline.
   - The three-asset comparison can reuse the nine-asset draws by taking columns SPY, IEF and GLD (positions 0, 3 and 6), which gives it exactly the same random numbers.
-  - A transaction-cost layer that tracks weight drift needs total returns (excess plus the risk-free rate), not excess returns alone.
+  - A transaction-cost layer that tracks weight drift needs total returns (excess plus the risk-free rate), not excess returns alone. Measured 2026-11-12 for the three-asset drift extension: leaving the risk-free rate out moves end-of-block weights by at most 7.1e-6, so that extension drifts on excess returns (`TC_DRIFT_DESIGN.md` C2).
 - **Prospectus.** Row 2 ("Ground-truth environment") is marked done.
 
 ---

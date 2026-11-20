@@ -1,0 +1,143 @@
+{
+  "H": 90,
+  "m": 1000,
+  "M_oracle": 2000,
+  "best_target": [
+    0.46,
+    0.14,
+    0.4
+  ],
+  "replay_seed": "TUNING_MASTER_SEED evaluation stream",
+  "oracle_seed": [
+    20261016,
+    3
+  ],
+  "levels": {
+    "zero": {
+      "solve_seconds": 125.4,
+      "n_iterations": 434,
+      "lead_replay": {
+        "mean": -0.026335704264188065,
+        "se": 0.07906629379481604
+      },
+      "lead_model": 0.007811804305252273,
+      "check5": {
+        "mean": -0.03414750856944035,
+        "se": 0.07906629379481604
+      },
+      "rounding": {
+        "mean": -0.04327826746182769,
+        "se": 0.037584273227853494
+      },
+      "level_replay_minus_model": {
+        "mean": -22.36441802161842,
+        "se": 12.01521680432879
+      },
+      "oracle_hold_fraction": 0.15183333333333332,
+      "oracle_turnover_per_block": 0.028758698512782437,
+      "rebalance_turnover_per_block": 0.0297501846906512,
+      "oracle_value_bps": 512.4215723743386,
+      "rebalance_value_bps": 512.4479080786028,
+      "cv_correction_bps_yr_mean": 3.2364813530124046
+    },
+    "aum_100m": {
+      "solve_seconds": 128.1,
+      "n_iterations": 434,
+      "lead_replay": {
+        "mean": -0.16619309157816334,
+        "se": 0.4250675351482171
+      },
+      "lead_model": 0.20911623664400833,
+      "check5": {
+        "mean": -0.3753093282221717,
+        "se": 0.4251160806956023
+      },
+      "rounding": {
+        "mean": -0.0964024345539169,
+        "se": 0.059910156576910914
+      },
+      "level_replay_minus_model": {
+        "mean": -22.691074022804063,
+        "se": 11.993113600682836
+      },
+      "oracle_hold_fraction": 0.28221111111111113,
+      "oracle_turnover_per_block": 0.021911808143979136,
+      "rebalance_turnover_per_block": 0.0297501846906512,
+      "oracle_value_bps": 510.5867833088036,
+      "rebalance_value_bps": 510.7529764003818,
+      "cv_correction_bps_yr_mean": 3.2364813530124046
+    },
+    "aum_1b": {
+      "solve_seconds": 132.3,
+      "n_iterations": 434,
+      "lead_replay": {
+        "mean": 1.3028742093625856,
+        "se": 0.7005297514262478
+      },
+      "lead_model": 1.2879080859335312,
+      "check5": {
+        "mean": 0.014966123429054278,
+        "se": 0.7000703966749289
+      },
+      "rounding": {
+        "mean": -0.09417625730540359,
+        "se": 0.07244632252448714
+      },
+      "level_replay_minus_model": {
+        "mean": -22.272521047490837,
+        "se": 11.910711316721617
+      },
+      "oracle_hold_fraction": 0.32005555555555554,
+      "oracle_turnover_per_block": 0.020690529516406053,
+      "rebalance_turnover_per_block": 0.0297501846906512,
+      "oracle_value_bps": 508.702803698789,
+      "rebalance_value_bps": 507.3999294894264,
+      "cv_correction_bps_yr_mean": 3.2364813530124046
+    },
+    "aum_10b": {
+      "solve_seconds": 137.5,
+      "n_iterations": 434,
+      "lead_replay": {
+        "mean": 7.097114648506517,
+        "se": 1.2572778440412073
+      },
+      "lead_model": 6.789321933985535,
+      "check5": {
+        "mean": 0.30779271452098234,
+        "se": 1.247356181916253
+      },
+      "rounding": {
+        "mean": -0.04043315032571057,
+        "se": 0.1280206203805964
+      },
+      "level_replay_minus_model": {
+        "mean": -21.890146953486482,
+        "se": 11.767574182352753
+      },
+      "oracle_hold_fraction": 0.4525222222222222,
+      "oracle_turnover_per_block": 0.015401811221180707,
+      "rebalance_turnover_per_block": 0.0297501846906512,
+      "oracle_value_bps": 503.87647020926244,
+      "rebalance_value_bps": 496.77935556075596,
+      "cv_correction_bps_yr_mean": 3.2364813530124046
+    }
+  },
+  "path_count_in_replay": {
+    "level": "aum_1b",
+    "m_small": 2000,
+    "m_large": 4000,
+    "large_minus_small": {
+      "mean": -0.11479720424964117,
+      "se": 0.1461082792954743
+    },
+    "policy_changed_share_2pct_starts": 0.13423831070889894
+  },
+  "command": "python -m src.tc_drift.oracle_replay --path-count",
+  "date": "2026-11-17",
+  "note": "cv_correction_bps_yr_mean recomputed after the run: the run printed it through annualized_bps (x0.05, 20x too small); the code is fixed.",
+  "versions": {
+    "python": "3.13.9",
+    "numpy": "2.3.5",
+    "scipy": "1.16.3"
+  }
+}

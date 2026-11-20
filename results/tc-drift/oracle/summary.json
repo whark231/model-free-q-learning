@@ -1,0 +1,363 @@
+{
+  "what": "TC drift oracle runs and checks 3 and 4, in the oracle's own model (TC_DRIFT_DESIGN.md \u00a75, \u00a78). Post hoc relative to baseline-v1. The oracle's values and its leads over other policies are in-sample, so biased upward; the reported gaps come from evaluate.py replays on fresh paths. never_trade here holds the start forever; trade_once trades to the best target in block 1, then holds (evaluate.never_trade_policy is the latter).",
+  "units": "bps/yr: spec.annualized_bps of a mean over the 1,326 2% starts (infinite horizon); statistics over a 90-block horizon from those starts",
+  "created_utc": "2026-11-17T20:41:16+00:00",
+  "seed": {
+    "oracle_path_seed": [
+      20261016,
+      3
+    ],
+    "check3_fresh_seed": [
+      20261016,
+      4
+    ]
+  },
+  "paths": {
+    "m": 2000,
+    "check3_m": 4000,
+    "block_length": 63
+  },
+  "lattice": {
+    "increment": 0.01,
+    "check4_increment": 0.005
+  },
+  "discount": 0.95,
+  "tolerance_bps": 0.5,
+  "horizon_blocks": 90,
+  "best_target": [
+    0.46,
+    0.14,
+    0.4
+  ],
+  "versions": {
+    "python": "3.10.2",
+    "numpy": "2.2.6",
+    "scipy": "1.15.3"
+  },
+  "provenance": {
+    "commit": "0a8d18054ce73390984c29bf8591fa5328443042",
+    "src_dirty": true,
+    "sha256": {
+      "src/tc_drift/oracle_runs.py": "7bc01de583cb920f953566d0c401fc0edbef0f8eb66005c72fb5a6c68eb395c6",
+      "src/tc_drift/oracle.py": "352b9db8fb82ae7419f3f809739ae7862642a99c056ce9d20da0e905cca59c0f",
+      "src/tc_drift/env.py": "4e8efcd86b48ac0b7c810e1f9dadb12598a532a109311d87a73831f21efed007",
+      "src/tc_drift/spec.py": "1ec87813e61d11a1c42c6bf46b26f859146f8a5ad0ee742f340a6bb117bf7e01",
+      "src/tc_drift/calibration.py": "9fc9c75f0c7e5622b899459a218da686abb403c9c25dbd1499943964130079c3"
+    }
+  },
+  "runtime_seconds": 8452,
+  "settings": {
+    "zero": {
+      "kappa": 0.0,
+      "lam": 0.0,
+      "gamma": 5.0,
+      "oracle_value_bps": 534.7859943124829,
+      "lead_over_always_rebalance_bps": 0.00781583570390495,
+      "lead_over_trade_once_bps": 24.828078296479294,
+      "lead_over_never_trade_bps": 142.35234963776014,
+      "lead_over_myopic_bps": 5.743827288795529e-09,
+      "hold_share_near_best_target": 0.15789473684210525,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.15649827599451763,
+        "turnover_per_block": 0.029496106157501773,
+        "trades_per_path": 75.91515516049341,
+        "mean_trade_size": 0.03496863766612771
+      },
+      "myopic": {
+        "hold_fraction": 0.15649827599451763,
+        "turnover_per_block": 0.029496106157501773,
+        "trades_per_path": 75.91515516049341,
+        "mean_trade_size": 0.03496863766612771
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -0.0010652365732780763,
+        "policy_difference_max_bps": 0.001065236573278076,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 2.0984894915504507e-06,
+        "reverse_shortfall_in_smaller_model_bps": 0.0009686010886793279,
+        "same_action_share_at_2pct_starts": 1.0,
+        "v_change_bps": -3.1268420651246918,
+        "v_change_max_bps": 3.1268420651246926,
+        "informative": false,
+        "difference_share_of_lead": 0.13629208873286097
+      },
+      "check4": {
+        "v_change_bps": -0.00021394384534280413,
+        "v_change_max_bps": 0.00021394384534280408,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 1.0
+      }
+    },
+    "aum_100m": {
+      "kappa": 0.00016265566999365473,
+      "lam": 0.004384107675699955,
+      "gamma": 5.0,
+      "oracle_value_bps": 533.2602583922818,
+      "lead_over_always_rebalance_bps": 0.21399435707581646,
+      "lead_over_trade_once_bps": 24.554344562460848,
+      "lead_over_never_trade_bps": 140.82661371755927,
+      "lead_over_myopic_bps": 0.013595608253679066,
+      "hold_share_near_best_target": 0.47368421052631576,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.2723233758255733,
+        "turnover_per_block": 0.022553537013304606,
+        "trades_per_path": 65.4908961756984,
+        "mean_trade_size": 0.0309939006751692
+      },
+      "myopic": {
+        "hold_fraction": 0.29125943503200125,
+        "turnover_per_block": 0.022377728052195338,
+        "trades_per_path": 63.78665084711989,
+        "mean_trade_size": 0.03157393432561003
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -0.0010460784517635064,
+        "policy_difference_max_bps": 0.006547835403740091,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 0.0071499744665595374,
+        "reverse_shortfall_in_smaller_model_bps": 0.004696041412592511,
+        "same_action_share_at_2pct_starts": 0.8371040723981901,
+        "v_change_bps": -3.115239060774993,
+        "v_change_max_bps": 3.1379747686104835,
+        "informative": false,
+        "difference_share_of_lead": 0.004888345964154977
+      },
+      "check4": {
+        "v_change_bps": 0.0003741515551809543,
+        "v_change_max_bps": 0.0005646485106668159,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 0.9932126696832579
+      }
+    },
+    "aum_1b": {
+      "kappa": 0.0003895831363569361,
+      "lam": 0.01428132298209642,
+      "gamma": 5.0,
+      "oracle_value_bps": 530.933415216552,
+      "lead_over_always_rebalance_bps": 1.3188805679329827,
+      "lead_over_trade_once_bps": 24.86093666593956,
+      "lead_over_never_trade_bps": 138.49977054182946,
+      "lead_over_myopic_bps": 0.24284770216401888,
+      "hold_share_near_best_target": 0.631578947368421,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.30803293558304323,
+        "turnover_per_block": 0.0212510689035973,
+        "trades_per_path": 62.27703579752611,
+        "mean_trade_size": 0.030711098831709856
+      },
+      "myopic": {
+        "hold_fraction": 0.3883601866376694,
+        "turnover_per_block": 0.018189305756284035,
+        "trades_per_path": 55.04758320260975,
+        "mean_trade_size": 0.029738590194600095
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -0.003147523458068576,
+        "policy_difference_max_bps": 0.009490206395890858,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 0.005080497362868404,
+        "reverse_shortfall_in_smaller_model_bps": 0.007092338155364758,
+        "same_action_share_at_2pct_starts": 0.8657616892911011,
+        "v_change_bps": -3.0868207513747645,
+        "v_change_max_bps": 3.1374825425689474,
+        "informative": true,
+        "difference_share_of_lead": 0.0023865113601616987
+      },
+      "check4": {
+        "v_change_bps": 0.00014701479278774637,
+        "v_change_max_bps": 0.0018134313288509245,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 0.9932126696832579
+      }
+    },
+    "aum_10b": {
+      "kappa": 0.001103869316012672,
+      "lam": 0.04568814500887141,
+      "gamma": 5.0,
+      "oracle_value_bps": 525.6834684425635,
+      "lead_over_always_rebalance_bps": 6.938991204267876,
+      "lead_over_trade_once_bps": 27.959656433099322,
+      "lead_over_never_trade_bps": 133.24982376784084,
+      "lead_over_myopic_bps": 2.5862338259068043,
+      "hold_share_near_best_target": 1.0,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.4426896969660597,
+        "turnover_per_block": 0.01572544318452955,
+        "trades_per_path": 50.157927273054625,
+        "mean_trade_size": 0.028216674084297108
+      },
+      "myopic": {
+        "hold_fraction": 0.5989828307905957,
+        "turnover_per_block": 0.010554940202849302,
+        "trades_per_path": 36.09154522884639,
+        "mean_trade_size": 0.026320419705864743
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -0.00049657085911357,
+        "policy_difference_max_bps": 0.013587712023283027,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 0.013899503901664582,
+        "reverse_shortfall_in_smaller_model_bps": 0.011689522852637392,
+        "same_action_share_at_2pct_starts": 0.8906485671191554,
+        "v_change_bps": -3.006020550918,
+        "v_change_max_bps": 3.145252998327177,
+        "informative": true,
+        "difference_share_of_lead": 7.156239927327628e-05
+      },
+      "check4": {
+        "v_change_bps": -0.0033833754439355945,
+        "v_change_max_bps": 0.011184656267117938,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 0.9871794871794872
+      }
+    },
+    "kappa_only": {
+      "kappa": 0.001817715434566578,
+      "lam": 0.0,
+      "gamma": 5.0,
+      "oracle_value_bps": 530.1242264202001,
+      "lead_over_always_rebalance_bps": 1.541598195672561,
+      "lead_over_trade_once_bps": 22.667135910673657,
+      "lead_over_never_trade_bps": 137.69058174547752,
+      "lead_over_myopic_bps": 1.690797127668486,
+      "hold_share_near_best_target": 1.0,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.5765994958964122,
+        "turnover_per_block": 0.01568215708890997,
+        "trades_per_path": 38.1060453693229,
+        "mean_trade_size": 0.03703858861035561
+      },
+      "myopic": {
+        "hold_fraction": 0.7352236368908698,
+        "turnover_per_block": 0.010611308562261864,
+        "trades_per_path": 23.82987267982172,
+        "mean_trade_size": 0.040076494886699184
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -0.0023925136446242682,
+        "policy_difference_max_bps": 0.005279410414556905,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 0.021339982230915364,
+        "reverse_shortfall_in_smaller_model_bps": 0.03149197903354825,
+        "same_action_share_at_2pct_starts": 0.773001508295626,
+        "v_change_bps": -3.0744584580527854,
+        "v_change_max_bps": 3.1203799642636367,
+        "informative": true,
+        "difference_share_of_lead": 0.0015519696710467891
+      },
+      "check4": {
+        "v_change_bps": -0.011528901497314507,
+        "v_change_max_bps": 0.015231187403569338,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 1.0
+      }
+    },
+    "lambda_only": {
+      "kappa": 2.710505431213761e-19,
+      "lam": 0.018177154345665778,
+      "gamma": 5.0,
+      "oracle_value_bps": 531.3840989667052,
+      "lead_over_always_rebalance_bps": 1.4880684499316932,
+      "lead_over_trade_once_bps": 25.689331549905198,
+      "lead_over_never_trade_bps": 138.95045429198257,
+      "lead_over_myopic_bps": 0.1293284452605015,
+      "hold_share_near_best_target": 0.42105263157894735,
+      "cv_correction_bps": {
+        "mean": 3.2364813530124015,
+        "max_abs": 4.614983737025281
+      },
+      "n_iterations": 434,
+      "oracle": {
+        "hold_fraction": 0.25948729972117135,
+        "turnover_per_block": 0.022111184852345485,
+        "trades_per_path": 66.64614302509457,
+        "mean_trade_size": 0.029859291871725983
+      },
+      "myopic": {
+        "hold_fraction": 0.2480949125106612,
+        "turnover_per_block": 0.021595899108714324,
+        "trades_per_path": 67.6714578740405,
+        "mean_trade_size": 0.028721575991491784
+      },
+      "always_rebalance": {
+        "hold_fraction": 0.054397268309033,
+        "turnover_per_block": 0.03026951927266634,
+        "trades_per_path": 85.10424585218703,
+        "mean_trade_size": 0.03201082046213752
+      },
+      "check3": {
+        "policy_difference_in_independent_model_bps": -6.114213445284563e-05,
+        "policy_difference_max_bps": 0.009458421317399763,
+        "passes": true,
+        "policy_shortfall_in_larger_model_bps": 0.004540094598317918,
+        "reverse_shortfall_in_smaller_model_bps": 0.006409498389414428,
+        "same_action_share_at_2pct_starts": 0.8567119155354449,
+        "v_change_bps": -3.088688461343166,
+        "v_change_max_bps": 3.142676148962554,
+        "informative": true,
+        "difference_share_of_lead": 4.108825400851166e-05
+      },
+      "check4": {
+        "v_change_bps": 0.005630617785716576,
+        "v_change_max_bps": 0.007163249149688001,
+        "passes": true,
+        "same_action_share_at_2pct_starts": 0.9962292609351433
+      }
+    }
+  }
+}

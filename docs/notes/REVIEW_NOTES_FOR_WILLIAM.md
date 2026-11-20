@@ -1,14 +1,14 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-11-09
+**Date:** 2026-11-09, updated 2026-11-20
 **Status:** open items only. Closed items are in `REVIEW_HISTORY.md` and `AUDIT_2026-11-06.md` §2.
 
 ---
 
 ## TL;DR / In plain terms
 
-What is left is decisions and writing. The transaction-cost agent scores like a random portfolio even with free trading, so the TC extension needs a design decision before any more TC runs; then pick the final runs and write the report, including the FA expectations that failed.
+What is left is the transaction-cost agent runs (Albert's) and the report. The TC redesign (`TC_DRIFT_DESIGN.md`) is built, checked and tuned, and its run driver is merged; the 40 runs come next. Nothing of the report is drafted yet, and it includes the FA expectations that failed.
 
 **Key concepts to understand**
 
@@ -24,29 +24,43 @@ What is left is decisions and writing. The transaction-cost agent scores like a 
 
 ## Still open
 
+Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6, TC-7, TC-9, TC-13 in the design, check 5, D-B, D-F, the Part IV counts, D7, F-L13 and Albert's 2026-11-17 questions) are in `REVIEW_HISTORY.md` §10. The open list for both of us is `AUDIT_2026-11-06.md` §9.6.
+
 | Item | What | Waits on |
 |---|---|---|
-| H4, M12, F-L10 | Report text: the failed FA expectations, the tuning disclosure, caveats on weights where no seed converged | The report draft |
+| TC runs | Albert runs the 40 final agent runs and scores them (`python -m src.tc_drift.run all`; `TC_DRIFT_DESIGN.md` §7). Go/no-go Nov 24 | Albert |
+| TC-4 | The report is not started. Schedule agreed 2026-11-20 (Albert's proposal): draft sections by Nov 24, full draft by Nov 26 (D-H) | Both |
+| Close the old PR | The PR from `feature/tc-drift-runs` is superseded by Albert's driver; close it unmerged | You |
+| TC-8, D-G | How the first TC design is reported. M7, M8, M9, M11 and the TC halves of M1 and F-L12 wait on it | Both |
+| M12, F-L10 | Report text: the FA tuning disclosure; caveats on weights where no seed converged | The report draft |
+| TC report text | The two oracle directions not met (trade-once does not approach the oracle as costs grow; myopic holds less than the oracle under λ only); the oracle's in-sample V is about 5 bps/yr high at M = 2,000; E1 to E12 marked met or not met; the disclosures in design §14 risk 5 (TC-13 and the tail-average change); c1 not resolved in the pilot (0.41, 3.19 and 0 of true, against c2 at 0.94, 0.49, 1.01), the exploration limit §9 predicted; D12 tracks the target the agent trades to and says nothing about when it holds (§9); check 5 as a two-SE bound at the cost levels (D-I) | The TC section |
 | F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B) | Low priority; or say it in the report |
 | L7 | Whether `all-three`'s report should compare with its single-change runs | A decision with Albert |
-| F-L13 | Tag `grid10-robustness` exists only on Albert's Mac | Albert |
-| TC | H1, H2, M7 to M9, M11, plus F-L12 and Albert's M1 print fix (`sys.stdout.reconfigure`) for `tc_sweep_report.py` | The TC redesign |
 
 ## Your next steps
 
-1. **Decide the TC redesign with Albert** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The reviewer's suggestion splits the problem: learn each target's reward by sample average, as `baseline-v1` does, and plan over the known costs with the existing Bellman solver. Its one-seed test reached 0.8 bps/yr of the oracle at the 2 bp anchor. Decide whether that counts as model-free enough, whether to add drift, and which cost levels matter. Until then, do not run `discount.json` or `learning-rate.json`.
-2. **Choose the final runs** from `AUDIT_2026-11-06.md` §6. The strongest FA candidate is FA on the 10% grid (C1), where tabular struggled most; a γ = 8 check (C2) would test the unfinished-directions explanation. Register each with an expected direction before it runs.
+1. **TC agent runs: Albert's.** Answer his questions on `agent.py` and `tune.py` quickly, since the runs wait on them. Three suggestions for his `run.py` are in his notes (2026-11-20, evening); none blocks the runs.
+2. **Final non-TC runs.** C2, C3, P1 and P2 (`AUDIT_2026-11-06.md` §6) are not run; the 2026-11-19 review recommends none, except P2 if one of us has a free day (§9.4 D-H). Register any run with an expected direction before it starts.
    - A run trained from the current `dev` will show "Training code changed: src/action_space/grid.py, src/train.py" against every earlier run. The flag is honest but no algorithm changed: the edits are LF writes and the increment guard, and `grid_sha256` still matches. Say so in each new run's caveats.
-3. **Write the FA section** using `EXPERIMENTS.md` §8.7, including the failed expectations, the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
-4. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; speeds up 10% grid tabular runs only, so it matters if C1 includes a tabular 10% comparison.
+3. **Write the FA section** from `AUDIT_2026-11-06.md` §2.3 (the experiment, the failed expectations and what can be claimed, all re-checked) and `EXPERIMENTS.md` §8.7 and §8.8, including the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; `AUDIT_2026-11-06.md` M12).
+4. **`update()` return value for the tabular agent** (`REVIEW_HISTORY.md` §5.3). Low priority; speeds up 10% grid tabular runs only, and C1 ran without a tabular 10% comparison, so probably not needed.
 5. **Your report sections** (prospectus §4): Theory/Benchmark, Q-learning (including the constant-α versus 1/N discussion), and the FA extension.
 
 ## To decide with Albert
 
-**TC redesign** (step 1 above).
+- **How the first TC design is reported** (D-G). The report schedule is agreed (D-H, 2026-11-20).
+- **Final runs** (above).
+- **`all-three`'s comparison set** (L7).
 
-**Final runs.** `AUDIT_2026-11-06.md` §6. A TC option first, then C1 to C3, P1 and P2 as time allows.
+**From Albert, 2026-11-20: the final runs are ready** (`feature/tc-drift-run`).
+- **Built.** `src/tc_drift/run.py` (TC-2): `python -m src.tc_drift.run all` trains 4 levels × 10 seeds, 7 at a time with BLAS pinned, then scores each level on m = 4,000 paths against the oracle, myopic, always rebalance, trade once then hold, and the own-target policy (TC-3, with the split checked as an identity on every path). It reports the tail-averaged policy as the headline and the last iterate alongside. All four D12 verdicts and the Part IV counts come from your `tune.convergence` and `tune.averaged_policy`. `train()` now logs θ and the favourite target at every checkpoint (TC-6). A test checks that one call gives exactly your `train_segmented` run.
+- **Decided by Albert:** m = 4,000, fixed before any agent result (TC-7, D-E).
+- **Checkpoint interval: 40,050, not the 40,000 you suggested.** It equals `tune.SEGMENT`, so the final runs have the layout design §6 registered and the pilot used: 11 tail-average snapshots and a 12-checkpoint D12 window from block 3,564,450. With 40,000 there would be 10 and 11. Found in the independent review.
+- **Expected directions (D-F).** My preliminary E1 to E12 are in `TC_DRIFT_DESIGN.md` §7, written before the runs. Please add or amend them. Anything added after the runs start gets labelled post hoc.
+- **Timing on my Mac:** 0.39 ms a block with 7 runs at once, so about 26 minutes a run and about 3 hours for all 40.
+- **Your files:** I did not edit `tune.py`. Its `run_one` defaults to `m = config.M_EVAL`, which is now 4,000, while your pilot used 1,000. A rerun of `tune train` would therefore differ from the pilot unless it passes `m=config.M_EVAL_PILOTS`. Your call.
+- **D7:** the pointer in `TRANSACTION_COSTS.md` is added.
 
-**`all-three`'s comparison set** (L7).
+*William, 2026-11-20:* all answered. E1 to E12 stay as registered, unchanged (D-F). `tune.run_one` now defaults to `m = config.M_EVAL_PILOTS`, with a test. 40,050 is right. Check 5's form: yes to both (D-I, design §5).
 
 **Which post-hoc runs go in the report.** `grid10-robustness` is the action-space check and γ = 3 and 8 the economic check. `b63` and `n26m` cover "different training budgets, episode lengths". `eps-decay` stays short, as mostly a negative result. `all-three` is the combined check `grid10-robustness` is compared against. The three constant-α runs go in the FA extension and in the Part III learning-rate discussion.
