@@ -2,7 +2,7 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** living plan, updated 2026-11-20 (Albert; TC rows, timeline, decisions and risks). The required work (Parts I to VI) is done. Function approximation has results. The transaction-cost redesign (with drift, `TC_DRIFT_DESIGN.md`) is built and tuned: environment, oracle, agent, training, evaluation and the run driver (`src/tc_drift/run.py`, PR #41), with the oracle run on every setting, all five oracle checks run (check 5's form awaits William's sign-off, D-I), the hyperparameters fixed (William, 2026-11-20) and m = 4,000 (Albert, 2026-11-20). The 40 agent runs (4 cost levels × 10 seeds, projected at about 3 hours on Albert's Mac) are ready to launch. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). H4 closed 2026-11-10 (`AUDIT_2026-11-06.md` §2.3). Still open: M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set). F-L13 is closed: the `grid10-robustness` tag is on `origin` at `e13a9a6`. `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC agent runs and their analysis, the decisions in §6, and the report.
+**Status:** living plan, updated 2026-11-20 (Albert; TC rows, timeline, decisions and risks). The required work (Parts I to VI) is done. Function approximation has results. The transaction-cost redesign (with drift, `TC_DRIFT_DESIGN.md`) is built and tuned: environment, oracle, agent, training, evaluation and the run driver (`src/tc_drift/run.py`, PRs #41 and #42), with the oracle run on every setting, all five oracle checks run (check 5's form signed off by William 2026-11-20, D-I), the hyperparameters fixed (William, 2026-11-20) and m = 4,000 (Albert, 2026-11-20). The 40 agent runs (4 cost levels × 10 seeds, projected at about 3 hours on Albert's Mac) are ready to launch. Every non-TC code issue from the two audits is fixed (`AUDIT_2026-11-06.md` §2.1, §2.2, §8.3). H4 closed 2026-11-10 (`AUDIT_2026-11-06.md` §2.3). Still open: M12 and F-L10 (text for the final report), F-L9 (partly fixed), L7 (a decision on `all-three`'s comparison set). F-L13 is closed: the `grid10-robustness` tag is on `origin` at `e13a9a6`. `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1). What remains is the TC agent runs and their analysis, the decisions in §6, and the report.
 
 ---
 
@@ -18,7 +18,7 @@ Everything the assignment requires has been built, run and independently checked
 **Key takeaways**
 
 - `baseline-v1` is the headline result for Parts IV and V.
-- The TC agent runs are the last computation. Their expected directions (E1 to E12, `TC_DRIFT_DESIGN.md` §7) were written down before they start; William may add to them until launch. The oracle results can be reported regardless.
+- The TC agent runs are the last computation. Their expected directions (E1 to E12, `TC_DRIFT_DESIGN.md` §7) were written down before they start; William kept them unchanged (2026-11-20). The oracle results can be reported regardless.
 - The report has not been started and is now the main risk (§7).
 
 ---
@@ -110,11 +110,11 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 - [x] **TC agent tuning** (William, 2026-11-19 and 20): recursive least squares on the cost block after a constant-α burn-in, α_value = 3e-4, 4M blocks, the tail-averaged policy, D12 restated and frozen (`TC_DRIFT_DESIGN.md` §6, §9; post hoc)
 - [x] **TC oracle check 3:** restated on the policy, M stays at 2,000 (William, 2026-11-17; post hoc)
 - [x] **TC evaluation size** (Albert, 2026-11-20): m = 4,000 starts, fixed before any agent result (D-E)
-- [ ] **TC expected directions** (D-F): Albert's E1 to E12 registered 2026-11-20 (`TC_DRIFT_DESIGN.md` §7); William to add or amend before launch
+- [x] **TC expected directions** (D-F): Albert's E1 to E12 registered 2026-11-20 (`TC_DRIFT_DESIGN.md` §7); William kept them unchanged the same day
 - [ ] **How the first TC design is reported** (D-G, both): a paragraph, or with its tables (then M8 and M9 must be fixed first)
-- [ ] **Check 5's form** (D-I, William): the 90-block model side and a two-SE bound at the cost levels
+- [x] **Check 5's form** (D-I, William, 2026-11-20): yes to the 90-block model side and a two-SE bound at the cost levels, labelled post hoc (`TC_DRIFT_DESIGN.md` §5)
 - [ ] **Report schedule** (D-H, both): the TC go/no-go is Nov 24 (William); sections and dates still to agree
-- [ ] **Final runs** from the candidates in `AUDIT_2026-11-06.md` §6 (for example FA on the 10% grid, a γ = 8 FA check, three versus nine assets)
+- [ ] **Final runs** from the candidates in `AUDIT_2026-11-06.md` §6. FA on the 10% grid (C1) ran 2026-11-11; the rest are probably not run (audit D-H)
 - [ ] Which post-hoc runs the report covers in full and which in a sentence (decide before writing Part VI)
 
 The Q-learning core's decisions (γ, the convergence rule, episode length, episode count, seed count, β and the second Part VI robustness check) were settled on 2026-10-16 and live in `src/config.py`, with the reasoning in `EXPERIMENTS.md` and `REVIEW_HISTORY.md` §6. γ's written justification is in `DATA_CLEANING.md` §8.4 (2026-10-19).

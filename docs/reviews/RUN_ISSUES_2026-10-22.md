@@ -1,8 +1,8 @@
 # Full-Scale Run, 2026-10-22: Issues and Fix Plan
 
 **Written:** 2026-10-22 by Claude, for Albert · **Run:** 01:35 to 05:00 EDT, commit `80a6e9c`, settings from `src/config.py` unchanged
-**Status of every item below:** found and verified, **nothing fixed in code yet**. The plan in §4 waits on Albert's go-ahead.
-**Checked again 2026-11-06 (`AUDIT_2026-11-06.md`):** steps 1 to 3 of §4 are still open in the code: no total-gap column in `per_seed.csv` or `INDEX.md`, no post-hoc "settled" measure, no checkpoint label, and no commit or extra file hashes in `summary.json`. The console run logs (`results/full_run_*.log`) are now tracked (step 7 done); the `run_*.npz` training logs stay uncommitted by design.
+**Status (updated 2026-11-20): every step in §4 is done.** Steps 1 to 3 were fixed by Albert on 2026-11-09 (`AUDIT_2026-11-06.md` M10). Steps 4 and 5: every run was re-evaluated the same day and every earlier number came back identical (`AUDIT_2026-11-06.md` §2.1, H3). Step 6: the 2026-11-09 flow audit re-derived the new fields independently (`AUDIT_2026-11-06.md` §8.4). Step 7: the console run logs (`results/full_run_*.log`) are tracked; the `run_*.npz` training logs stay uncommitted by design. Findings 4, 5, 8 and 9 remain report text.
+**History:** written with nothing fixed; on 2026-11-06 the audit found steps 1 to 3 still open in the code.
 
 ---
 

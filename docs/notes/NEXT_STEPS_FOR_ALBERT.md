@@ -1,14 +1,46 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-19
-**Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
+**Date:** 2026-11-06, updated 2026-11-20
+**Status (2026-11-20):** the required work is done and independently re-checked, and so are the FA runs. The TC redesign is built, checked and tuned, and your run driver is merged. Your open items are in the table below; everything else in this file is the dated record, with closed items marked. Closed TC items are collected in `REVIEW_HISTORY.md` §10, and the open list for both of us is `AUDIT_2026-11-06.md` §9.6.
 
 ---
 
-## TL;DR / In plain terms
+## Open for you, 2026-11-20
 
-Three things need you. First, re-evaluate four runs from your training logs so their Q-value fit numbers exist in the repo; `fa-spline`'s notes quote `baseline-v1` numbers that nothing committed contains. Second, decide with me how to redesign the transaction-cost extension: in your sweep the agent scored the same as a random portfolio even with free trading, and the code is correct, so the problem is the design. Third, a batch of small code fixes that change no number.
+**TL;DR / In plain terms:** your earlier items are done. What is open for you now: run and score the 40 TC agent runs, settle two decisions with me, and write your report sections. Your three questions to me are answered (below).
+
+**Key concepts to understand**
+- **One commit for all 40 runs.** Each run records the commit checked out when it starts, and scoring refuses seeds trained on different code. Run them from a copy of the repo pinned to one commit, and commit nothing there until all 40 are done.
+
+**Key takeaways**
+- Nothing in Parts I to VI changed.
+
+| Item | What |
+|---|---|
+| TC runs | After `feature/docs-closeout` merges (it changes `tune.py`, one of the files `run.py` hashes): `git worktree add -b run/tc-drift-final ../mfq-runs origin/dev`; copy `results/tc-drift/oracle/*.npz` into `../mfq-runs/results/tc-drift/oracle/` (git-ignored, so the worktree lacks them; `load_oracle_tables` re-checks them against the committed summary); run `python -m src.tc_drift.run all` there; commit the results on `run/tc-drift-final` once all 40 are scored, and keep `values.npz`. Go/no-go Nov 24 |
+| D-G, D-H | With me: how the first TC design is reported, the report schedule (your proposal, sections by Nov 24 and a full draft by Nov 26, waits on my answer), and who writes the TC section (prospectus §4) |
+| Report scope | With me: final non-TC runs (probably none), which post-hoc runs the report covers in full, and how the two unmet oracle directions are presented (design §8) |
+| Report text | Call `never_trade_policy` "trade once, then hold" in tables and text; caveat post-convergence weights (F-L10); mark E1 to E12 met or not met |
+| Your report sections | Data/Calibration, and convergence analysis and visualizations (prospectus §4) |
+| F-L9, L7 | The episodes column (partly fixed, low priority); `all-three`'s comparison set (with me) |
+
+## From William, 2026-11-20 (evening): answers, and three suggestions for `run.py`
+
+**TL;DR / In plain terms:** your questions are answered, and your run driver is the one we use. Three optional improvements to it follow; none blocks the runs. I also edited a few of your files' status lines (listed at the end).
+
+**Answers to your 2026-11-20 note.** E1 to E12 stay as you registered them; I am not adding to them (D-F). `tune.run_one` now defaults to `m = config.M_EVAL_PILOTS`, with a test (merged with this note). 40,050 is right. Check 5: yes to both questions (D-I, design §5).
+
+**My parallel run driver.** I had built one on `feature/tc-drift-runs` (commits `abbbcc6` and `53aeec0`) in parallel with yours. Yours is merged, so mine will not be: that branch's PR is to be closed unmerged. Its settings matched yours exactly. Three things it did that yours does not, offered as suggestions for you to take or leave (none blocks the runs):
+1. **Commit each seed's `.npz`.** Yours keeps them git-ignored, so the tail-averaged θ and the D12 checkpoints live only on your machine; redoing the scoring from the repository then means retraining (about 3 hours, bit-identical only on the same platform). Mine added `!results/tc-drift/runs/*/seed*.npz` to `.gitignore` (about 150 KB each, 6 MB in all, measured on the pilot's logs) and also wrote the averaged and final θ into each seed's JSON.
+2. **A path SE for the seed-averaged gap.** Every seed is scored on the same paths, so the across-seed SE misses the path noise. Mine also reported the gap of the seed-averaged policy value, paired path by path against each reference, with its SE. Your `values.npz` already holds every seed's per-path values, so this can be computed after the runs as long as you keep that file (it is git-ignored).
+3. **Batched scoring.** A `DriftAgent.greedy_actions(states)` that gives exactly `greedy_action`'s choices for many states at once, about twice as fast (checked on 117,000 state-policy pairs from the pilot; `abbbcc6`). Only worth it if scoring is slow at m = 4,000.
+
+**Edits to your files in this close-out:** the README's pointer to the audit (now names §9.6); the status block of `RUN_ISSUES_2026-10-22.md` (every §4 step done, with where each was checked); a D-I bullet in your "Check 5 measured" part of design §5. One question: the README gives the oracle run as 20 minutes to 2.5 hours, design §5 as 1 to 2.5 hours. Where does the 20 minutes come from? If it is your machine, cite it in §5 and we use one range.
+
+## From William, 2026-11-06: the audit (every item below is now closed, or open in the table above and in `AUDIT_2026-11-06.md` §9.6)
+
+Three things needed you. First, re-evaluate four runs from your training logs so their Q-value fit numbers exist in the repo; `fa-spline`'s notes quote `baseline-v1` numbers that nothing committed contains. Second, decide with me how to redesign the transaction-cost extension: in your sweep the agent scored the same as a random portfolio even with free trading, and the code is correct, so the problem is the design. Third, a batch of small code fixes that change no number.
 
 **Key concepts to understand**
 
@@ -155,7 +187,7 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 6. **D7:** the pointer in `TRANSACTION_COSTS.md` (your file). I added the one in `AUDIT_2026-11-06.md` §6.2.
 7. **TC-10:** a TC section in the README once the driver exists.
 
-**Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you).
+**Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you). *2026-11-20:* D-C done (I ran the pilot), D-F registered by you and kept; D-G and the report schedule remain.
 
 ## From William, 2026-11-19 (evening): tuning is done, and the agent is scored on an averaged θ
 
@@ -224,7 +256,7 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 - Call `update(state, action, spec.net_reward(R, cost), next_state)` with the true drifted end-of-block holdings, even on a block after which you restart. A restart only changes where the next block starts. It is not a terminal state, so the agent still bootstraps from where this block ended.
 - Use `greedy_action` for the probe-state log. It draws no random numbers and changes nothing.
 
-**What is still open**
+**What was still open then** (all closed by 2026-11-20: the cross-test is in, check 5 and check 3 are decided, the agent is tuned)
 - **Cross-test.** Whoever merges second adds a test that `env.block_outcome` and my test loop (`loop_block_outcome` in `src/tests/test_tc_drift_oracle.py`) give the same oracle solution.
 - **Check 5** (continuous replay) needs your `evaluate_policy`. Its tolerance is 0.5 bps/yr, but a direct replay of one policy has an SE of about 12 bps/yr (your pilot), so I proposed a paired form (design §5). Tell me if you see a better one.
 - **Check 3 fails at M = 2,000** at $1B (3.1 bps/yr against 0.5). I decide between more paths and restating it on the policy (design §5).
@@ -232,10 +264,10 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 
 ## Your next steps
 
-**Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: pushing or deleting the local `grid10-robustness` tag (F-L13), and caveating post-convergence weights in the report text (F-L10).
+**Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: ~~pushing or deleting the local `grid10-robustness` tag (F-L13)~~ (closed 2026-11-20, on `origin`), and caveating post-convergence weights in the report text (F-L10).
 
 1. ~~**Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`**~~ Done 2026-11-09 (H3), plus `fa-spline`. Every earlier number came back identical. The `baseline-v1` Q fit matches the numbers in `fa-spline`'s notes (Spearman 0.821, 0.710, 0.920; top-10 recall 35%, 20%, 20% at γ = 5, 3, 8). `b63`, `eps-decay`, `tabular-const` and `fa-quadratic` need William, who holds their logs.
-2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The redesign is decided (`TC_DRIFT_DESIGN.md`); its Phase 2 tasks are step 6. For the old design: do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11).
+2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The redesign is decided (`TC_DRIFT_DESIGN.md`); its Phase 2 tasks are step 6. For the old design: do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11). *2026-11-20:* the redesign is built and tuned; these first-design items wait on D-G.
 3. ~~**Small code fixes**~~ Done 2026-11-09: M1 (except `tc_sweep_report.py`), M2, M3, M4, M5, plus L2.
 4. ~~**`RUN_ISSUES` §4 steps 1 to 3** (M10)~~ Done 2026-11-09: total gap, post-hoc `settled` and `near_optimal_every_episode`, provenance in `summary.json`, definitions in `EVALUATION.md` §2.
 5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Use the post-hoc `settled` measure next to the pre-registered rule, labelled post hoc. Who writes the TC section is proposed in the prospectus (you, since you built it) and is yours to accept or change.
@@ -250,7 +282,7 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 
 ## To decide together
 
-~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13; m still to be measured (step 6). **The final runs** (`AUDIT_2026-11-06.md` §6; the 2026-11-19 review recommends no more non-TC runs, except P2 if time allows). **D7 pointer** in `TRANSACTION_COSTS.md` (step 6). **The report schedule** and **how the first TC design is reported** (`AUDIT_2026-11-06.md` §9.4 D-G, D-H). **How the TC report presents the two oracle directions that were not met** (design §8).
+~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13; m set to 4,000 by you on 2026-11-20. **The final runs** (`AUDIT_2026-11-06.md` §6; the 2026-11-19 review recommends no more non-TC runs, except P2 if time allows). ~~**D7 pointer** in `TRANSACTION_COSTS.md` (step 6).~~ Done 2026-11-20. **The report schedule** and **how the first TC design is reported** (`AUDIT_2026-11-06.md` §9.4 D-G, D-H). **How the TC report presents the two oracle directions that were not met** (design §8).
 
 **Which post-hoc runs go in the report.** My suggestion:
 - `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;

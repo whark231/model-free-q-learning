@@ -147,7 +147,7 @@ See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
 | Run reports | `src/reporting/` | `reports/README.md` |
 
 `docs/PROJECT_PROSPECTUS.md` has the plan and task ownership.
-`docs/reviews/AUDIT_2026-11-06.md` lists the open issues found in the 2026-11-06 audit.
+`docs/reviews/AUDIT_2026-11-06.md` holds the 2026-11-06 audit and the later status reviews; §9.6 lists everything still open.
 `docs/README.md` lists every document.
 
 ## Repository layout
