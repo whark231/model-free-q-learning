@@ -13,7 +13,7 @@ What is left is the transaction-cost agent runs (Albert's) and the report. The T
 **Key concepts to understand**
 
 - **Shrinkage under a constant α.** With α constant and Q starting at 0, a portfolio updated N times holds about (1 − (1 − α)^N) of its true value. Portfolios tried only during exploration (about 1,100 times) end at about 0.3 of their value, measured at 0.29 to 0.30 in `tabular-const`'s logs. The inferred consequence (not tested by a counterfactual run) is that the greedy portfolio can then never be overtaken, which would explain why `tabular-const` "converged" in 28 of 30 seeds while finding the best portfolio in 2.
-- **Unfinished FA directions.** Uniform exploration lasts about 1/β ≈ 1.41M episodes, not the 13M our §8.4 estimate assumed. At that count 36 of the 45 quadratic directions and 351 of the 369 spline directions barely move from θ = 0. This is the suspected cause of the γ = 8 miss (every FA seed holds 20% SPY where the best portfolio holds 40%); it is not tested yet.
+- **Unfinished FA directions.** Uniform exploration lasts about 1/β ≈ 1.41M episodes, not the 13M our §8.4 estimate assumed. At that count 36 of the 45 quadratic directions and 351 of the 369 spline directions have not finished learning (wording per `AUDIT_2026-11-06.md`). This is the suspected cause of the γ = 8 miss (every FA seed holds 20% SPY where the best portfolio holds 40%); it is not tested yet.
 
 **Key takeaways**
 
@@ -30,7 +30,7 @@ Updated 2026-11-20. Items closed since 2026-11-19 (TC-1, TC-2, TC-3, TC-5, TC-6,
 |---|---|---|
 | TC runs | Albert runs the 40 final agent runs and scores them (`python -m src.tc_drift.run all`; `TC_DRIFT_DESIGN.md` §7). Go/no-go Nov 24 | Albert |
 | TC-4 | The report is not started. Schedule agreed 2026-11-20 (Albert's proposal): draft sections by Nov 24, full draft by Nov 26 (D-H) | Both |
-| Close the old PR | The PR from `feature/tc-drift-runs` is superseded by Albert's driver; close it unmerged | You |
+| ~~Close the old PR~~ | Done 2026-11-20: PR #43 from `feature/tc-drift-runs` was closed unmerged (superseded by Albert's driver) | You |
 | TC-8, D-G | How the first TC design is reported. M7, M8, M9, M11 and the TC halves of M1 and F-L12 wait on it | Both |
 | M12, F-L10 | Report text: the FA tuning disclosure; caveats on weights where no seed converged | The report draft |
 | TC report text | The two oracle directions not met (trade-once does not approach the oracle as costs grow; myopic holds less than the oracle under λ only); the oracle's in-sample V is about 5 bps/yr high at M = 2,000; E1 to E12 marked met or not met; the disclosures in design §14 risk 5 (TC-13 and the tail-average change); c1 not resolved in the pilot (0.41, 3.19 and 0 of true, against c2 at 0.94, 0.49, 1.01), the exploration limit §9 predicted; D12 tracks the target the agent trades to and says nothing about when it holds (§9); check 5 as a two-SE bound at the cost levels (D-I) | The TC section |
