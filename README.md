@@ -12,9 +12,9 @@ transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations. On 2026-11-09 all 442 tests passed on Windows with
-Python 3.10; the Mac combination last passed the full suite before that day's
-fixes (425 tests, one rounding failure since fixed with a 1e-12 tolerance):
+Tested on two combinations. On 2026-11-20 all 757 tests passed on the Mac
+(Python 3.13). On 2026-11-09 all 442 tests then in the suite passed on Windows
+with Python 3.10; it has not been rerun there since the TC-drift code was added:
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -62,8 +62,31 @@ example `python -m src.run_experiments --run b63 --results-dir results/b63`.
 (`tabular-const`, `fa-quadratic`, `fa-spline`), each with its command,
 expected direction and run time.
 
-**Transaction costs** run through their own script with a configuration file
-(`docs/methods/TRANSACTION_COSTS.md`):
+**Transaction costs with drift** (the reported TC extension,
+`docs/methods/TC_DRIFT_DESIGN.md`) has its own commands. The oracle tables
+(`results/tc-drift/oracle/*.npz`) are not committed, so rebuild them first:
+
+```bash
+python -m src.tc_drift.oracle_runs              # 20 min to 2.5 h, depending on the machine
+git checkout results/tc-drift/oracle/summary.json   # keep the committed summary (see below)
+python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; about 3 h on a 10-core Mac
+python -m src.tc_drift.run train --level aum_1b --seed 0   # one run
+python -m src.tc_drift.run evaluate --level aum_1b         # score one level (all 10 seeds; --seeds 0 1 2 for fewer)
+```
+
+`oracle_runs` rewrites `summary.json`. Before restoring it, `git diff` should
+show changes only in `provenance`, `created_utc` and `runtime_seconds`; any
+other change means the tables did not reproduce. `run.py` checks the tables
+against the committed summary, so restore it first. Levels are `zero`,
+`aum_100m`, `aum_1b` and `aum_10b`. Results go to
+`results/tc-drift/runs/<level>/`: `summary.json`, `per_seed.csv` and one
+`seed<i>.json` record per run are small; `values.npz` and the per-seed
+`.npz` training logs stay local. Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
+master seed 20261016 (`src/tc_drift/spec.py`; tuning used 20261112), and `run all` skips any run that already
+has a finished record, so an interrupted batch can be restarted.
+
+**The first transaction-cost design** (kept as a negative result) runs through
+its own script with a configuration file (`docs/methods/TRANSACTION_COSTS.md`):
 
 ```bash
 python -m src.transaction_costs experiments/transaction-costs/quadratic-cost.json --dry-run
@@ -88,7 +111,8 @@ evaluation (`SeedPlan` in `src/environment.py`). Each run's manifest records
 the seed plan. Seed i draws the same simulated returns in every run, so runs
 can be compared seed by seed. The learning rates for the constant-α runs were
 tuned on a separate master seed, **20261103**, never on the reported one
-(`docs/methods/EXPERIMENTS.md` §8.1).
+(`docs/methods/EXPERIMENTS.md` §8.1). The transaction-cost agent was tuned on
+**20261112** (`src/tc_drift/spec.py`, `TC_DRIFT_DESIGN.md` §9).
 
 ## Expected outputs
 
@@ -98,7 +122,8 @@ tuned on a separate master seed, **20261103**, never on the reported one
 | `results/<run_id>/INDEX.md` | Summary of each post-hoc run |
 | `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (grouped weight bars, learning curve, cumulative regret, losses by seed) |
 | `results/comparison_g5_grid20_vs_grid25/`, `results/grid10-robustness/comparison_*` | The action-space resolution comparisons |
-| `results/tc-quadratic-cost/` | The transaction-cost sweep, one JSON per cost level |
+| `results/tc-quadratic-cost/` | The first transaction-cost design's sweep, one JSON per cost level |
+| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` once the agent runs finish |
 | `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
 
 Training logs (`run_*.npz`) are not committed; every summary and report is.
@@ -117,7 +142,8 @@ See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
 | Evaluation against the benchmarks | `src/evaluate.py` | `docs/methods/EVALUATION.md` |
 | Experiment settings and batch runner | `src/config.py`, `src/run_experiments.py` | `docs/methods/EXPERIMENTS.md` |
 | Function approximation: features, agent, step-size tuning | `src/features.py`, `src/fa_agent.py`, `src/tune_fa.py` | `docs/methods/FA_INTEGRATION_NOTES.md`, `docs/methods/EXPERIMENTS.md` §8 |
-| Transaction costs: stateful agent, grid oracle, sweep report | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `docs/methods/TRANSACTION_COSTS.md` |
+| Transaction costs with drift: environment, oracle, agent, tuning, run driver | `src/tc_drift/` | `docs/methods/TC_DRIFT_DESIGN.md` |
+| Transaction costs, first design (negative result) | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `docs/methods/TRANSACTION_COSTS.md` |
 | Run reports | `src/reporting/` | `reports/README.md` |
 
 `docs/PROJECT_PROSPECTUS.md` has the plan and task ownership.
