@@ -57,6 +57,9 @@ results/*
 !results/settings.json
 !results/*/
 results/**/*.npz
+# TC-drift final runs: each seed's theta snapshots and log (about 150 KB) are
+# what the scoring and D12 read, so they are committed (William, 2026-11-20).
+!results/tc-drift/runs/*/seed*.npz
 results/smoke*/
 results/.*.new/
 # Full-run console logs are small and are the only record of how a

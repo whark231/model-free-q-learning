@@ -516,3 +516,21 @@ def test_favourite_target_is_the_argmax_of_the_value_model():
     g = a.holding_values(TARGETS)
     assert a.favourite_target() == int(np.argmax(g))
     assert make().favourite_target() == 0                  # all values 0: lowest index
+
+
+@pytest.mark.parametrize("cost", [(0.0, 0.0), (6e-6, 1.1e-4), (3e-3, 2e-2)])
+def test_batched_greedy_actions_match_greedy_action(cost):
+    """greedy_actions is greedy_action row by row: on-grid, off-grid and
+    arbitrary holdings, a trained theta and a zero theta (every trade ties with
+    HOLD: HOLD must win), with the chunk boundary inside the batch."""
+    rng = np.random.default_rng(11)
+    agent = DriftAgent(rng, alpha_value=0.05, alpha_cost=0.0, beta=0.0, target_refresh_every=10)
+    states = np.vstack([spec.target_grid()[::7], rng.dirichlet(np.ones(3), 300), spec.lattice()[::37]])
+    for _ in range(400):
+        a, b = states[rng.integers(len(states))], states[rng.integers(len(states))]
+        agent.update(a, int(rng.integers(spec.HOLD + 1)), float(rng.normal(0, 1e-2)), b)
+    for theta in (agent.theta, np.zeros(87)):
+        copy_ = agent.with_parameters(theta, cost)
+        np.testing.assert_array_equal(copy_.greedy_actions(states, chunk=97),
+                                      [copy_.greedy_action(s) for s in states])
+    assert (agent.with_parameters(np.zeros(87), (0.0, 0.0)).greedy_actions(states) == spec.HOLD).all()

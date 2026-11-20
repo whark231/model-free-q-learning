@@ -125,6 +125,15 @@ def always_rebalance_policy(best_target: int) -> Policy:
     return policy
 
 
+def own_target_rebalance_policy(agent) -> Policy:
+    """Trade every block to the agent's own favourite target, the target with
+    the highest learned theta . phi (AUDIT_2026-11-06.md TC-3). Built from the
+    agent alone, so nothing leaks; with always_rebalance_policy it splits the
+    agent's gap to the oracle into favourite-target error and the rest.
+    Added 2026-11-20 by William for Albert's review."""
+    return always_rebalance_policy(int(agent.favourite_target()))
+
+
 def never_trade_policy(first_target: int) -> Policy:
     """Trade to first_target in block 0, HOLD in every later block."""
     target = _target_index(first_target, "first_target")
@@ -242,5 +251,5 @@ def _target_index(value, name: str) -> int:
 
 
 __all__ = ["Policy", "evaluate_policy", "agent_policy", "oracle_policy", "always_rebalance_policy",
-           "never_trade_policy", "best_static_target", "draw_evaluation_set", "paired_gap", "model_value",
+           "never_trade_policy", "own_target_rebalance_policy", "best_static_target", "draw_evaluation_set", "paired_gap", "model_value",
            "lattice_table", "probe_convergence"]

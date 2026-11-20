@@ -157,6 +157,25 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 **Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you).
 
+## From William, 2026-11-20: I built the run driver and edited your files so the runs can start; please review
+
+**TL;DR / In plain terms:** to make the Nov 24 go/no-go, I (with Claude) wrote the run driver you were down for, and changed four of your files. Everything is on `feature/tc-drift-runs`, in a PR for you to review before the runs are scored. If you would rather have done it differently, say so and we change it; nothing has been scored yet.
+
+**Key concepts to understand**
+- **Training and scoring are separate steps.** Each of the 40 training runs saves its log and its averaged θ. Scoring then loads all 10 seeds of a level and plays them, the oracle and the reference policies on one common set of 4,000 paths. One level's paths take 544 MB, so levels are scored one at a time.
+- **The agent is scored in batches.** `DriftAgent.greedy_actions` gives the same actions as calling `greedy_action` row by row (tested on 117,000 state and policy pairs), about twice as fast.
+
+**Key takeaways: what changed in your files**
+- `config.py`: `N_BLOCKS = 4_000_000`, `CHECKPOINT_EVERY = 40_050` (not the 40,000 I asked for on 2026-11-19: 40,050 is the tuning pilot's grid, so the averaged policy and D12 are exactly what was tuned), `HYPERPARAMETERS` (the tuned values), and **`M_EVAL = 4000`** (your D10 call; I decided it under TC-7 so it is fixed before any agent result; change it back if you disagree, before scoring). `config.pending()` is now empty.
+- `oracle_replay.py`: its `M_EVAL` is pinned at 1,000, the m check 5 ran with, so your documented command still reproduces your committed numbers.
+- `.gitignore`: an exception so `results/tc-drift/runs/<level>/seed*.npz` (θ at every checkpoint, about 150 KB each) is committed.
+- `train.py`: θ itself is logged at every checkpoint (`diagnostics["theta"]`, TC-6). Nothing else changed; a test checks the logged θ equals what the tuning pilot read between segments.
+- `evaluate.py`: `own_target_rebalance_policy(agent)` (TC-3). `probe_convergence` is unchanged but implements only the original D12; the driver reports D12 through `tune.convergence`.
+- `test_tc_drift_train_evaluate.py`: two assertions updated (the diagnostics now include θ; `pending()` is empty and m is 4,000).
+- New: `src/tc_drift/run.py` (`queue`, `train`, `evaluate`, `report`) and `src/tests/test_tc_drift_run.py`. README has a TC-drift section (TC-10).
+
+**Decided 2026-11-20 (me):** your two check 5 questions (D-I): yes to both, the 90-block model side and a two-SE bound at the cost levels, labelled post hoc (design §5). **Proposed, for you to confirm before any run is scored:** the agent's expected directions (D-F), design §14.
+
 ## From William, 2026-11-19 (evening): tuning is done, and the agent is scored on an averaged θ
 
 **TL;DR / In plain terms:** the tuning pilot ran and picked α_value = 3e-4. The agent's weights kept wobbling to the end of training, so the policy we report is now built from the average of its weights over the last 10% of training rather than the last weights. Your run driver needs θ at every checkpoint to do that, and should score both versions.

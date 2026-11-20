@@ -58,7 +58,9 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
       mean_turnover      mean one-way turnover per block in the window
       mean_net_reward    mean net reward per block in the window, daily units
       diagnostics        {name: (n_checkpoints,)} for the names in _DIAGNOSTICS the agent has,
-                         plus theta_norm when it exposes theta
+                         plus theta_norm, and theta itself (n_checkpoints, len(theta)),
+                         when it exposes theta (AUDIT_2026-11-06.md TC-6; the D12 rule
+                         and the tail-averaged policy read it, TC_DRIFT_DESIGN.md §6)
       n_blocks, block_length, simulated_days, n_restarts, drift
     """
     n_blocks = _positive_int(n_blocks, "n_blocks")
@@ -93,6 +95,7 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
     diagnostics = {name: np.empty(n_ckpt) for name in diag_names}
     if hasattr(agent, "theta"):
         diagnostics["theta_norm"] = np.empty(n_ckpt)
+        diagnostics["theta"] = np.empty((n_ckpt, len(np.asarray(agent.theta))))
 
     state = starts[start_rng.integers(len(starts))]
     n_restarts = 0
@@ -137,7 +140,9 @@ def train(agent: TCAgent, market: Market, settings: TCSettings, *, n_blocks: int
             for name in diag_names:
                 diagnostics[name][ckpt] = float(getattr(agent, name))
             if "theta_norm" in diagnostics:
-                diagnostics["theta_norm"][ckpt] = float(np.linalg.norm(agent.theta))
+                theta = np.asarray(agent.theta, dtype=float)
+                diagnostics["theta_norm"][ckpt] = float(np.linalg.norm(theta))
+                diagnostics["theta"][ckpt] = theta
             window[:] = 0.0
             window_start = k + 1
             ckpt += 1

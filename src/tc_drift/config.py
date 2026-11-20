@@ -26,10 +26,12 @@ from src.tc_drift import spec
 LEVELS = ("zero", "aum_100m", "aum_1b", "aum_10b")  # calibration.cost_settings() keys (D9)
 HEADLINE_LEVEL = "aum_1b"
 
-# Evaluation (D10, approved 2026-11-13). Revisit M_EVAL once the oracle's lead
-# over always-rebalance is measured (§13 D10 rule).
+# Evaluation (D10, approved 2026-11-13). M_EVAL raised from 1,000 to 4,000 on
+# 2026-11-20 (William, for Albert's review; AUDIT_2026-11-06.md TC-7), before
+# any final agent result: the oracle's lead over always-rebalance is 1.30 +/- 0.70
+# bps/yr at $1B at m = 1,000, and 4,000 halves every SE. The paths take 544 MB.
 H_EVAL = 90
-M_EVAL = 1000
+M_EVAL = 4000
 
 # Oracle paths. Fixed at 2,000 by check 3, restated on the policy (William,
 # 2026-11-17; TC_DRIFT_DESIGN.md §5).
@@ -41,9 +43,21 @@ M_ORACLE = 2000
 # Training start states (D4, as for the evaluation): uniform on the 2% grid.
 N_SEEDS = 10
 RESTART_EVERY = H_EVAL
-N_BLOCKS = None          # PENDING tuning (William's choice among TC_DRIFT_DESIGN.md §9 options)
-CHECKPOINT_EVERY = None  # PENDING: N_BLOCKS // 100, set with N_BLOCKS
-HYPERPARAMETERS = None   # PENDING tuning: the DriftAgent keywords
+# Set 2026-11-20 from the tuning pilot (TC_DRIFT_DESIGN.md §9; src/tc_drift/tune.py,
+# candidate a3e-4), William, for Albert's review. The same values at every level.
+N_BLOCKS = 4_000_000
+CHECKPOINT_EVERY = 40_050                     # the tuning pilot's grid (445 x RESTART_EVERY): 99 checkpoints
+                                              # of 40,050 and the last at N_BLOCKS, so the tail average (11
+                                              # snapshots) and the D12 window (12 checkpoints) are the pilot's
+HYPERPARAMETERS = {
+    "alpha_value": 3e-4,
+    "alpha_cost": 3e-4,                       # used during the burn-in only
+    "beta": 2.302585092994046e-06,            # ln(100) / (N_BLOCKS / 2): epsilon = 1% at the halfway point
+    "target_refresh_every": 1000,
+    "l2": 0.0,
+    "cost_rls_after": 301_030,                # round(ln 2 / beta): epsilon = 0.5, the end of the burn-in
+    "cost_rls_prior": 1e-3,
+}
 
 # Probe states for the convergence rule (D12): every 2% target plus a fixed
 # sample of off-grid 1% lattice states.

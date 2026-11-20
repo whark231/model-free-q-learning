@@ -165,9 +165,13 @@ def test_drift_agent_trains_and_logs_diagnostics(market):
     log = _train(agent, market, n_blocks=200, restart_every=50, checkpoint_every=50)
     assert agent.n_updates == 200
     d = log["diagnostics"]
-    assert set(d) == {"cost_linear", "cost_quadratic", "epsilon", "n_updates", "theta_norm"}
+    assert set(d) == {"cost_linear", "cost_quadratic", "epsilon", "n_updates", "theta_norm", "theta"}
     np.testing.assert_array_equal(d["n_updates"], [50, 100, 150, 200])
     assert np.isfinite(d["theta_norm"]).all() and (np.diff(d["epsilon"]) < 0).all()
+    # theta (TC-6, added 2026-11-20): the last row is the trained theta, and the norms match.
+    assert d["theta"].shape == (4, 87)
+    np.testing.assert_array_equal(d["theta"][-1], agent.theta)
+    np.testing.assert_allclose(np.linalg.norm(d["theta"], axis=1), d["theta_norm"], rtol=1e-15)
     assert log["probe_greedy"].min() >= 0 and log["probe_greedy"].max() <= spec.HOLD
 
 
@@ -426,8 +430,8 @@ def test_run_streams_are_distinct_and_reproducible():
 
 
 def test_pending_settings_are_listed():
-    assert set(config.pending()) <= {"N_BLOCKS", "CHECKPOINT_EVERY", "HYPERPARAMETERS"}
-    assert config.RESTART_EVERY == config.H_EVAL == 90 and config.M_EVAL == 1000
+    assert config.pending() == []                       # set 2026-11-20 from the tuning pilot
+    assert config.RESTART_EVERY == config.H_EVAL == 90 and config.M_EVAL == 4000
 
 
 class Counter(Recorder):

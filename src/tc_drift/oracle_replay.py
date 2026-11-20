@@ -41,7 +41,7 @@ from src.tc_drift import config, env, evaluate, oracle, spec
 from src.tc_drift.calibration import cost_settings
 
 H = config.H_EVAL
-M_EVAL = config.M_EVAL
+M_EVAL = 1000   # check 5 as run 2026-11-17; config.M_EVAL is now the final runs' 4,000 (William, 2026-11-20)
 M_ORACLE = config.M_ORACLE
 
 

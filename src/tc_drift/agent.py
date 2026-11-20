@@ -286,6 +286,24 @@ class DriftAgent:
         """The current greedy action (HOLD wins ties); never changes the agent's state."""
         return self._greedy(self._state(state), self._g_online_values(), self._theta, self._cost)
 
+    def greedy_actions(self, states: np.ndarray, chunk: int = 256) -> np.ndarray:
+        """greedy_action for every row of states (m, 3), in batches: the same
+        scores and the same tie rule (lowest target index among equal trades;
+        HOLD unless a trade beats it by more than TIE_TOLERANCE). For scoring
+        many paths at once; never changes the agent's state."""
+        S = check_holdings(np.asarray(states, dtype=float))
+        S = S / S.sum(axis=1, keepdims=True)
+        g = self._g_online_values()
+        out = np.empty(len(S), dtype=np.int64)
+        for i in range(0, len(S), chunk):
+            s = S[i:i + chunk]
+            hold = spline_features(s, self.n_basis, self.degree) @ self._theta
+            u = self._targets[None, :, :] - s[:, None, :]
+            trades = g[None, :] - self._cost[0] * np.abs(u).sum(axis=2) - self._cost[1] * (u * u).sum(axis=2)
+            best = trades.argmax(axis=1)
+            out[i:i + chunk] = np.where(trades[np.arange(len(s)), best] > hold + TIE_TOLERANCE, best, HOLD)
+        return out
+
     def with_parameters(self, theta: np.ndarray, cost=None) -> "DriftAgent":
         """A copy of this agent with theta (and, if given, the costs) replaced,
         for evaluating a policy built from other parameters: the tail-averaged
