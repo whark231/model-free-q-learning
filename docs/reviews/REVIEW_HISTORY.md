@@ -1,11 +1,11 @@
 # Review History
 
 **Covers:** every closed review item and settled decision between Albert and
-William, 2026-09-29 to 2026-10-28 (§8 was added 2026-10-28). Later work is
+William, 2026-09-29 to 2026-11-20 (§8 was added 2026-10-28, §9 on 2026-11-09 and §10, the transaction-costs-with-drift items, on 2026-11-20). Other work is
 recorded elsewhere: `grid10-robustness` in `EXPERIMENTS.md` §7.7, the FA
 extension and its tuning in `FA_INTEGRATION_NOTES.md` and `EXPERIMENTS.md` §8,
-the transaction-cost extension in `TRANSACTION_COSTS.md`, and the 2026-11-06
-audit in `AUDIT_2026-11-06.md`. Moved here from
+the first transaction-cost design in `TRANSACTION_COSTS.md`, the redesign in
+`TC_DRIFT_DESIGN.md`, and the 2026-11-06 audit in `AUDIT_2026-11-06.md`. Moved here from
 `REVIEW_NOTES_FOR_WILLIAM.md` on 2026-10-26 so that file can list only open
 work. Section numbers §1 to §6 are unchanged from the original, because code
 comments in `src/config.py` and `src/tests/test_agent.py` cite them.
@@ -20,12 +20,14 @@ how γ, B and the convergence rule were decided and why (§3, §6), and the
 follow-up ideas we tested after the full run and rejected (§7). Nothing in
 here is waiting on anyone, except the one item marked as reopened (§5.3, the
 tabular `update()` return value), which is tracked in
-`REVIEW_NOTES_FOR_WILLIAM.md`.
+`REVIEW_NOTES_FOR_WILLIAM.md`, and the §10 code (TC-2, TC-3, TC-6, TC-7),
+which is written and tested but waits on Albert's review.
 
 **Key concepts to understand**
 
 - **Closed vs. flagged.** An item is closed here only once the code changed
-  and a test or check confirmed it (CLAUDE.md §2.3). Each row says where.
+  and a test or check confirmed it (CLAUDE.md §2.3), or, in §10, once a
+  decision was recorded in the design doc. Each row says where.
 - **Pre-registration.** γ, B, K and the other settings in §6 were fixed on
   2026-10-16, before any full-scale result existed. Ideas that came from
   looking at results (§7) are labelled post-hoc.
@@ -466,3 +468,38 @@ William's items, on `feature/william-audit-fixes` (details in `AUDIT_2026-11-06.
 | F-L12, FA part | `tune_fa.summarize` sorts candidates; `fa_tuning.json` regenerated | Byte-identical across hash seeds; same content as before |
 | L8, F-M3 | `b63`, `eps-decay`, `tabular-const`, `fa-quadratic` re-evaluated at `3322e03`, re-extracted, reports rebuilt | No value changed; Q fit added |
 | F-M11 | Prospectus status brought up to date | Read |
+
+## 10. Transaction costs with drift: items closed 2026-11-13 to 2026-11-20
+
+**TL;DR / In plain terms:** everything that stood between the TC redesign and its final agent runs is closed: the learning rule, its tuning, the convergence rule, the run driver, the evaluation size and the extra reference policy. These rows moved here from `REVIEW_NOTES_FOR_WILLIAM.md` and `NEXT_STEPS_FOR_ALBERT.md` on 2026-11-20. What is still open is in `AUDIT_2026-11-06.md` §9.6.
+
+**Key concepts to understand**
+
+- **Closed by a decision versus closed by code.** TC-1, TC-5, D-B, D-F and D-I were closed by a decision that is recorded in the design doc. TC-2, TC-3, TC-6 and TC-7 were closed by code on `feature/tc-drift-runs` with tests, which Albert still reviews.
+- **Frozen before results.** The convergence rule, m and the tuned settings were all fixed before any final agent run was trained, which is what Part IV asks for the convergence rule.
+
+**Key takeaways**
+
+- The 40 final agent runs can start; nothing in the code waits on a decision.
+- Several closed items leave report text behind (disclosures, c1 not resolved); those are open in `AUDIT_2026-11-06.md` §9.6.
+
+| Item | How it closed | Where |
+|---|---|---|
+| TC-1, D-A, tuning | Recursive least squares on the cost block after a constant-α burn-in, θ at constant α_value (decided 2026-11-19). Pilot: α_value = 3e-4 (paired difference 9.31, SE 6.32). The pilot's other settings confirmed 2026-11-20: burn-in to ε = 0.5 (301,030 updates), α_cost = α_value, target refresh 1,000, l2 = 0 | `TC_DRIFT_DESIGN.md` §9 |
+| D-B, budget and timing | 4 million blocks a seed, ε reaching 1% at halfway (β ≈ 2.30e-6, about 434,000 exploring blocks). A 4-million-block run took 2.4 hours with six in parallel and BLAS pinned on William's laptop (8.1 hours under heavy load) | `TC_DRIFT_DESIGN.md` §9; audit §9.4 |
+| TC exploration | Settled by D-B. The limit it warned about shows in the pilot as c1 not resolved, which is report text | `TC_DRIFT_DESIGN.md` §9 |
+| D-C, who tunes | William ran the pilot on 2026-11-19 | `TC_DRIFT_DESIGN.md` §9 |
+| TC-5, D-D, D12 | Changed 2026-11-19 (favourite target within one 2% step; the tail-averaged θ), secondary restated 2026-11-20 (95% of probes with post-decision holdings within one 2% step), frozen 2026-11-20; all four versions reported, the 2026-11-12 original for its probe primary only. 1 of 3 pilot runs converges | `TC_DRIFT_DESIGN.md` §6, §13 |
+| Part IV counts | `tune.convergence` gives the first checkpoint from which both rules hold, in blocks, episodes and daily observations; `run.py` records it per seed | `src/tc_drift/tune.py`, `run.py` |
+| TC-2, run driver | `src/tc_drift/run.py` (`queue`, `train`, `evaluate`, `report`), written by William with Claude, for Albert's review | `TC_DRIFT_DESIGN.md` §10 |
+| TC-3, the gap split | `evaluate.own_target_rebalance_policy` and `DriftAgent.favourite_target()`; `run.py` reports all three terms with paired SEs | `TC_DRIFT_DESIGN.md` §10 |
+| TC-6, θ in the log | `train()` logs θ at every checkpoint | `src/tc_drift/train.py` |
+| TC-7, D-E, D10's m | m = 4,000, set 2026-11-20 before any final agent result | `TC_DRIFT_DESIGN.md` §7 |
+| TC-9 | Albert's `feature/tc-drift-train` merged (PR #37, 2026-11-19) | audit §9.3 |
+| D-F, expected directions | Drafted, then dropped by William on 2026-11-20: the agent runs are reported as observed | `TC_DRIFT_DESIGN.md` §15 |
+| D-I, check 5 | Yes to both of Albert's questions: the 90-block model side, and a two-SE bound at the cost levels, labelled post hoc | `TC_DRIFT_DESIGN.md` §5 |
+| Check 3 | Two forms agree: −0.003 bps/yr in William's independent model and −0.11 ± 0.15 in Albert's replay at $1B | `TC_DRIFT_DESIGN.md` §5 |
+| Oracle trading in a continuous replay | Albert's replay matches William's in-model numbers (hold fraction 0.15, 0.28, 0.32, 0.45 against 0.156, 0.272, 0.308, 0.443) | `TC_DRIFT_DESIGN.md` §5, "Check 5 measured" |
+| TC-11, the cross-test | Both copies kept | audit §9.3 |
+| TC-10, TC-12, TC-13 | README section; design title, §1, C13 and the oracle timing updated; the TC-13 disclosure added to design §14 risk 5 (the report still has to carry it) | audit §9.3 |
+| Gate, Nov 17 | Environment plus oracle checks 1 and 2 passed | `TC_DRIFT_DESIGN.md` §5, §11 |

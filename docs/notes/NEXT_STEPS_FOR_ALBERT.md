@@ -1,14 +1,33 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-19
-**Status:** the required work is done and independently re-checked. The FA runs are merged and reported. The whole-project audit (`AUDIT_2026-11-06.md`) found no correctness bug in the core, the FA code or the reports pipeline. It did find that the transaction-cost agent cannot learn as designed, plus a list of small fixes, most of them in your files.
+**Date:** 2026-11-06, updated 2026-11-20
+**Status (2026-11-20):** the required work is done and independently re-checked, and so are the FA runs. The TC redesign is built, checked and tuned, and its run driver is written for your review. Your open items are in the table below; everything else in this file is the dated record, with closed items marked. Closed TC items are collected in `REVIEW_HISTORY.md` §10, and the open list for both of us is `AUDIT_2026-11-06.md` §9.6.
 
 ---
 
-## TL;DR / In plain terms
+## Open for you, 2026-11-20
 
-Three things need you. First, re-evaluate four runs from your training logs so their Q-value fit numbers exist in the repo; `fa-spline`'s notes quote `baseline-v1` numbers that nothing committed contains. Second, decide with me how to redesign the transaction-cost extension: in your sweep the agent scored the same as a random portfolio even with free trading, and the code is correct, so the problem is the design. Third, a batch of small code fixes that change no number.
+**TL;DR / In plain terms:** your earlier items are done. What is open for you now: review the TC run driver and the edits I made to your files, add the one-line pointer in `TRANSACTION_COSTS.md`, settle two decisions with me, and write your report sections.
+
+**Key concepts to understand**
+- **Where the TC work stands.** Built, checked and tuned. The 40 final agent runs are the last compute; scoring them should wait for your review of `run.py`.
+
+**Key takeaways**
+- Nothing in Parts I to VI changed.
+
+| Item | What |
+|---|---|
+| TC review | Review `src/tc_drift/run.py` and every edit to your files in the 2026-11-20 section below (`config.py`, `train.py`, `evaluate.py`, `oracle_replay.py`, your test file, the shared `.gitignore`, the README's TC-drift section and the `RUN_ISSUES` status line), before the runs are scored |
+| D7 | A one-line pointer to `TC_DRIFT_DESIGN.md` in `TRANSACTION_COSTS.md` (your file) |
+| D-G, D-H | With me: how the first TC design is reported, the report schedule, and who writes the TC section (prospectus §4) |
+| Report text | Call `never_trade_policy` "trade once, then hold" in tables and text; caveat post-convergence weights (F-L10) |
+| Your report sections | Data/Calibration, and convergence analysis and visualizations (prospectus §4) |
+| F-L9, F-L13, L7 | The episodes column (partly fixed, low priority); the `grid10-robustness` tag on your Mac; `all-three`'s comparison set (with me) |
+
+## From William, 2026-11-06: the audit (every item below is now closed or listed above)
+
+Three things needed you. First, re-evaluate four runs from your training logs so their Q-value fit numbers exist in the repo; `fa-spline`'s notes quote `baseline-v1` numbers that nothing committed contains. Second, decide with me how to redesign the transaction-cost extension: in your sweep the agent scored the same as a random portfolio even with free trading, and the code is correct, so the problem is the design. Third, a batch of small code fixes that change no number.
 
 **Key concepts to understand**
 
@@ -144,18 +163,18 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 **Key takeaways**
 - Your branch's tests pass (121 passed in `test_tc_drift_train_evaluate.py` and `test_tc_drift_spec.py` at `397aaf5`). It edits two of my files (the prospectus and my notes), which I still need to check before it merges. Your two check 5 questions (the finite-horizon model side, and a two-SE bound at the cost levels) are in my list of decisions.
-- **Decided 2026-11-19 (me):** recursive least squares on the cost block after a constant-α burn-in, θ at constant α_value; 4M blocks per seed with ε reaching 1% at halfway (β ≈ 2.30e-6); D12 changed, labelled, to "favourite target within one 2% step over the final 10%" plus "95% of probes stable", with the original verdict reported (design §6, §9); go/no-go for the agent runs on Nov 24 (design §11). Set `N_BLOCKS = 4_000_000` and `CHECKPOINT_EVERY = 40_000` in `config.py` when convenient; the hyperparameters follow tuning. Items 1 to 4 below can be built now.
+- **Decided 2026-11-19 (me):** recursive least squares on the cost block after a constant-α burn-in, θ at constant α_value; 4M blocks per seed with ε reaching 1% at halfway (β ≈ 2.30e-6); D12 changed, labelled, to "favourite target within one 2% step over the final 10%" plus "95% of probes stable", with the original verdict reported (design §6, §9); go/no-go for the agent runs on Nov 24 (design §11). Set `N_BLOCKS = 4_000_000` and `CHECKPOINT_EVERY = 40_000` in `config.py` when convenient; the hyperparameters follow tuning. Items 1 to 4 below can be built now. *Done 2026-11-20, with 40,050 (see the 2026-11-20 section).*
 
 **What the TC runs need from you** (`AUDIT_2026-11-06.md` §9.3):
-1. **TC-2, a run driver** (`src/tc_drift/run.py` or similar): for each level and seed, build the agent from `config.HYPERPARAMETERS`, call `train()`, save the log, the final θ, c1 and c2, and a manifest (settings, seeds, code hashes, as `src/train.py` does), then score the final greedy policy against the oracle, always-rebalance, trade-once-then-hold, myopic and the TC-3 policy on the evaluation paths, and write `summary.json` and a per-seed CSV. One command per level, so the four levels can run in parallel. Write every text file with `newline="\n"`; `test_reporting.py` checks that. Pin BLAS to one thread (`OMP_NUM_THREADS=1` and friends): on my machine `train()` took 1.96 ms a block with default threading and 0.89 to 1.48 ms pinned, not your 0.57, so please time it on whichever machine runs the jobs.
-2. **TC-6, θ in the log:** c1, c2 and ‖θ‖ are already logged at every checkpoint; please add θ itself (87 numbers). The new convergence rule (design §6) reads the favourite target from θ, so it cannot be applied without this.
-3. **TC-3, the extra reference policy:** `own_target_rebalance_policy(agent)` in `evaluate.py`, trading every block to argmax over the 1,326 targets of `agent.holding_values(spec.target_grid())`. I can add a `favourite_target()` method to `DriftAgent` if you prefer to call that.
-4. **TC-7, m:** your decision under D10. My suggestion is m = 4,000 in `config.M_EVAL`, decided before any agent result, because the D10 rule needs the agent's SE and so would choose m from results. 4,000 halves every SE but may still miss the D10 target at $1B; report the SE either way. The paths are 544 MB per level; `evaluate_policy` reads `len(paths)` and `paths[t]`, so a block-by-block version needs an indexable lazy object that gives every policy the same paths.
+1. **Done 2026-11-20 (William, for your review).** **TC-2, a run driver** (`src/tc_drift/run.py` or similar): for each level and seed, build the agent from `config.HYPERPARAMETERS`, call `train()`, save the log, the final θ, c1 and c2, and a manifest (settings, seeds, code hashes, as `src/train.py` does), then score the final greedy policy against the oracle, always-rebalance, trade-once-then-hold, myopic and the TC-3 policy on the evaluation paths, and write `summary.json` and a per-seed CSV. One command per level, so the four levels can run in parallel. Write every text file with `newline="\n"`; `test_reporting.py` checks that. Pin BLAS to one thread (`OMP_NUM_THREADS=1` and friends): on my machine `train()` took 1.96 ms a block with default threading and 0.89 to 1.48 ms pinned, not your 0.57, so please time it on whichever machine runs the jobs.
+2. **Done 2026-11-20 (William, for your review).** **TC-6, θ in the log:** c1, c2 and ‖θ‖ are already logged at every checkpoint; please add θ itself (87 numbers). The new convergence rule (design §6) reads the favourite target from θ, so it cannot be applied without this.
+3. **Done 2026-11-20 (William, for your review).** **TC-3, the extra reference policy:** `own_target_rebalance_policy(agent)` in `evaluate.py`, trading every block to argmax over the 1,326 targets of `agent.holding_values(spec.target_grid())`. I can add a `favourite_target()` method to `DriftAgent` if you prefer to call that.
+4. **Done 2026-11-20 (William, for your review): m = 4,000.** **TC-7, m:** your decision under D10. My suggestion is m = 4,000 in `config.M_EVAL`, decided before any agent result, because the D10 rule needs the agent's SE and so would choose m from results. 4,000 halves every SE but may still miss the D10 target at $1B; report the SE either way. The paths are 544 MB per level; `evaluate_policy` reads `len(paths)` and `paths[t]`, so a block-by-block version needs an indexable lazy object that gives every policy the same paths.
 5. ~~**Merge your branch**~~ Merged into `dev` 2026-11-19 (PR #37).
-6. **D7:** the pointer in `TRANSACTION_COSTS.md` (your file). I added the one in `AUDIT_2026-11-06.md` §6.2.
-7. **TC-10:** a TC section in the README once the driver exists.
+6. **Open.** **D7:** the pointer in `TRANSACTION_COSTS.md` (your file). I added the one in `AUDIT_2026-11-06.md` §6.2.
+7. **Done 2026-11-20.** **TC-10:** a TC section in the README once the driver exists.
 
-**Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you).
+**Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you). *2026-11-20:* D-C done (I ran the pilot) and D-F dropped; D-G and the report schedule remain.
 
 ## From William, 2026-11-20: I built the run driver and edited your files so the runs can start; please review
 
@@ -173,8 +192,9 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 - `evaluate.py`: `own_target_rebalance_policy(agent)` (TC-3). `probe_convergence` is unchanged but implements only the original D12; the driver reports D12 through `tune.convergence`.
 - `test_tc_drift_train_evaluate.py`: two assertions updated (the diagnostics now include θ; `pending()` is empty and m is 4,000).
 - New: `src/tc_drift/run.py` (`queue`, `train`, `evaluate`, `report`) and `src/tests/test_tc_drift_run.py`. README has a TC-drift section (TC-10).
+- Doc close-out (later the same day): the status line of `RUN_ISSUES_2026-10-22.md` now says every §4 step is done (M10, 2026-11-09), with no other change to that file; the README's pointer to the audit now names §9.6. Closed items across the docs are marked closed, and `AUDIT_2026-11-06.md` §9.6 lists what is still open.
 
-**Decided 2026-11-20 (me):** your two check 5 questions (D-I): yes to both, the 90-block model side and a two-SE bound at the cost levels, labelled post hoc (design §5). **Proposed, for you to confirm before any run is scored:** the agent's expected directions (D-F), design §14.
+**Decided 2026-11-20 (me):** your two check 5 questions (D-I): yes to both, the 90-block model side and a two-SE bound at the cost levels, labelled post hoc (design §5). **Dropped (me), so nothing to confirm:** the agent's expected directions (D-F). I drafted eight, then decided to report the agent runs as observed instead (design §15). The convergence rule D12 is still fixed before any result, which is what the assignment asks. Say if you disagree before the runs are scored.
 
 ## From William, 2026-11-19 (evening): tuning is done, and the agent is scored on an averaged θ
 
@@ -188,8 +208,8 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 - Hyperparameters for the final runs (all confirmed 2026-11-20): `alpha_value = 3e-4`, `alpha_cost = 3e-4`, `beta = ln(100) / 2,000,000`, `cost_rls_after = 301_030`, `cost_rls_prior = 1e-3` (the default), `target_refresh_every = 1000`, `l2 = 0`. Designs and numbers in `TC_DRIFT_DESIGN.md` §6 and §9.
 - On my machine a 4M-block run took 2.4 hours with six in parallel and BLAS pinned.
 
-**What changes for the run driver (TC-2, TC-6):**
-1. Log θ at every checkpoint (TC-6). With `CHECKPOINT_EVERY = 40_000` and 4M blocks, the final 10% holds 10 snapshots.
+**What changes for the run driver (TC-2, TC-6), all done 2026-11-20 in `run.py`:**
+1. Log θ at every checkpoint (TC-6). With `CHECKPOINT_EVERY = 40_050` and 4M blocks, the final 10% holds 11 snapshots (corrected 2026-11-20 from 40,000 and 10).
 2. The reported policy: `agent.with_parameters(theta_mean, (c1, c2))`, where `theta_mean` is the mean of the θ snapshots at checkpoints with block > 0.9·N and the costs are the agent's final ones. `src/tc_drift/tune.py` has `trailing_average` and `averaged_policy` (which also applies D12 to the averaged policy) that you can call rather than rewrite.
 3. Score the averaged policy and the last-iterate policy on the same paths, and report both; the averaged one is the headline. The TC-3 reference policy uses the averaged agent's `favourite_target()`.
 4. **Convergence, restated 2026-11-20** (design §6): a run has converged when the favourite target stays within one 2% step over the final 10% and 95% of probes keep their post-decision holdings within one 2% step. `tune.convergence(log, n_blocks, probes)` computes it, and the first checkpoint from which it holds (blocks, episodes, daily observations) for Part IV. `tune.averaged_policy` returns it for the averaged policy. Report how many of the 10 seeds converge at each level; on the pilot one of three did. `evaluate.probe_convergence` implements only the original rule, so please report D12 through `tune.convergence` (or move it into `evaluate.py`), with all four versions' verdicts. `converged_from_*` is None on a run that has not converged. The rule is frozen as of 2026-11-20.
@@ -243,7 +263,7 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 - Call `update(state, action, spec.net_reward(R, cost), next_state)` with the true drifted end-of-block holdings, even on a block after which you restart. A restart only changes where the next block starts. It is not a terminal state, so the agent still bootstraps from where this block ended.
 - Use `greedy_action` for the probe-state log. It draws no random numbers and changes nothing.
 
-**What is still open**
+**What was still open then** (all closed by 2026-11-20: the cross-test is in, check 5 and check 3 are decided, the agent is tuned)
 - **Cross-test.** Whoever merges second adds a test that `env.block_outcome` and my test loop (`loop_block_outcome` in `src/tests/test_tc_drift_oracle.py`) give the same oracle solution.
 - **Check 5** (continuous replay) needs your `evaluate_policy`. Its tolerance is 0.5 bps/yr, but a direct replay of one policy has an SE of about 12 bps/yr (your pilot), so I proposed a paired form (design §5). Tell me if you see a better one.
 - **Check 3 fails at M = 2,000** at $1B (3.1 bps/yr against 0.5). I decide between more paths and restating it on the policy (design §5).
@@ -254,11 +274,11 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 **Update 2026-11-09 (Albert):** steps 1, 3 and 4 are done on `dev`; `AUDIT_2026-11-06.md` §2.1 lists each fix and how it was checked. The second (flow) audit's Albert items are fixed too (§8.3), including the fresh-clone reproduce crash (F-H1). No reported number changed. Still Albert's: pushing or deleting the local `grid10-robustness` tag (F-L13), and caveating post-convergence weights in the report text (F-L10).
 
 1. ~~**Re-evaluate `baseline-v1`, `n26m`, `all-three` and `grid10-robustness`**~~ Done 2026-11-09 (H3), plus `fa-spline`. Every earlier number came back identical. The `baseline-v1` Q fit matches the numbers in `fa-spline`'s notes (Spearman 0.821, 0.710, 0.920; top-10 recall 35%, 20%, 20% at γ = 5, 3, 8). `b63`, `eps-decay`, `tabular-const` and `fa-quadratic` need William, who holds their logs.
-2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The redesign is decided (`TC_DRIFT_DESIGN.md`); its Phase 2 tasks are step 6. For the old design: do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11).
+2. **TC redesign, with William** (`AUDIT_2026-11-06.md` H1, H2, §6.2). The redesign is decided (`TC_DRIFT_DESIGN.md`); its Phase 2 tasks are step 6. For the old design: do not run `discount.json` or `learning-rate.json` as designed. Once decided, also: commit the four single-variant configs (M9), rewrite the TC report text (M8), add the M1 line to `tc_sweep_report.py`, and add TC tests (M11). *2026-11-20:* the redesign is built and tuned; these first-design items wait on D-G.
 3. ~~**Small code fixes**~~ Done 2026-11-09: M1 (except `tc_sweep_report.py`), M2, M3, M4, M5, plus L2.
 4. ~~**`RUN_ISSUES` §4 steps 1 to 3** (M10)~~ Done 2026-11-09: total gap, post-hoc `settled` and `near_optimal_every_episode`, provenance in `summary.json`, definitions in `EVALUATION.md` §2.
 5. **Your report sections** (prospectus §4): Data/Calibration, and convergence analysis and visualizations. Use the post-hoc `settled` measure next to the pre-registered rule, labelled post hoc. Who writes the TC section is proposed in the prospectus (you, since you built it) and is yours to accept or change.
-6. **TC Phase 2, your side** (updated 2026-11-17; details in the 2026-11-15 and 2026-11-17 sections above). *2026-11-19:* steps 6.1 (with `N_BLOCKS`, the checkpoint interval and the hyperparameters still pending) and 6.3 are done on `feature/tc-drift-train`; the remaining work is in the 2026-11-19 section above (run driver, θ in the log, the own-target reference policy, m fixed now).
+6. **TC Phase 2, your side.** *2026-11-20: done, except 6.5 (report wording) and 6.6 (the pointer in `TRANSACTION_COSTS.md`), both in the table at the top; 6.4 was settled by m = 4,000.* (Updated 2026-11-17; details in the 2026-11-15 and 2026-11-17 sections above). *2026-11-19:* steps 6.1 (with `N_BLOCKS`, the checkpoint interval and the hyperparameters still pending) and 6.3 are done on `feature/tc-drift-train`; the remaining work is in the 2026-11-19 section above (run driver, θ in the log, the own-target reference policy, m fixed now).
    1. `train.py`, `evaluate.py` and the config against the frozen `src/tc_drift/spec.py` (Nov 16 to 18). The oracle, agent and environment are all merged or on `feature/tc-drift-oracle-runs`.
    2. **Regenerate the oracle tables before building `evaluate.py`.** From the repo root on `feature/tc-drift-oracle-runs` (or `dev` once merged), run `python -m src.tc_drift.oracle_runs`. It takes about 1 to 2.5 hours and writes `results/tc-drift/oracle/<setting>.npz` for the six settings (policy table, V, G, r̂, the myopic table), which `.gitignore` keeps out of git. It also rewrites `summary.json`. Afterwards, `git diff results/tc-drift/oracle/summary.json` should show at most the `provenance` block changed (`commit`, `src_dirty`; the `sha256` file hashes should match). A different machine may change a number in its last digit; any larger change (a hold fraction, a lead, a check result) means the run did not reproduce mine, so tell me before using the tables, and do not commit that `summary.json`. To test that it runs first, `python -m src.tc_drift.oracle_runs --quick --out <folder outside the repo>` uses M = 40 and no fine lattice (about 10 minutes); without `--out` it writes to `results/tc-drift/oracle-quick/`, which git does not ignore.
    3. Build check 5 into `evaluate.py` in the paired form, and compare with the in-model leads in `results/tc-drift/oracle/summary.json`.
@@ -269,7 +289,7 @@ Where everything is: `feature/tc-drift-oracle-runs`; design §5 (checks) and §8
 
 ## To decide together
 
-~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13; m still to be measured (step 6). **The final runs** (`AUDIT_2026-11-06.md` §6; the 2026-11-19 review recommends no more non-TC runs, except P2 if time allows). **D7 pointer** in `TRANSACTION_COSTS.md` (step 6). **The report schedule** and **how the first TC design is reported** (`AUDIT_2026-11-06.md` §9.4 D-G, D-H). **How the TC report presents the two oracle directions that were not met** (design §8).
+~~**D10, the TC evaluation size** (above).~~ Approved 2026-11-13; m set to 4,000 on 2026-11-20. **The final runs** (`AUDIT_2026-11-06.md` §6; the 2026-11-19 review recommends no more non-TC runs, except P2 if time allows). **D7 pointer** in `TRANSACTION_COSTS.md` (step 6). **The report schedule** and **how the first TC design is reported** (`AUDIT_2026-11-06.md` §9.4 D-G, D-H). **How the TC report presents the two oracle directions that were not met** (design §8).
 
 **Which post-hoc runs go in the report.** My suggestion:
 - `grid10-robustness` as the action-space check, and γ = 3 and 8 as the economic check;

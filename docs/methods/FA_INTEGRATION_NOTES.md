@@ -1,10 +1,11 @@
 # Function Approximation: Integration Notes for Albert
 
 **From:** William (with Claude) · **Date:** 2026-11-03, updated 2026-11-06 · **Branch:** merged into `dev` (PR #23)
-**Status (2026-11-06):**
+**Status (2026-11-06, updated 2026-11-20):**
 - **Built:** agent, features, the `train.py` path and the Q-value fit metrics, all tested and independently reviewed.
 - **Tuned:** the step size, on tuning seeds (§5).
 - **Run:** the three constant-learning-rate runs `tabular-const`, `fa-quadratic` and `fa-spline`, 30 seeds each at commit `bc311a3`, in `dev` (PRs #24 and #25; `fa-spline` in Albert's commit `9355610`). Outcomes and the registered expectations are in `EXPERIMENTS.md` §8.7; the reports are in `reports/<run_id>/`.
+- **Run on the 10% grid (2026-11-11, Albert):** `fa-spline-grid10-eps3` and `fa-spline-grid10-eps10` (`EXPERIMENTS.md` §8.8). Nothing in this file is open.
 
 Everything here is post hoc relative to `baseline-v1`. The sections below are the design record and were written before the runs; where a result later contradicted a prediction, `EXPERIMENTS.md` §8.7 says so. Open issues from the 2026-11-06 audit are in `AUDIT_2026-11-06.md`.
 
@@ -17,7 +18,7 @@ Everything here is post hoc relative to `baseline-v1`. The sections below are th
 - **Honest convergence reporting:** `settled_from()` returns `None` when the final policy did not settle in the checkpoints. Evaluation and reports do not claim final-policy convergence when the cached history ends on another portfolio. The report omits the missing settlement marker and has no post-settlement excursions to count.
 - **Regression coverage:** a real-calibration seed reproduces the original crash end to end; controlled exact ties and float32 near-ties check the final policy and preserved history; settlement tests cover missing and empty histories.
 - **Validation:** all 366 tests pass. An independent two-seed tabular comparison against `dev` produced identical saved arrays and configurations.
-- **Scope:** changes are in `train.py`, `evaluate.py`, reporting extraction/template and tests. No tuning, full-scale FA runs or changes to the agent update rule are included. The integration work in §2 is still outstanding.
+- **Scope:** changes are in `train.py`, `evaluate.py`, reporting extraction/template and tests. No tuning, full-scale FA runs or changes to the agent update rule are included. The integration work in §2 was still outstanding then; it was done before the runs (merged in PR #23).
 
 ---
 

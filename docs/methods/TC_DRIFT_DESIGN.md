@@ -1,6 +1,6 @@
 # Transaction Costs with Drift: Design
 
-**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-18):** Phase 2. Merged into `dev`: `spec.py`, `calibration.py`, `env.py` (Albert), `oracle.py`, `features.py`, `agent.py` and the oracle runs with checks 3 and 4 (William). On `feature/tc-drift-train` (Albert): `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py`, with check 5 measured (§5). Agent tuning waits on the §9 choice. **Post hoc** relative to `baseline-v1`; label every result that way.
+**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-20):** built, checked and tuned. Merged into `dev`: `spec.py`, `calibration.py`, `env.py`, `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py` (Albert); `oracle.py`, `features.py`, `agent.py`, the oracle runs, the recursive-least-squares cost block and the tuning pilot (William). On `feature/tc-drift-runs`, for Albert's review: the run driver `run.py` and the final settings (§10). The 40 final agent runs have not run yet. **Post hoc** relative to `baseline-v1`; label every result that way.
 
 ---
 
@@ -37,7 +37,7 @@ The new design uses the assignment's original three ETFs (SPY, IEF, GLD). It let
 - **Three shared files changed, each by one line or one table row:**
   - `src/tests/test_environment.py`: the two new agent modules are added to `AGENT_MODULES`, so the existing leakage scan covers them.
   - `CLAUDE.md` and `docs/README.md` list this document.
-- **Phase 1 ends here.** After approval each person gets one implementation prompt.
+- **Phase 1 ends here.** After approval each person gets one implementation prompt. (Approved and merged 2026-11-12, PR #33.)
 
 ## 2. Locked decisions, checked against the repo
 
@@ -132,7 +132,7 @@ The cost matrix is 5,151 × 1,326, 55 MB in float64. The next indices are stored
 - **Memory.** The cost matrix, the sweeps and the transition matrix are processed 1,024 rows at a time. On the 0.5% lattice (check 4) at M = 2,000 the solve peaks at 474 MB (tracemalloc) and takes about 6.4 minutes.
 - **Extra fields** on `OracleSolution`, beyond those in §10: `U`, the cost matrix, `block_length` and `n_iterations`.
 - **Checks 1 and 2 pass** (the gate). Check 1 runs at $1B on the 1% lattice and at $10B and a steep cost on the 2% lattice; values agree with the old solver to 1e-11, and policies agree on every state whose best two destinations differ by more than 1e-11. In check 2 with drift, the oracle's lead over always rebalancing to the best target is 0.008 bps/yr at the median lattice state (M = 2,000; at most 0.012).
-- **Checks 3 and 4 pass at every setting** (2026-11-17; `python -m src.tc_drift.oracle_runs`, 52 minutes; merged `env.block_outcome`; numbers in `results/tc-drift/oracle/summary.json`). One scoring of the lattice serves every cost setting and the myopic reference, because the scoring does not depend on κ, λ or ρ (`oracle.score` and `oracle.solve_scored`; `solve` is the two in a row and its signature is unchanged).
+- **Checks 3 and 4 pass at every setting** (2026-11-17; `python -m src.tc_drift.oracle_runs`, about 1 to 2.5 hours, since neither timing so far was on a quiet machine (`AUDIT_2026-11-06.md` TC-12); merged `env.block_outcome`; numbers in `results/tc-drift/oracle/summary.json`). One scoring of the lattice serves every cost setting and the myopic reference, because the scoring does not depend on κ, λ or ρ (`oracle.score` and `oracle.solve_scored`; `solve` is the two in a row and its signature is unchanged).
   - **Check 3 is restated on the policy** (decided William 2026-11-17, after the V-based form failed, so post hoc). The M = 2,000 and M = 4,000 policy tables are both scored with `value_of` in an independent model: 4,000 paths from SeedSequence entropy (20261016, 4), which neither policy was fitted on. It passes if the mean difference over the 1,326 2% starts is under 0.5 bps/yr in size, so it can fail in either direction. The independent model is the reviewer's correction of my first version, which scored both in the M = 4,000 model; that model shares its first 2,000 paths with the M = 2,000 policy, so its bias has no fixed sign. That form is in `summary.json` too.
   - **Check 4** compares the mean V over the 2% starts on the 0.5% and 1% lattices, as decided.
 
@@ -286,7 +286,7 @@ All policies are scored from the same start holdings on the same simulated paths
 
 **Implemented** (`src/tc_drift/evaluate.py`, 2026-11-17; tests in `src/tests/test_tc_drift_train_evaluate.py`): `evaluate_policy` and the four adapters as frozen, plus `best_static_target`, `draw_evaluation_set` (the pilot's draw order), `paired_gap`, `model_value` (finite-horizon value of a lattice policy in the oracle's model), `lattice_table` and `probe_convergence` (the original D12 rule only; the operative D12 is `tune.convergence` with probes, §6). `evaluate_policy` is checked against a separate share-and-price loop for four policies, and `model_value` against `value_of` and hand-computed one- and two-step values. The policy gets a copy of the holdings. A trade of zero size counts as a hold; turnover is one-way.
 
-`src/tc_drift/train.py` (same date) follows §6 and William's note: the agent is updated with the true drifted end holdings even on the block before a restart, the first block and every `restart_every`-th start from a draw from the start states, and probes are read with `greedy_action` after the checkpoint block's update. It is checked against a separate replay that redraws the returns one block at a time and recomputes every (s, a, r, s′) with the share loop and the cost formula. Returns are drawn 1,024 blocks at a time, which gives the same numbers as one at a time (tested). `src/tc_drift/config.py` holds H, m, the oracle's M, 10 seeds, restarts every 90 blocks (the evaluation horizon; Albert's proposal), the training starts (the 2% grid, D4), the probe states (the 1,326 targets plus 200 off-grid lattice points from seed (20261112, 1)) and the seed layout. N_BLOCKS, the checkpoint interval and the hyperparameters stay pending until tuning (`config.pending()`). `probe_convergence` checks probes only at checkpoints, so a flip that reverts between two checkpoints is not seen; the baseline's rule tracked every change. Disclose it.
+`src/tc_drift/train.py` (same date) follows §6 and William's note: the agent is updated with the true drifted end holdings even on the block before a restart, the first block and every `restart_every`-th start from a draw from the start states, and probes are read with `greedy_action` after the checkpoint block's update. It is checked against a separate replay that redraws the returns one block at a time and recomputes every (s, a, r, s′) with the share loop and the cost formula. Returns are drawn 1,024 blocks at a time, which gives the same numbers as one at a time (tested). `src/tc_drift/config.py` holds H, m, the oracle's M, 10 seeds, restarts every 90 blocks (the evaluation horizon; Albert's proposal), the training starts (the 2% grid, D4), the probe states (the 1,326 targets plus 200 off-grid lattice points from seed (20261112, 1)) and the seed layout. N_BLOCKS, the checkpoint interval and the hyperparameters stay pending until tuning (`config.pending()`). *Set 2026-11-20 (§10); `config.pending()` is now empty.* `probe_convergence` checks probes only at checkpoints, so a flip that reverts between two checkpoints is not seen; the baseline's rule tracked every change. Disclose it.
 
 **Reference policies:**
 - the oracle;
@@ -369,7 +369,7 @@ Leads in bps/yr. Turnover is one-way, ‖t − s‖₁/2. Always rebalancing hol
 - **Choosing rule, fixed before running:**
   1. The highest mean over 3 tuning seeds wins.
   2. If the runner-up is within one paired standard error, add 3 seeds and decide on 6. This is the rule `src/tune_fa.py` used.
-- **Candidate grid:** William, Phase 2. Not fixed yet: the pilot (§6) shows that one constant α for both blocks cannot resolve the cost coefficients at the real noise level. Options to decide before tuning, none tried yet:
+- **Candidate grid:** William, Phase 2. *Superseded by the decision of 2026-11-19 below.* Before it: the pilot (§6) shows that one constant α for both blocks cannot resolve the cost coefficients at the real noise level. Options to decide before tuning, none tried yet:
   - separate, smaller α_cost (the two blocks already have separate step sizes), with a much longer budget;
   - decaying step sizes, α_t ∝ 1/t from some point on, which average the noise away (the assignment allows them, and the tabular baseline used 1/N);
   - decorrelating the two cost features, for example ‖u‖₁ and ‖u‖₂² − b‖u‖₁ for a fixed b, which changes only how they are parameterized, not what the agent can represent;
@@ -378,7 +378,7 @@ Leads in bps/yr. Turnover is one-way, ‖t − s‖₁/2. Always rebalancing hol
   Then pilot the D12 convergence rule on the tuning seed before fixing the grid.
 
   **Decided 2026-11-19 (William), after the cost-block analysis below and before any tuning run:**
-  - **Rule:** recursive least squares on the cost block (c1, c2), started after a burn-in at constant α_cost; θ keeps a constant α_value. The fit starts at the switch from the costs the burn-in ended with, under a small prior (1e-3·I, decided William 2026-11-19): the burn-in's constant-step costs were 3 to 10 times off in the §6 pilot, so they get almost no weight, at the price of noisy costs for roughly the first 15,000 trades after the switch (an estimate from the synthetic regression, to be read off the pilot's checkpoints). The D11 clamp is applied when the costs are read, not inside the recursion (a review on 2026-11-19 found the clamp inside the recursion biases the costs upward). The burn-in length used in the pilot is listed below and is not yet confirmed. The choice was informed by benchmark information (the true c1 and c2, and the pilot's target error computed from μ and Σ); disclose it with §14 risk 5.
+  - **Rule:** recursive least squares on the cost block (c1, c2), started after a burn-in at constant α_cost; θ keeps a constant α_value. The fit starts at the switch from the costs the burn-in ended with, under a small prior (1e-3·I, decided William 2026-11-19): the burn-in's constant-step costs were 3 to 10 times off in the §6 pilot, so they get almost no weight, at the price of noisy costs for roughly the first 15,000 trades after the switch (an estimate from the synthetic regression, to be read off the pilot's checkpoints). The D11 clamp is applied when the costs are read, not inside the recursion (a review on 2026-11-19 found the clamp inside the recursion biases the costs upward). The burn-in length used in the pilot is listed below; confirmed 2026-11-20. The choice was informed by benchmark information (the true c1 and c2, and the pilot's target error computed from μ and Σ); disclose it with §14 risk 5.
   - **Budget:** 4 million blocks per seed, with ε_t = e^{−βt} reaching 1% at the halfway point: β = ln 100 / 2,000,000 ≈ 2.30e-6, about 434,000 exploring blocks.
   - **Candidate grid:** α_value ∈ {3e-4, 1e-3}, 3 tuning seeds, chosen by the rule above.
   - **Chosen by Claude for the pilot, confirmed by William 2026-11-20 for the final runs:** the burn-in ends when ε first reaches 0.5 (cost_rls_after = round(ln 2 / β) = 301,030 updates); α_cost = α_value during the burn-in; target_refresh_every = 1,000; l2 = 0.
@@ -446,9 +446,9 @@ Leads in bps/yr. Turnover is one-way, ‖t − s‖₁/2. Always rebalancing hol
 `src/tc_drift/calibration.py` (shared, written 2026-11-12) gives the four cost levels as `TCSettings`; the agent may not import it. A config module or JSON for the runs belongs to Albert (C5).
 
 **The final runs** (`src/tc_drift/run.py`, written 2026-11-20 by William with Claude, for Albert's review, since the run driver was Albert's (TC-2) and the runs had to start before the Nov 24 go/no-go):
-- `python -m src.tc_drift.run queue --workers 6` trains every (level, seed) not yet saved, the headline $1B level first, each in its own process with BLAS pinned to one thread; `run train --level L --seed N` trains one.
+- `python -m src.tc_drift.run queue --workers 6` (about 17 hours: 40 runs at 6 at a time is 7 rounds, at the pilot's 2.43 hours a run, `train_seconds` in `results/tc-drift/tuning/`) trains every (level, seed) not yet saved, the headline $1B level first, each in its own process with BLAS pinned to one thread; `run train --level L --seed N` trains one.
 - `python -m src.tc_drift.run evaluate --level L` scores that level's 10 seeds on m = 4,000 paths from the reported evaluation stream: per seed the tail-averaged policy (headline), the last-iterate policy and always rebalancing to the averaged agent's favourite target (TC-3); once per level the oracle and myopic (the lattice tables from `oracle_runs`, played through the nearest 1% point), always rebalancing to the best target and trading once. It writes `summary.json`, `per_seed.csv` and `values.npz` (every policy's per-path values). `run report` puts the levels side by side.
-- Each training record holds D12 under all four versions (§6). The scoring rebuilds each agent with `DriftAgent.with_parameters` and checks its favourite target against the saved one; the agent is scored with `DriftAgent.greedy_actions`, a batched `greedy_action` with the same actions (tested on 117,000 state-policy pairs from the pilot and in `test_tc_drift_agent.py`).
+- Each training record holds D12 under all four versions (§6); the 2026-11-12 original is computed for its probe primary only, since its secondary (within 25 bps of the oracle) needs the evaluation paths. The scoring rebuilds each agent with `DriftAgent.with_parameters` and checks its favourite target against the saved one; the agent is scored with `DriftAgent.greedy_actions`, a batched `greedy_action` with the same actions (tested on 117,000 state-policy pairs from the pilot and in `test_tc_drift_agent.py`).
 - **Checkpoints every 40,050 blocks**, the tuning pilot's grid, so the tail average (11 snapshots), the D12 window (12 checkpoints from block 3,564,450) and the split halves (5 and 6) are exactly the pilot's (§6). θ is saved only at checkpoints, so this cannot change after training.
 - **Safeguards** (from the 2026-11-20 review): each run records the code's hashes when it starts and refuses to save if they changed by the end; records are written atomically; the queue and the scoring refuse records trained with other settings, and the scoring refuses seeds from different commits; the scoring checks each rebuilt agent against the logged probe actions. Run the queue from a git worktree pinned to the commit (`git worktree add ../mfq-runs <commit>`), so edits to the main checkout cannot reach jobs that start later.
 - The per-seed arrays (`results/tc-drift/runs/<level>/seed*.npz`, θ at every checkpoint) are committed (a `.gitignore` exception), and each seed's JSON also holds the averaged and final θ, so the scoring and D12 can be redone from the repository.
@@ -481,7 +481,7 @@ They may not use star imports, `importlib`, `__import__`, `open`, `eval`, `np.lo
 
 **Go/no-go for the agent runs, Nov 24 (William, 2026-11-19).** If the learning rule is implemented and tuned by Nov 24, run the agent at the four levels; otherwise report the oracle results and a diagnosed null agent result (prospectus §7).
 
-**Gate, Nov 17.** The environment plus oracle checks 1 and 2 must pass. If not, fall back to the no-drift design with "learn each target's reward, then plan" (`AUDIT_2026-11-06.md` §6.2, T1), plus the negative result. The prospectus (week 9: "first full report draft") assumes a draft by Nov 19; this timeline moves TC results past that (C12).
+**Gate, Nov 17. Met** (§5). The environment plus oracle checks 1 and 2 must pass. If not, fall back to the no-drift design with "learn each target's reward, then plan" (`AUDIT_2026-11-06.md` §6.2, T1), plus the negative result. The prospectus (week 9: "first full report draft") assumes a draft by Nov 19; this timeline moves TC results past that (C12).
 
 ## 12. Numbers verified for this design
 
@@ -501,8 +501,8 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 | Counts | 1,326 targets; 5,151 lattice points (1%); 20,301 (0.5%); every target on the 1% lattice |
 
 **Not verified:**
-- oracle run time on the 0.5% lattice (the 1% lattice is measured in §5);
-- the agent's speed on the final tuned agent: measured 2026-11-17 on `train.py` at 0.57 ms a block with the current `DriftAgent` at $1B (about 9.5 minutes per million blocks), and 0.22 s per checkpoint over the 1,526 probe states; a recursive-least-squares cost block (§9) would add a 2×2 solve per update.
+- ~~oracle run time on the 0.5% lattice~~ Measured since: about 6.4 minutes at M = 2,000 (§5).
+- ~~the agent's speed on the final tuned agent~~ Measured 2026-11-17 on `train.py` at 0.57 ms a block on Albert's machine, before the recursive-least-squares cost block; in the 2026-11-19 tuning pilot, with it, a 4-million-block run took about 2.4 hours with six in parallel and BLAS pinned on William's laptop (§9).
 
 ## 13. Conflicts with the repo, and questions
 
@@ -521,7 +521,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - *Decision taken:* a new file, `src/tc_drift/features.py`, reusing `bspline_basis` by import.
 
 **C5. `src/config.py` cannot host this family.** `RunVariant` and `Experiment` describe stateless runs on the nine-asset grid. `config.py` is also fingerprinted in evaluation provenance (`src/evaluate.py` `EVAL_CODE_FILES`), so adding to it changes every run's evaluation code hash.
-- *Recommendation:* a separate `src/tc_drift/config.py` (Albert), or JSON under `experiments/tc-drift/`, as the old TC design did.
+- *Recommendation:* a separate `src/tc_drift/config.py` (Albert), or JSON under `experiments/tc-drift/`, as the old TC design did. *Done:* `src/tc_drift/config.py` (Albert, merged 2026-11-19).
 
 **C6. Oracle check 2 as worded is not exact.** "κ = λ = 0 equals the best portfolio held forever" fails in two ways:
 - HOLD keeps an off-grid lattice start, which can beat every target;
@@ -530,7 +530,7 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 §5 restates check 2 as an exact equality without drift and a provable inequality with drift.
 
 **C7. HOLD makes weights off the 2% grid reachable.** The Part II "best portfolio in the agent's discrete action set" is no longer a fixed set, because the reachable weights depend on the start and on drift. The extension's discrete benchmark is the oracle on the same action set. The static continuous optimum is still reported.
-- *Open (D4):* draw evaluation starts from the 2% grid, from the 1% lattice, or uniformly on the triangle? Grid starts keep "off-grid luck" out of the comparison.
+- *Decided (D4, below):* evaluation starts drawn uniformly from the 2% grid. Grid starts keep "off-grid luck" out of the comparison.
 
 **C8. Two value models for one function.** θ_f·φ(target) and θ_h·ψ(s) both estimate G (§3), at different points. Separate parameters mean HOLD learns only from HOLD steps.
 - *Decided (D5, 2026-11-12):* share them (one θ, one φ). This halves the parameters, lets every step teach both, and matches the exact structure. It still keeps the learned cost terms, so the agent is no less model-free.
@@ -542,17 +542,17 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 
 **C11. The myopic reference needs the oracle with ρ = 0.** In the stub, `solve` takes a `discount` argument.
 
-**C12. The prospectus is out of date for TC** (William's file; I have not edited it). Rows that would change after approval:
+**C12. The prospectus is out of date for TC** (William's file; I have not edited it). *Updated 2026-11-20:* §4 has the redesign split; the week 9 draft date did not hold (`AUDIT_2026-11-06.md` TC-4). Rows that would change after approval:
 - §4: "Transaction-cost extension | Albert built it; redesign paired" becomes this split;
 - §5, week 9: the draft date against the Nov 20 to 26 TC runs.
 
 **C13. Two documents still describe the old options as current.** `TRANSACTION_COSTS.md` and `AUDIT_2026-11-06.md` §6.2 were not touched, by instruction. *Updated 2026-11-20:* the audit's §6.2 now carries the pointer (2026-11-19); the one in `TRANSACTION_COSTS.md` is Albert's.
-- *Open (D7):* add a one-line pointer to this document in each after approval?
+- *Decided (D7, below):* a pointer in each. The audit's is in; the one in `TRANSACTION_COSTS.md` is Albert's and still open.
 
 **C14. A one-line edit in Albert's test file.** `src/tests/test_environment.py` `AGENT_MODULES` gains `src.tc_drift.agent` and `src.tc_drift.features`.
 
 **C15. The discount needs a justification in the report.** ρ = 0.95 per 63-day block is about 0.81 per year: a reward 13.5 blocks (3.4 years) ahead counts half. The assignment asks to "explain its role". The continuation now differs by action, which is the point of the extension.
-- *Open (D8):* is 0.95 per block the intended value, or was 0.95 per year meant? That would be about 0.987 per block.
+- *Decided (D8, below):* 0.95 per block. (0.95 per year would be about 0.987 per block.)
 
 **Decisions needed before Phase 2:**
 - **D1 (C1). Decided:** the three ETFs the nine-asset optimum holds, chosen for computational convenience; the benchmark-leakage caveat goes in the report.
@@ -564,36 +564,27 @@ Reproduced by `python -m src.tc_drift.design_numbers`, seed 20261113, 20,000 pat
 - **D7 (C13). Decided:** a one-line pointer to this document in each, added when this design merges into `dev`.
 - **D8 (C15). Decided:** 0.95 per block, described in the report as a 5-year investor (half the weight at 3.4 years). 0.95 per year would need about 350-block evaluation paths and noisier learning.
 - **D9 (§8). Decided:** realistic costs at four portfolio sizes (zero, $100M, $1B headline, $10B), from spreads and square-root impact on our own volume data, fitted across trade sizes.
-- **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE). *Measured 2026-11-17 (§5):* the lead is 1.30 ± 0.70 bps/yr at $1B and 7.10 ± 1.26 at $10B, so at $1B the rule asks for an agent-gap SE of about 0.43 or less. Albert decides m once the agent's gap SE is known; m = 4,000 is the likely answer.
+- **D10 (§7). Decided (Albert, 2026-11-13):** H = 90 blocks and 1,000 starting holdings, as proposed. The §7 pilot gives paired-gap SEs from 0.5 to 7.4 bps/yr depending on how far apart the two policies' holdings get. Once the oracle exists, measure the oracle-minus-always-rebalance gap and the agent-against-oracle gap's SE, and raise m until that SE is below a third of the oracle-minus-always-rebalance gap (m = 4,000 halves every SE). *Measured 2026-11-17 (§5):* the lead is 1.30 ± 0.70 bps/yr at $1B and 7.10 ± 1.26 at $10B, so at $1B the rule asks for an agent-gap SE of about 0.43 or less. Albert decides m once the agent's gap SE is known; m = 4,000 is the likely answer. *Set 2026-11-20 (William, D-E, for Albert's review):* m = 4,000, before any final agent result (§7).
 - **D11 (§6). Decided:** θ₁ and θ₂ are kept at zero or above.
 - **D12 (§6). Decided:** the rule mirrors the baseline's `greedy_stable_through_end`, applied to the probe states (§6). It may be revised after the tuning pilot, before any final results are examined, and labelled as a change (William, 2026-11-17). **Changed 2026-11-19 (William), before the tuning pilot:** favourite target within one 2% step over the final 10% (primary), 95% of probes stable (secondary), original verdict reported alongside (§6). **Changed again 2026-11-19 (William), after the tuning pilot and after seeing its benchmark diagnostics, before any final run:** the reported policy is greedy on the tail-averaged θ (mean of the checkpoint snapshots over the final 10%), and the rules are applied to its trailing averages; the last iterate's verdicts are reported alongside (§6, §9). **Secondary restated 2026-11-20 (William), labelled:** 95% of probes with post-decision holdings within one 2% step of the final checkpoint's throughout the window; a run has converged when the primary and this hold; Part IV's converged-from block is reported (§6). **Frozen 2026-11-20:** no further changes; the final runs report all four versions' verdicts.
 
-C4, C10, C11 and C14 are already settled in the stubs; C5 and C12 need only the edits described.
+C4, C10, C11 and C14 are already settled in the stubs; C5 and C12 need only the edits described (both done).
 
 ## 14. Risks
 
-1. **The agent may not resolve the decisions.** One block's reward has a standard deviation of 2,390 bps/yr, while one block of drift from the optimum costs 1.3 bps/yr. To resolve that loss at one standard error the agent would need about (2,390/1.3)², roughly 3 million, blocks spent on the comparison. The oracle sweep should pick costs where decisions matter, and the agent's expected directions are registered only after tuning. A null agent result against a working oracle is still a reportable finding. **Measured 2026-11-15 (§6 pilot):** after 500,000 blocks at constant α the cost coefficients are still off by factors of 3 to 10.
+1. **The agent may not resolve the decisions.** One block's reward has a standard deviation of 2,390 bps/yr, while one block of drift from the optimum costs 1.3 bps/yr. To resolve that loss at one standard error the agent would need about (2,390/1.3)², roughly 3 million, blocks spent on the comparison. The oracle sweep should pick costs where decisions matter. The agent's runs have no registered expected directions (§15). A null agent result against a working oracle is still a reportable finding. **Measured 2026-11-15 (§6 pilot):** after 500,000 blocks at constant α the cost coefficients are still off by factors of 3 to 10.
 2. **Divergence (§6).** Checked against the oracle's G after training.
 3. **The oracle is approximate.** Rounding and finite paths are bounded by checks 3 to 5, and its in-sample V is biased upward. Gaps use its replayed value, and a policy on continuous holdings can beat it slightly, so small negative gaps are possible.
-4. **Compute and the gate.** Oracle time is unmeasured, and the 0.5% lattice check is four times the work. If checks 1 and 2 fail by Nov 17, fall back (§11).
+4. **Compute and the gate.** Oracle time is unmeasured, and the 0.5% lattice check is four times the work. If checks 1 and 2 fail by Nov 17, fall back (§11). *Closed:* both measured (§5) and the gate met on Nov 17.
 5. **Disclosure.** The universe framing (C1), cost levels chosen with the oracle (§8), tuning on simulated data (as in `AUDIT_2026-11-06.md` M12), and post-hoc labels on everything. *Added 2026-11-20 (`AUDIT_2026-11-06.md` TC-13):* benchmark information shaped the agent's design, though never its inputs or the tuning criterion. The learning rule (§9) was chosen with the true c1 and c2 (from κ and λ) and the target error (from μ and Σ) in view; the tail-averaged policy (§6, 2026-11-19) was adopted after the tuning pilot's oracle gaps and utility losses had been seen; the restated secondary rule (§6, 2026-11-20) after its split-half distances had been seen. All of it is on the tuning seed, before any final run.
 6. **Maximization bias** in the bootstrapped target, from noisy Q̂. Measured against the oracle.
-
-**Expected directions for the final agent runs (D-F). Proposed 2026-11-20 by Claude, from the design and the tuning pilot (tuning seed only, §9), for William and Albert to confirm before any final run is scored.** Training may start first: the directions only have to be fixed before results are examined (Part IV). Gaps are means over the 10 seeds of each seed's paired gap, in bps/yr. The SE used is the larger of the across-seed SE and the path SE of the seed-averaged gap (`seed_averaged_path_gaps`; every seed is scored on the same paths, so the across-seed SE misses the path noise). "Below zero" means more than two SEs below; "about zero" means within two SEs.
-1. **The agent trails the oracle at every level with costs** ($100M, $1B, $10B): agent minus oracle below zero. At $1B, between −1 and −6 (pilot −2.8 to −3.9).
-2. **The agent does not beat always rebalancing to the best target at $1B or below**: agent minus always-rebalance about zero or negative (pilot −1.5 to −2.6). At $10B, where the oracle leads always-rebalance by 7.1 ± 1.3, the agent captures less than half of that lead.
-3. **Most of the agent's gap is where it heads, not when it trades (TC-3)**: at $1B and $10B, |favourite-rebalance minus always-rebalance| exceeds |agent minus favourite-rebalance| on average over seeds (pilot 1.1 to 3.2 against 0.5 to 0.7).
-4. **At zero cost the agent's gap to the oracle is favourite-target error**: agent minus favourite-rebalance is about zero there (the oracle and always-rebalance agree to within 0.03 ± 0.08 at zero cost, so by the TC-3 identity the gap is then the favourite-target term).
-5. **The agent holds more at $10B than at zero cost**: its mean hold fraction over seeds on the evaluation paths is higher at $10B than at zero, as the oracle's is (0.15, 0.28, 0.32, 0.45 from zero to $10B). Not a strict ordering over all four levels: the pilot's hold fraction ranged from 0.12 to 0.55 across seeds at $1B alone.
-6. **The agent beats trading once and then holding at every level** (always-rebalance beats it by 20 to 24 bps/yr in the D10 pilot).
-7. **Convergence (D12, 2026-11-20) on fewer than half the seeds at each level** (pilot: 1 of 3 at $1B). Under the original rule, none.
-8. **Costs at $1B and $10B**: the learned c2 within a factor of 2 of its true value on at least 6 of 10 seeds; c1 outside a factor of 2 on at least half the seeds (pilot 0 to 3.2 times true). At $100M, neither within a factor of 2 on a majority of seeds.
 
 ## 15. Decisions not taken
 
 - **Nine assets with drift.** Discussed 2026-11-11. The holdings would be an 8-dimensional continuous state, so an exact oracle is out of reach.
 - **Pure quadratic cost without HOLD.** Drift would be economically immaterial: re-centering a 2% drift costs almost nothing under a quadratic cost.
 - **A tabular agent over (lattice state, action).** About 6.8 million pairs, the same data-starvation that sank the first design (H1).
+- **Expected directions for the final agent runs (D-F).** Eight were drafted 2026-11-20 and dropped the same day by William before any final run was trained: the runs are reported as observed, without predictions. The assignment requires only that convergence be defined before the final results are examined (Part IV), and D12 (§6) is frozen as of 2026-11-20 for that. The oracle's directions (§8) stay. This departs from the project's habit of registering a direction for every run (`reports/README.md`).
 - **Giving the agent the cost formula (afterstate learning with known costs).** Accurate and simpler, but the agent would know κ and λ. Rejected so the agent stays model-free in costs too.
 
 ## 16. Review (2026-11-12)
