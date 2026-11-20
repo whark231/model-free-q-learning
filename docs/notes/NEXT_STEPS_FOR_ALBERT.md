@@ -157,6 +157,24 @@ H4 (William's item) is closed: the constant-α experiment (`tabular-const`, `fa-
 
 **Decisions we need together** (audit §9.4): how the first TC design appears in the report (D-G); the schedule, with a TC go/no-go date, since the prospectus's week 10 "light schedule" clashes with the design's Nov 20 to 26 runs (D-H); the agent's expected directions before the runs (D-F); and who runs the tuning pilot (D-C; design §9 says you).
 
+## From William, 2026-11-19 (evening): tuning is done, and the agent is scored on an averaged θ
+
+**TL;DR / In plain terms:** the tuning pilot ran and picked α_value = 3e-4. The agent's weights kept wobbling to the end of training, so the policy we report is now built from the average of its weights over the last 10% of training rather than the last weights. Your run driver needs θ at every checkpoint to do that, and should score both versions.
+
+**Key concepts to understand**
+- **Iterate averaging.** With a constant step size, the weights never settle; they keep jittering around a good value as each noisy reward pushes them. Averaging the snapshots over the last stretch cancels most of that jitter, so the averaged weights are a steadier estimate of the same thing. Nothing about the agent's learning changes; only which weights we evaluate.
+- **Why the probe rule still fails.** Between the first and second half of the final 10%, the averaged policies send 85% to 91% of the probe states to targets within one 2% step of each other, and agree on hold versus trade at 99.5%+. The exact-action rule counts a move to the neighbouring target as a change.
+
+**Key takeaways**
+- Hyperparameters for the final runs (all confirmed 2026-11-20): `alpha_value = 3e-4`, `alpha_cost = 3e-4`, `beta = ln(100) / 2,000,000`, `cost_rls_after = 301_030`, `cost_rls_prior = 1e-3` (the default), `target_refresh_every = 1000`, `l2 = 0`. Designs and numbers in `TC_DRIFT_DESIGN.md` §6 and §9.
+- On my machine a 4M-block run took 2.4 hours with six in parallel and BLAS pinned.
+
+**What changes for the run driver (TC-2, TC-6):**
+1. Log θ at every checkpoint (TC-6). With `CHECKPOINT_EVERY = 40_000` and 4M blocks, the final 10% holds 10 snapshots.
+2. The reported policy: `agent.with_parameters(theta_mean, (c1, c2))`, where `theta_mean` is the mean of the θ snapshots at checkpoints with block > 0.9·N and the costs are the agent's final ones. `src/tc_drift/tune.py` has `trailing_average` and `averaged_policy` (which also applies D12 to the averaged policy) that you can call rather than rewrite.
+3. Score the averaged policy and the last-iterate policy on the same paths, and report both; the averaged one is the headline. The TC-3 reference policy uses the averaged agent's `favourite_target()`.
+4. **Convergence, restated 2026-11-20** (design §6): a run has converged when the favourite target stays within one 2% step over the final 10% and 95% of probes keep their post-decision holdings within one 2% step. `tune.convergence(log, n_blocks, probes)` computes it, and the first checkpoint from which it holds (blocks, episodes, daily observations) for Part IV. `tune.averaged_policy` returns it for the averaged policy. Report how many of the 10 seeds converge at each level; on the pilot one of three did. `evaluate.probe_convergence` implements only the original rule, so please report D12 through `tune.convergence` (or move it into `evaluate.py`), with all four versions' verdicts. `converged_from_*` is None on a run that has not converged. The rule is frozen as of 2026-11-20.
+
 ## From William, 2026-11-17: the oracle has run, and I agree with the paired check 5
 
 **TL;DR / In plain terms:** the oracle is solved for all four portfolio sizes and the two $1B illustrations, and checks 3 and 4 pass everywhere, so 2,000 paths and the 1% lattice are enough (check 3 can say little at zero cost and $100M, where the oracle barely beats always rebalancing). I agree with the paired form of check 5 (design §5), so you can build it into `evaluate.py` as written. The oracle's lead over always rebalancing at $1B is about 1.3 bps/yr, which probably means more than 1,000 evaluation starts.
