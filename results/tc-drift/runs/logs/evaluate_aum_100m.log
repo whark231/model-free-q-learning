@@ -1,0 +1,113 @@
+[aum_100m] seed 0: agent - oracle -8.57 (0.90), converged False
+[aum_100m] seed 1: agent - oracle -15.02 (1.19), converged True
+[aum_100m] seed 2: agent - oracle -13.95 (1.15), converged True
+[aum_100m] seed 3: agent - oracle -12.43 (1.09), converged True
+[aum_100m] seed 4: agent - oracle -5.18 (0.69), converged True
+[aum_100m] seed 5: agent - oracle -4.80 (0.70), converged False
+[aum_100m] seed 6: agent - oracle -20.19 (1.43), converged True
+[aum_100m] seed 7: agent - oracle -16.08 (1.25), converged True
+[aum_100m] seed 8: agent - oracle -20.64 (1.41), converged True
+[aum_100m] seed 9: agent - oracle -14.06 (1.17), converged False
+{
+  "level": "aum_100m",
+  "across_seeds": {
+    "agent_minus_oracle_mean": {
+      "mean": -13.091658743598833,
+      "sd_across_seeds": 5.517236177284896,
+      "se_across_seeds": 1.7447032709300812,
+      "min": -20.64191548235401,
+      "max": -4.795960393334596
+    },
+    "agent_minus_always_rebalance_mean": {
+      "mean": -12.674239324247644,
+      "sd_across_seeds": 5.517236177284895,
+      "se_across_seeds": 1.744703270930081,
+      "min": -20.22449606300282,
+      "max": -4.378540973983406
+    },
+    "agent_minus_trade_once_then_hold_mean": {
+      "mean": 9.850939462619833,
+      "sd_across_seeds": 5.517236177284894,
+      "se_across_seeds": 1.7447032709300807,
+      "min": 2.3006827238646594,
+      "max": 18.146637812884073
+    },
+    "agent_minus_myopic_mean": {
+      "mean": -13.10306906398091,
+      "sd_across_seeds": 5.517236177284895,
+      "se_across_seeds": 1.744703270930081,
+      "min": -20.65332580273609,
+      "max": -4.807370713716676
+    },
+    "agent_minus_last_iterate_mean": {
+      "mean": 0.4208436849053558,
+      "sd_across_seeds": 1.3209126594143124,
+      "se_across_seeds": 0.4177092593899483,
+      "min": -1.1360243718282108,
+      "max": 3.318354880353245
+    },
+    "last_iterate_minus_oracle_mean": {
+      "mean": -13.512502428504188,
+      "sd_across_seeds": 4.57608447155671,
+      "se_across_seeds": 1.4470849695447205,
+      "min": -19.74224085652929,
+      "max": -6.279359700341269
+    },
+    "split_agent_minus_own_target_mean": {
+      "mean": 0.07623590869421162,
+      "sd_across_seeds": 0.7957260741948345,
+      "se_across_seeds": 0.25163067880398116,
+      "min": -0.9640425530558918,
+      "max": 1.883596548483156
+    },
+    "split_own_target_minus_always_rebalance_mean": {
+      "mean": -12.750475232941856,
+      "sd_across_seeds": 5.734685695084201,
+      "se_across_seeds": 1.8134668461651942,
+      "min": -20.28710920670804,
+      "max": -3.479090129475348
+    },
+    "agent_hold_fraction": {
+      "mean": 0.2462186111111111,
+      "sd_across_seeds": 0.24645797984992165,
+      "se_across_seeds": 0.07793685638496357,
+      "min": 0.0013944444444444445,
+      "max": 0.7053333333333333
+    },
+    "agent_turnover_per_block": {
+      "mean": 0.02283883601809114,
+      "sd_across_seeds": 0.0067670443006427805,
+      "se_across_seeds": 0.0021399273017292417,
+      "min": 0.01042565458848933,
+      "max": 0.02908168344627971
+    },
+    "agent_cost_bps_per_block": {
+      "mean": 0.1371322358612361,
+      "sd_across_seeds": 0.029755583281925818,
+      "se_across_seeds": 0.009409541627771372,
+      "min": 0.08293840896007558,
+      "max": 0.16605821515931837
+    },
+    "favourite_target_utility_loss_bps": {
+      "mean": 12.949636534673484,
+      "sd_across_seeds": 5.535106519577993,
+      "se_across_seeds": 1.7503543693513837,
+      "min": 4.5556595576509045,
+      "max": 20.675175534007884
+    },
+    "d12_converged_count": {
+      "2026_11_12_original_primary_last_iterate": 0,
+      "2026_11_19_exact_action_last_iterate": 0,
+      "2026_11_19_tail_average": 0,
+      "2026_11_20_operative": 7
+    },
+    "train_hours_mean": 0.3367583333333333
+  },
+  "d10": {
+    "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+    "target_se": 0.13913980645039672,
+    "mean_agent_minus_oracle_se": 1.0990179628791759,
+    "applicable": false,
+    "met": false
+  }
+}

@@ -1,0 +1,113 @@
+[aum_1b] seed 0: agent - oracle -8.88 (0.95), converged False
+[aum_1b] seed 1: agent - oracle -10.22 (0.97), converged True
+[aum_1b] seed 2: agent - oracle -9.27 (0.94), converged True
+[aum_1b] seed 3: agent - oracle -10.17 (0.93), converged False
+[aum_1b] seed 4: agent - oracle -2.64 (0.49), converged True
+[aum_1b] seed 5: agent - oracle -6.25 (0.78), converged False
+[aum_1b] seed 6: agent - oracle -10.60 (1.02), converged True
+[aum_1b] seed 7: agent - oracle -12.26 (1.08), converged True
+[aum_1b] seed 8: agent - oracle -19.61 (1.33), converged True
+[aum_1b] seed 9: agent - oracle -9.97 (0.94), converged True
+{
+  "level": "aum_1b",
+  "across_seeds": {
+    "agent_minus_oracle_mean": {
+      "mean": -9.987615491854113,
+      "sd_across_seeds": 4.319433661068013,
+      "se_across_seeds": 1.3659248570974691,
+      "min": -19.60897127345216,
+      "max": -2.63746649311259
+    },
+    "agent_minus_always_rebalance_mean": {
+      "mean": -8.208408390434025,
+      "sd_across_seeds": 4.319433661068013,
+      "se_across_seeds": 1.3659248570974691,
+      "min": -17.82976417203207,
+      "max": -0.8582593916925025
+    },
+    "agent_minus_trade_once_then_hold_mean": {
+      "mean": 13.548618184084797,
+      "sd_across_seeds": 4.319433661068013,
+      "se_across_seeds": 1.3659248570974691,
+      "min": 3.927262402486749,
+      "max": 20.89876718282632
+    },
+    "agent_minus_myopic_mean": {
+      "mean": -9.858734918447114,
+      "sd_across_seeds": 4.319433661068014,
+      "se_across_seeds": 1.3659248570974694,
+      "min": -19.480090700045164,
+      "max": -2.508585919705591
+    },
+    "agent_minus_last_iterate_mean": {
+      "mean": 0.19626242361340573,
+      "sd_across_seeds": 1.265778238372624,
+      "se_across_seeds": 0.4002742245933034,
+      "min": -0.872114871344841,
+      "max": 3.682306027984873
+    },
+    "last_iterate_minus_oracle_mean": {
+      "mean": -10.18387791546752,
+      "sd_across_seeds": 3.930273039338205,
+      "se_across_seeds": 1.2428614630661283,
+      "min": -18.736856402107318,
+      "max": -2.580272380081733
+    },
+    "split_agent_minus_own_target_mean": {
+      "mean": 0.833987913386598,
+      "sd_across_seeds": 1.0408270362414012,
+      "se_across_seeds": 0.3291384084805447,
+      "min": -1.3829521847745285,
+      "max": 2.373000759274186
+    },
+    "split_own_target_minus_always_rebalance_mean": {
+      "mean": -9.042396303820624,
+      "sd_across_seeds": 4.304351490269557,
+      "se_across_seeds": 1.361155455919189,
+      "min": -17.464291236809906,
+      "max": -1.903435132142829
+    },
+    "agent_hold_fraction": {
+      "mean": 0.1792447222222222,
+      "sd_across_seeds": 0.19035429302990323,
+      "se_across_seeds": 0.060195312836560835,
+      "min": 0.010430555555555556,
+      "max": 0.6975472222222222
+    },
+    "agent_turnover_per_block": {
+      "mean": 0.02356287628285395,
+      "sd_across_seeds": 0.00505176303285619,
+      "se_across_seeds": 0.0015975077383265587,
+      "min": 0.010487912382570012,
+      "max": 0.02892622707257082
+    },
+    "agent_cost_bps_per_block": {
+      "mean": 0.37381378931725634,
+      "sd_across_seeds": 0.060369092928871354,
+      "se_across_seeds": 0.019090383393359875,
+      "min": 0.21851341452940734,
+      "max": 0.4384027421370506
+    },
+    "favourite_target_utility_loss_bps": {
+      "mean": 9.750661519699507,
+      "sd_across_seeds": 4.051797943900479,
+      "se_across_seeds": 1.2812910121512657,
+      "min": 2.349330392549104,
+      "max": 17.11469499677435
+    },
+    "d12_converged_count": {
+      "2026_11_12_original_primary_last_iterate": 0,
+      "2026_11_19_exact_action_last_iterate": 0,
+      "2026_11_19_tail_average": 0,
+      "2026_11_20_operative": 7
+    },
+    "train_hours_mean": 0.3340138888888889
+  },
+  "d10": {
+    "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+    "target_se": 0.593069033806696,
+    "mean_agent_minus_oracle_se": 0.9415766676728105,
+    "applicable": true,
+    "met": false
+  }
+}
