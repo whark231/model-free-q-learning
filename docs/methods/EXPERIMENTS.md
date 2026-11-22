@@ -7,10 +7,11 @@
 
 ## TL;DR / In plain terms
 
-One command trains every experiment the report needs, evaluates each one, compares
-the two grid sizes and writes a results index. All settings live in
-`src/config.py` and were fixed before any real run, so no number in the report can
-be accused of being tuned to its outcome. A full run takes roughly 3.5 hours on
+One command trains every `baseline-v1` experiment, evaluates each one, compares
+the two grid sizes and writes a results index. The baseline settings live in
+`src/config.py` and were fixed before any real run, so no baseline number can
+be accused of being tuned to its outcome. The later runs (§7 and §8) were chosen
+after seeing those results and are labelled post hoc. A full run takes roughly 3.5 hours on
 Albert's Mac and can be stopped and restarted.
 
 **Key concepts to understand**

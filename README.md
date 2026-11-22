@@ -12,9 +12,11 @@ transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations. On 2026-11-20 all 757 tests passed on the Mac
+Tested on two combinations. On 2026-11-20 all 758 tests passed on the Mac
 (Python 3.13). On 2026-11-09 all 442 tests then in the suite passed on Windows
-with Python 3.10; it has not been rerun there since the TC-drift code was added:
+with Python 3.10, and on 2026-11-19 all 672 tests then in the suite passed there
+(`docs/reviews/AUDIT_2026-11-06.md` §9.5); the tests added since have not been
+run on Windows:
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -157,7 +159,7 @@ See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
 | `src/` | All code; tests in `src/tests/` |
 | `data/` | `raw/` (committed, never re-downloaded), `interim/`, `processed/` (rebuilt by `src.data.clean`) |
 | `experiments/` | Run configurations for the transaction-cost script |
-| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/`; `tuning/` holds the FA step-size search |
+| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/` (the two `fa-spline-grid10-eps*` runs are in `results/<run_id>_2026-11-11/`); `tuning/` holds the FA step-size search |
 | `reports/` | One HTML report per run with its extracted `data.json`, the run list `registry.json`, and the hand-built `full_run_2026-10-22/` report |
 | `docs/` | Methods, reviews and audits, team notes, and the prospectus (`docs/README.md`) |
 | `notebooks/` | An empty placeholder notebook; no reported result uses it |

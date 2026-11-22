@@ -52,7 +52,7 @@ Both of us now modify the core algorithm, as planned for the extension phase.
 | 9 | Convergence analysis: learning curves, regret, two resolutions | Part V | ✅ Done. Learning curves, cumulative regret, observations to the 25 bps line; 20% vs 25% and 20% vs 10% grids |
 | 10 | Robustness checks (one action-space, one economic or statistical) | Part VI | ✅ Done. Risk aversion γ = 3 and 8; the 10% grid (`grid10-robustness`, 2026-10-29); training budget, episode length and exploration (`b63`, `n26m`, `eps-decay`, `all-three`, 2026-10-28) |
 
-Full suite: 757 tests passing on 2026-11-20 on Albert's Mac (`python -m pytest src/tests -q`).
+Full suite: 758 tests passing on 2026-11-20 on Albert's Mac (`python -m pytest src/tests -q`).
 
 ### Extensions (bonus)
 | # | Component | Notes | Status (2026-11-06; TC updated 2026-11-20) |
@@ -124,7 +124,7 @@ The Q-learning core's decisions (γ, the convergence rule, episode length, episo
 - **Transaction costs may not reach a credible result in time.** The redesign's code, oracle and tuning are done, but in the tuning pilot the agent learned c2 better than c1, headed for a target 2 to 6 bps/yr worse than the best, and converged on one seed of three (`TC_DRIFT_DESIGN.md` §9, §14 risk 1). At $100M and $1B the oracle is within about 1 bp/yr of always-rebalancing, so the agent's result may not separate from the simple rule. Fallback: report the oracle's results and a diagnosed null agent result, and put the bonus weight on function approximation. A correctly scoped smaller extension beats a broken ambitious one under the rubric.
 - **The report is late.** The plan had a first draft by Nov 19, and none exists on Nov 20. Write while the TC runs train (projected at about 3 hours on Albert's Mac from timings on 2026-11-20).
 - **Thanksgiving week reduces available time** right before the deadline (Nov 26 to 30).
-- **Reproducibility.** The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1), so a plain clone gets the current code; merge `dev` into `main` again after each later change.
+- **Reproducibility.** The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1), so a plain clone gets the current code; merge `dev` into `main` again after each later change (last done 2026-11-20, PR #45).
 
 ---
 
