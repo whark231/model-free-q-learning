@@ -1,6 +1,6 @@
 # Transaction Costs with Drift: Design
 
-**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-20):** Phase 2 built and tuned. Merged into `dev`: `spec.py`, `calibration.py`, `env.py`, `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py` (Albert), `oracle.py`, `features.py`, `agent.py`, the oracle runs and the tuning pilot (`tune.py`, William). Merged into `dev` (Albert, PRs #41 and #42): the run driver `run.py`, θ in the training log, the own-target reference policy, the final settings in `config.py` and the expected directions (§7). The 40 agent runs have not started. **Post hoc** relative to `baseline-v1`; label every result that way.
+**Owners:** William (oracle, agent, features, tuning design) and Albert (environment, training, evaluation, config, runs) · **Status (2026-11-20):** Phase 2 built and tuned. Merged into `dev`: `spec.py`, `calibration.py`, `env.py`, `train.py`, `evaluate.py`, `config.py` and `oracle_replay.py` (Albert), `oracle.py`, `features.py`, `agent.py`, the oracle runs and the tuning pilot (`tune.py`, William). Merged into `dev` (Albert, PRs #41 and #42): the run driver `run.py`, θ in the training log, the own-target reference policy, the final settings in `config.py` and the expected directions (§7). *2026-11-22:* the 40 agent runs finished 2026-11-20 (Albert, PR #47); results and E1 to E12 verdicts in `results/tc-drift/runs/README.md`, report `reports/tc-drift/report.html`. **Post hoc** relative to `baseline-v1`; label every result that way.
 
 ---
 
@@ -509,7 +509,7 @@ They may not use star imports, `importlib`, `__import__`, `open`, `eval`, `np.lo
 | Nov 20 to 26 | Full runs; Thanksgiving buffer |
 | Nov 26 to 30 | Analysis and the report |
 
-*Status 2026-11-20:* on schedule to Nov 19, apart from tuning, which finished on Nov 20 (William). The run driver is ready (PR #41) and the 40 runs take about 3 hours, so the Nov 24 go/no-go can be met.
+*Status 2026-11-20:* on schedule to Nov 19, apart from tuning, which finished on Nov 20 (William). The run driver is ready (PR #41) and the 40 runs take about 3 hours, so the Nov 24 go/no-go can be met. *2026-11-22:* met; the runs finished 2026-11-20.
 
 **Go/no-go for the agent runs, Nov 24 (William, 2026-11-19).** If the learning rule is implemented and tuned by Nov 24, run the agent at the four levels; otherwise report the oracle results and a diagnosed null agent result (prospectus §7).
 
