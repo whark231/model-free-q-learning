@@ -1,0 +1,1019 @@
+{
+  "levels": {
+    "zero": {
+      "across_seeds": {
+        "agent_minus_oracle_mean": {
+          "mean": -13.14378346655962,
+          "sd_across_seeds": 4.578842399453734,
+          "se_across_seeds": 1.447957102922432,
+          "min": -20.34352087773014,
+          "max": -5.821917591927422
+        },
+        "agent_minus_always_rebalance_mean": {
+          "mean": -13.105967784786205,
+          "sd_across_seeds": 4.578842399453733,
+          "se_across_seeds": 1.4479571029224318,
+          "min": -20.305705195956723,
+          "max": -5.784101910154008
+        },
+        "agent_minus_trade_once_then_hold_mean": {
+          "mean": 9.883676802562793,
+          "sd_across_seeds": 4.578842399453734,
+          "se_across_seeds": 1.447957102922432,
+          "min": 2.683939391392276,
+          "max": 17.20554267719499
+        },
+        "agent_minus_myopic_mean": {
+          "mean": -13.14378346655962,
+          "sd_across_seeds": 4.578842399453734,
+          "se_across_seeds": 1.447957102922432,
+          "min": -20.34352087773014,
+          "max": -5.821917591927422
+        },
+        "agent_minus_last_iterate_mean": {
+          "mean": -0.35412997608693736,
+          "sd_across_seeds": 0.7184783617287112,
+          "se_across_seeds": 0.2272028072609079,
+          "min": -1.3340161028550817,
+          "max": 0.8763595737419049
+        },
+        "last_iterate_minus_oracle_mean": {
+          "mean": -12.789653490472682,
+          "sd_across_seeds": 4.586395196522015,
+          "se_across_seeds": 1.4503455070665132,
+          "min": -19.230761424749915,
+          "max": -4.830978557054449
+        },
+        "split_agent_minus_own_target_mean": {
+          "mean": 0.0013744885346245405,
+          "sd_across_seeds": 1.0418079825892008,
+          "se_across_seeds": 0.32944861095269173,
+          "min": -1.9194881641235595,
+          "max": 1.662775886566106
+        },
+        "split_own_target_minus_always_rebalance_mean": {
+          "mean": -13.107342273320828,
+          "sd_across_seeds": 4.570660197907927,
+          "se_across_seeds": 1.4453696636065019,
+          "min": -18.386217031833162,
+          "max": -4.305311027260887
+        },
+        "agent_hold_fraction": {
+          "mean": 0.34587527777777777,
+          "sd_across_seeds": 0.27385348401824916,
+          "se_across_seeds": 0.08660007546701876,
+          "min": 0.025044444444444446,
+          "max": 0.7292777777777777
+        },
+        "agent_turnover_per_block": {
+          "mean": 0.02062465425917453,
+          "sd_across_seeds": 0.0077271521810448,
+          "se_across_seeds": 0.002443540071883934,
+          "min": 0.01015088047733279,
+          "max": 0.029164553765553436
+        },
+        "agent_cost_bps_per_block": {
+          "mean": 0.0,
+          "sd_across_seeds": 0.0,
+          "se_across_seeds": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "favourite_target_utility_loss_bps": {
+          "mean": 12.905403688484196,
+          "sd_across_seeds": 4.348695166028084,
+          "se_across_seeds": 1.3751781574412831,
+          "min": 4.9299409901864655,
+          "max": 17.11469499677435
+        },
+        "d12_converged_count": {
+          "2026_11_12_original_primary_last_iterate": 0,
+          "2026_11_19_exact_action_last_iterate": 0,
+          "2026_11_19_tail_average": 0,
+          "2026_11_20_operative": 5
+        },
+        "train_hours_mean": 0.3368555555555556
+      },
+      "references": {
+        "oracle": {
+          "mean_value_bps": 531.516699673257,
+          "hold_fraction": 0.15256666666666666,
+          "turnover_per_block": 0.028819722725561752,
+          "cost_bps_per_block": 0.0,
+          "mean_trade_size": 0.03400824771926416,
+          "mean_weights": [
+            0.461,
+            0.1396,
+            0.3995
+          ]
+        },
+        "myopic": {
+          "mean_value_bps": 531.516699673257,
+          "hold_fraction": 0.15256666666666666,
+          "turnover_per_block": 0.028819722725561752,
+          "cost_bps_per_block": 0.0,
+          "mean_trade_size": 0.03400824771926416,
+          "mean_weights": [
+            0.461,
+            0.1396,
+            0.3995
+          ]
+        },
+        "always_rebalance": {
+          "mean_value_bps": 531.4788839914836,
+          "hold_fraction": 1.6666666666666667e-05,
+          "turnover_per_block": 0.02983340123255739,
+          "cost_bps_per_block": 0.0,
+          "mean_trade_size": 0.029833898464198455,
+          "mean_weights": [
+            0.46,
+            0.14,
+            0.4
+          ]
+        },
+        "trade_once_then_hold": {
+          "mean_value_bps": 508.4892394041346,
+          "hold_fraction": 0.9889055555555557,
+          "turnover_per_block": 0.003832388888888889,
+          "cost_bps_per_block": 0.0,
+          "mean_trade_size": 0.3454331497245869,
+          "mean_weights": [
+            0.5231,
+            0.0789,
+            0.398
+          ]
+        }
+      },
+      "d10": {
+        "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+        "target_se": 0.012605227257805116,
+        "mean_agent_minus_oracle_se": 1.1045011025298188,
+        "applicable": false,
+        "met": false
+      },
+      "oracle_minus_always_rebalance": {
+        "mean": 0.03781568177341535,
+        "se": 0.03916896872263753
+      },
+      "seed_averaged_path_se": 1.0330828280515028
+    },
+    "aum_100m": {
+      "across_seeds": {
+        "agent_minus_oracle_mean": {
+          "mean": -13.091658743598833,
+          "sd_across_seeds": 5.517236177284896,
+          "se_across_seeds": 1.7447032709300812,
+          "min": -20.64191548235401,
+          "max": -4.795960393334596
+        },
+        "agent_minus_always_rebalance_mean": {
+          "mean": -12.674239324247644,
+          "sd_across_seeds": 5.517236177284895,
+          "se_across_seeds": 1.744703270930081,
+          "min": -20.22449606300282,
+          "max": -4.378540973983406
+        },
+        "agent_minus_trade_once_then_hold_mean": {
+          "mean": 9.850939462619833,
+          "sd_across_seeds": 5.517236177284894,
+          "se_across_seeds": 1.7447032709300807,
+          "min": 2.3006827238646594,
+          "max": 18.146637812884073
+        },
+        "agent_minus_myopic_mean": {
+          "mean": -13.10306906398091,
+          "sd_across_seeds": 5.517236177284895,
+          "se_across_seeds": 1.744703270930081,
+          "min": -20.65332580273609,
+          "max": -4.807370713716676
+        },
+        "agent_minus_last_iterate_mean": {
+          "mean": 0.4208436849053558,
+          "sd_across_seeds": 1.3209126594143124,
+          "se_across_seeds": 0.4177092593899483,
+          "min": -1.1360243718282108,
+          "max": 3.318354880353245
+        },
+        "last_iterate_minus_oracle_mean": {
+          "mean": -13.512502428504188,
+          "sd_across_seeds": 4.57608447155671,
+          "se_across_seeds": 1.4470849695447205,
+          "min": -19.74224085652929,
+          "max": -6.279359700341269
+        },
+        "split_agent_minus_own_target_mean": {
+          "mean": 0.07623590869421162,
+          "sd_across_seeds": 0.7957260741948345,
+          "se_across_seeds": 0.25163067880398116,
+          "min": -0.9640425530558918,
+          "max": 1.883596548483156
+        },
+        "split_own_target_minus_always_rebalance_mean": {
+          "mean": -12.750475232941856,
+          "sd_across_seeds": 5.734685695084201,
+          "se_across_seeds": 1.8134668461651942,
+          "min": -20.28710920670804,
+          "max": -3.479090129475348
+        },
+        "agent_hold_fraction": {
+          "mean": 0.2462186111111111,
+          "sd_across_seeds": 0.24645797984992165,
+          "se_across_seeds": 0.07793685638496357,
+          "min": 0.0013944444444444445,
+          "max": 0.7053333333333333
+        },
+        "agent_turnover_per_block": {
+          "mean": 0.02283883601809114,
+          "sd_across_seeds": 0.0067670443006427805,
+          "se_across_seeds": 0.0021399273017292417,
+          "min": 0.01042565458848933,
+          "max": 0.02908168344627971
+        },
+        "agent_cost_bps_per_block": {
+          "mean": 0.1371322358612361,
+          "sd_across_seeds": 0.029755583281925818,
+          "se_across_seeds": 0.009409541627771372,
+          "min": 0.08293840896007558,
+          "max": 0.16605821515931837
+        },
+        "favourite_target_utility_loss_bps": {
+          "mean": 12.949636534673484,
+          "sd_across_seeds": 5.535106519577993,
+          "se_across_seeds": 1.7503543693513837,
+          "min": 4.5556595576509045,
+          "max": 20.675175534007884
+        },
+        "d12_converged_count": {
+          "2026_11_12_original_primary_last_iterate": 0,
+          "2026_11_19_exact_action_last_iterate": 0,
+          "2026_11_19_tail_average": 0,
+          "2026_11_20_operative": 7
+        },
+        "train_hours_mean": 0.3367583333333333
+      },
+      "references": {
+        "oracle": {
+          "mean_value_bps": 530.1645232694468,
+          "hold_fraction": 0.28349444444444444,
+          "turnover_per_block": 0.02197619172540973,
+          "cost_bps_per_block": 0.1397724140012191,
+          "mean_trade_size": 0.03067134867973227,
+          "mean_weights": [
+            0.4702,
+            0.1384,
+            0.3914
+          ]
+        },
+        "myopic": {
+          "mean_value_bps": 530.1759335898289,
+          "hold_fraction": 0.30331111111111114,
+          "turnover_per_block": 0.02184364033207684,
+          "cost_bps_per_block": 0.13730724704084918,
+          "mean_trade_size": 0.031353507541815505,
+          "mean_weights": [
+            0.4703,
+            0.1365,
+            0.3932
+          ]
+        },
+        "always_rebalance": {
+          "mean_value_bps": 529.7471038500955,
+          "hold_fraction": 1.6666666666666667e-05,
+          "turnover_per_block": 0.02983340123255739,
+          "cost_bps_per_block": 0.19055669311061302,
+          "mean_trade_size": 0.029833898464198455,
+          "mean_weights": [
+            0.46,
+            0.14,
+            0.4
+          ]
+        },
+        "trade_once_then_hold": {
+          "mean_value_bps": 507.2219250632281,
+          "hold_fraction": 0.9889055555555557,
+          "turnover_per_block": 0.003832388888888889,
+          "cost_bps_per_block": 0.06971014858343097,
+          "mean_trade_size": 0.3454331497245869,
+          "mean_weights": [
+            0.5231,
+            0.0789,
+            0.398
+          ]
+        }
+      },
+      "d10": {
+        "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+        "target_se": 0.13913980645039672,
+        "mean_agent_minus_oracle_se": 1.0990179628791759,
+        "applicable": false,
+        "met": false
+      },
+      "oracle_minus_always_rebalance": {
+        "mean": 0.4174194193511902,
+        "se": 0.2173083154959673
+      },
+      "seed_averaged_path_se": 1.0193734844245814
+    },
+    "aum_1b": {
+      "across_seeds": {
+        "agent_minus_oracle_mean": {
+          "mean": -9.987615491854113,
+          "sd_across_seeds": 4.319433661068013,
+          "se_across_seeds": 1.3659248570974691,
+          "min": -19.60897127345216,
+          "max": -2.63746649311259
+        },
+        "agent_minus_always_rebalance_mean": {
+          "mean": -8.208408390434025,
+          "sd_across_seeds": 4.319433661068013,
+          "se_across_seeds": 1.3659248570974691,
+          "min": -17.82976417203207,
+          "max": -0.8582593916925025
+        },
+        "agent_minus_trade_once_then_hold_mean": {
+          "mean": 13.548618184084797,
+          "sd_across_seeds": 4.319433661068013,
+          "se_across_seeds": 1.3659248570974691,
+          "min": 3.927262402486749,
+          "max": 20.89876718282632
+        },
+        "agent_minus_myopic_mean": {
+          "mean": -9.858734918447114,
+          "sd_across_seeds": 4.319433661068014,
+          "se_across_seeds": 1.3659248570974694,
+          "min": -19.480090700045164,
+          "max": -2.508585919705591
+        },
+        "agent_minus_last_iterate_mean": {
+          "mean": 0.19626242361340573,
+          "sd_across_seeds": 1.265778238372624,
+          "se_across_seeds": 0.4002742245933034,
+          "min": -0.872114871344841,
+          "max": 3.682306027984873
+        },
+        "last_iterate_minus_oracle_mean": {
+          "mean": -10.18387791546752,
+          "sd_across_seeds": 3.930273039338205,
+          "se_across_seeds": 1.2428614630661283,
+          "min": -18.736856402107318,
+          "max": -2.580272380081733
+        },
+        "split_agent_minus_own_target_mean": {
+          "mean": 0.833987913386598,
+          "sd_across_seeds": 1.0408270362414012,
+          "se_across_seeds": 0.3291384084805447,
+          "min": -1.3829521847745285,
+          "max": 2.373000759274186
+        },
+        "split_own_target_minus_always_rebalance_mean": {
+          "mean": -9.042396303820624,
+          "sd_across_seeds": 4.304351490269557,
+          "se_across_seeds": 1.361155455919189,
+          "min": -17.464291236809906,
+          "max": -1.903435132142829
+        },
+        "agent_hold_fraction": {
+          "mean": 0.1792447222222222,
+          "sd_across_seeds": 0.19035429302990323,
+          "se_across_seeds": 0.060195312836560835,
+          "min": 0.010430555555555556,
+          "max": 0.6975472222222222
+        },
+        "agent_turnover_per_block": {
+          "mean": 0.02356287628285395,
+          "sd_across_seeds": 0.00505176303285619,
+          "se_across_seeds": 0.0015975077383265587,
+          "min": 0.010487912382570012,
+          "max": 0.02892622707257082
+        },
+        "agent_cost_bps_per_block": {
+          "mean": 0.37381378931725634,
+          "sd_across_seeds": 0.060369092928871354,
+          "se_across_seeds": 0.019090383393359875,
+          "min": 0.21851341452940734,
+          "max": 0.4384027421370506
+        },
+        "favourite_target_utility_loss_bps": {
+          "mean": 9.750661519699507,
+          "sd_across_seeds": 4.051797943900479,
+          "se_across_seeds": 1.2812910121512657,
+          "min": 2.349330392549104,
+          "max": 17.11469499677435
+        },
+        "d12_converged_count": {
+          "2026_11_12_original_primary_last_iterate": 0,
+          "2026_11_19_exact_action_last_iterate": 0,
+          "2026_11_19_tail_average": 0,
+          "2026_11_20_operative": 7
+        },
+        "train_hours_mean": 0.3340138888888889
+      },
+      "references": {
+        "oracle": {
+          "mean_value_bps": 528.0926291941389,
+          "hold_fraction": 0.3199083333333333,
+          "turnover_per_block": 0.020754828868324412,
+          "cost_bps_per_block": 0.33809901112301466,
+          "mean_trade_size": 0.03051769325457268,
+          "mean_weights": [
+            0.4697,
+            0.1387,
+            0.3916
+          ]
+        },
+        "myopic": {
+          "mean_value_bps": 527.963748620732,
+          "hold_fraction": 0.3998833333333333,
+          "turnover_per_block": 0.017857904216178822,
+          "cost_bps_per_block": 0.2794573233734035,
+          "mean_trade_size": 0.02975738753494401,
+          "mean_weights": [
+            0.4714,
+            0.1303,
+            0.3983
+          ]
+        },
+        "always_rebalance": {
+          "mean_value_bps": 526.3134220927188,
+          "hold_fraction": 1.6666666666666667e-05,
+          "turnover_per_block": 0.02983340123255739,
+          "cost_bps_per_block": 0.5370471382375585,
+          "mean_trade_size": 0.029833898464198455,
+          "mean_weights": [
+            0.46,
+            0.14,
+            0.4
+          ]
+        },
+        "trade_once_then_hold": {
+          "mean_value_bps": 504.5563955182001,
+          "hold_fraction": 0.9889055555555557,
+          "turnover_per_block": 0.003832388888888889,
+          "cost_bps_per_block": 0.21633080506912375,
+          "mean_trade_size": 0.3454331497245869,
+          "mean_weights": [
+            0.5231,
+            0.0789,
+            0.398
+          ]
+        }
+      },
+      "d10": {
+        "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+        "target_se": 0.593069033806696,
+        "mean_agent_minus_oracle_se": 0.9415766676728105,
+        "applicable": true,
+        "met": false
+      },
+      "oracle_minus_always_rebalance": {
+        "mean": 1.7792071014200879,
+        "se": 0.36067395822943105
+      },
+      "seed_averaged_path_se": 0.8294182903333546
+    },
+    "aum_10b": {
+      "across_seeds": {
+        "agent_minus_oracle_mean": {
+          "mean": -2.7713200122285326,
+          "sd_across_seeds": 1.696908209129369,
+          "se_across_seeds": 0.5366094921086135,
+          "min": -5.921917478389823,
+          "max": -0.522680927849624
+        },
+        "agent_minus_always_rebalance_mean": {
+          "mean": 5.013888954969788,
+          "sd_across_seeds": 1.6969082091293688,
+          "se_across_seeds": 0.5366094921086135,
+          "min": 1.863291488808498,
+          "max": 7.262528039348697
+        },
+        "agent_minus_trade_once_then_hold_mean": {
+          "mean": 24.34497761436082,
+          "sd_across_seeds": 1.696908209129369,
+          "se_across_seeds": 0.5366094921086135,
+          "min": 21.194380148199524,
+          "max": 26.593616698739726
+        },
+        "agent_minus_myopic_mean": {
+          "mean": -0.5033394570341757,
+          "sd_across_seeds": 1.6969082091293688,
+          "se_across_seeds": 0.5366094921086135,
+          "min": -3.653936923195466,
+          "max": 1.7452996273447325
+        },
+        "agent_minus_last_iterate_mean": {
+          "mean": 0.1331433603566224,
+          "sd_across_seeds": 0.7392193552554438,
+          "se_across_seeds": 0.23376168530883626,
+          "min": -1.2038393131730376,
+          "max": 1.3866570817510107
+        },
+        "last_iterate_minus_oracle_mean": {
+          "mean": -2.904463372585155,
+          "sd_across_seeds": 1.7888638738867395,
+          "se_across_seeds": 0.5656884265474301,
+          "min": -5.765123132736502,
+          "max": -0.8276407757324601
+        },
+        "split_agent_minus_own_target_mean": {
+          "mean": 6.156034936225344,
+          "sd_across_seeds": 0.9498365410794863,
+          "se_across_seeds": 0.30036468746672645,
+          "min": 4.805518871916078,
+          "max": 7.951112187474757
+        },
+        "split_own_target_minus_always_rebalance_mean": {
+          "mean": -1.1421459812555552,
+          "sd_across_seeds": 1.835499668088303,
+          "se_across_seeds": 0.5804359595642115,
+          "min": -5.514483740295152,
+          "max": 0.4305612080463152
+        },
+        "agent_hold_fraction": {
+          "mean": 0.17057166666666665,
+          "sd_across_seeds": 0.049585977586233405,
+          "se_across_seeds": 0.015680462917855586,
+          "min": 0.059944444444444446,
+          "max": 0.2132138888888889
+        },
+        "agent_turnover_per_block": {
+          "mean": 0.02106973767096074,
+          "sd_across_seeds": 0.0017204826981886568,
+          "se_across_seeds": 0.0005440644001188205,
+          "min": 0.017950742285474497,
+          "max": 0.023899403557827183
+        },
+        "agent_cost_bps_per_block": {
+          "mean": 0.9190217150221021,
+          "sd_across_seeds": 0.09014947584997608,
+          "se_across_seeds": 0.028507767355626816,
+          "min": 0.7337521982700126,
+          "max": 1.0397066075650163
+        },
+        "favourite_target_utility_loss_bps": {
+          "mean": 1.7925675580588547,
+          "sd_across_seeds": 1.9038159121644098,
+          "se_across_seeds": 0.6020394528110599,
+          "min": 0.0,
+          "max": 5.58235526243919
+        },
+        "d12_converged_count": {
+          "2026_11_12_original_primary_last_iterate": 0,
+          "2026_11_19_exact_action_last_iterate": 0,
+          "2026_11_19_tail_average": 0,
+          "2026_11_20_operative": 4
+        },
+        "train_hours_mean": 0.33019999999999994
+      },
+      "references": {
+        "oracle": {
+          "mean_value_bps": 523.2222845680997,
+          "hold_fraction": 0.45343055555555556,
+          "turnover_per_block": 0.015480960911827431,
+          "cost_bps_per_block": 0.6868823224274834,
+          "mean_trade_size": 0.02832386820957935,
+          "mean_weights": [
+            0.4662,
+            0.1383,
+            0.3955
+          ]
+        },
+        "myopic": {
+          "mean_value_bps": 520.9543040129054,
+          "hold_fraction": 0.6078027777777777,
+          "turnover_per_block": 0.010461297519338456,
+          "cost_bps_per_block": 0.4226956048564176,
+          "mean_trade_size": 0.026673563520067455,
+          "mean_weights": [
+            0.475,
+            0.1252,
+            0.3998
+          ]
+        },
+        "always_rebalance": {
+          "mean_value_bps": 515.4370756009013,
+          "hold_fraction": 1.6666666666666667e-05,
+          "turnover_per_block": 0.02983340123255739,
+          "cost_bps_per_block": 1.6330907782873756,
+          "mean_trade_size": 0.029833898464198455,
+          "mean_weights": [
+            0.46,
+            0.14,
+            0.4
+          ]
+        },
+        "trade_once_then_hold": {
+          "mean_value_bps": 496.1059869415103,
+          "hold_fraction": 0.9889055555555557,
+          "turnover_per_block": 0.003832388888888889,
+          "cost_bps_per_block": 0.6811556858878914,
+          "mean_trade_size": 0.3454331497245869,
+          "mean_weights": [
+            0.5231,
+            0.0789,
+            0.398
+          ]
+        }
+      },
+      "d10": {
+        "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+        "target_se": 2.595069655732774,
+        "mean_agent_minus_oracle_se": 0.42585423159830416,
+        "applicable": true,
+        "met": true
+      },
+      "oracle_minus_always_rebalance": {
+        "mean": 7.785208967198321,
+        "se": 0.64321265920473
+      },
+      "seed_averaged_path_se": 0.34579333132334106
+    }
+  },
+  "expectations": [
+    {
+      "id": "E1",
+      "expectation": "Agent \u2212 oracle between \u22121 and \u22128 at every level, negative on at least 8 of 10 seeds",
+      "verdict": "partly met",
+      "parts": [
+        {
+          "clause": "mean in [\u22128, \u22121] at zero",
+          "met": false,
+          "observed": "-13.14"
+        },
+        {
+          "clause": "mean in [\u22128, \u22121] at $100M",
+          "met": false,
+          "observed": "-13.09"
+        },
+        {
+          "clause": "mean in [\u22128, \u22121] at $1B",
+          "met": false,
+          "observed": "-9.99"
+        },
+        {
+          "clause": "mean in [\u22128, \u22121] at $10B",
+          "met": true,
+          "observed": "-2.77"
+        },
+        {
+          "clause": "negative on \u2265 8 seeds at zero",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "negative on \u2265 8 seeds at $100M",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "negative on \u2265 8 seeds at $1B",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "negative on \u2265 8 seeds at $10B",
+          "met": true,
+          "observed": "10/10"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "expectation": "Favourite-target error is most of the gap at zero, $100M, $1B",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "own target \u2212 AR < 0 and larger than |agent \u2212 own target| at zero",
+          "met": true,
+          "observed": "-13.11 vs 0.00"
+        },
+        {
+          "clause": "own target \u2212 AR < 0 and larger than |agent \u2212 own target| at $100M",
+          "met": true,
+          "observed": "-12.75 vs 0.08"
+        },
+        {
+          "clause": "own target \u2212 AR < 0 and larger than |agent \u2212 own target| at $1B",
+          "met": true,
+          "observed": "-9.04 vs 0.83"
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "expectation": "Agent loses to always rebalance at $100M and $1B; relatively better at $10B than $1B",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "agent \u2212 AR < 0 at $100M",
+          "met": true,
+          "observed": "-12.67"
+        },
+        {
+          "clause": "agent \u2212 AR < 0 at $1B",
+          "met": true,
+          "observed": "-8.21"
+        },
+        {
+          "clause": "$10B above $1B",
+          "met": true,
+          "observed": "5.01 vs -8.21"
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "expectation": "Agent \u2212 own target rises from $1B to $10B and is positive at $10B; within \u00b11 at zero and $100M",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "rises $1B \u2192 $10B",
+          "met": true,
+          "observed": "0.83 \u2192 6.16"
+        },
+        {
+          "clause": "positive at $10B",
+          "met": true,
+          "observed": "6.16"
+        },
+        {
+          "clause": "within \u00b11 at zero",
+          "met": true,
+          "observed": "0.00"
+        },
+        {
+          "clause": "within \u00b11 at $100M",
+          "met": true,
+          "observed": "0.08"
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "expectation": "Agent beats trade once, then hold at every level and on every seed",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "every seed > 0 at zero",
+          "met": true,
+          "observed": "lowest 2.68"
+        },
+        {
+          "clause": "every seed > 0 at $100M",
+          "met": true,
+          "observed": "lowest 2.30"
+        },
+        {
+          "clause": "every seed > 0 at $1B",
+          "met": true,
+          "observed": "lowest 3.93"
+        },
+        {
+          "clause": "every seed > 0 at $10B",
+          "met": true,
+          "observed": "lowest 21.19"
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "expectation": "Agent loses to the myopic oracle at every level",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "agent \u2212 myopic < 0 at zero",
+          "met": true,
+          "observed": "-13.14"
+        },
+        {
+          "clause": "agent \u2212 myopic < 0 at $100M",
+          "met": true,
+          "observed": "-13.10"
+        },
+        {
+          "clause": "agent \u2212 myopic < 0 at $1B",
+          "met": true,
+          "observed": "-9.86"
+        },
+        {
+          "clause": "agent \u2212 myopic < 0 at $10B",
+          "met": true,
+          "observed": "-0.50"
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "expectation": "Hold fraction varies widely across seeds; higher at $10B than zero; at zero above the oracle's",
+      "verdict": "partly met",
+      "parts": [
+        {
+          "clause": "wide spread (max \u2212 min \u2265 0.3) at the headline $1B",
+          "met": true,
+          "observed": "0.01 to 0.70"
+        },
+        {
+          "clause": "mean higher at $10B than at zero",
+          "met": false,
+          "observed": "0.171 vs 0.346"
+        },
+        {
+          "clause": "at zero above the oracle's",
+          "met": true,
+          "observed": "0.346 vs 0.153"
+        }
+      ]
+    },
+    {
+      "id": "E8",
+      "expectation": "c2 learned better than c1 (benchmark diagnostic)",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "c2 within \u00d72 on \u2265 7 seeds at $1B",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "c2 within \u00d72 on \u2265 7 seeds at $10B",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "c1 off by > \u00d72 on \u2265 3 seeds at $100M",
+          "met": true,
+          "observed": "10/10"
+        },
+        {
+          "clause": "c1 off by > \u00d72 on \u2265 3 seeds at $1B",
+          "met": true,
+          "observed": "8/10"
+        },
+        {
+          "clause": "c1 off by > \u00d72 on \u2265 3 seeds at $10B",
+          "met": true,
+          "observed": "10/10"
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "expectation": "Fewer than 5 of 10 converge (operative rule); none under the original and exact-action rules",
+      "verdict": "partly met",
+      "parts": [
+        {
+          "clause": "operative < 5 at zero",
+          "met": false,
+          "observed": "5/10"
+        },
+        {
+          "clause": "operative < 5 at $100M",
+          "met": false,
+          "observed": "7/10"
+        },
+        {
+          "clause": "operative < 5 at $1B",
+          "met": false,
+          "observed": "7/10"
+        },
+        {
+          "clause": "operative < 5 at $10B",
+          "met": true,
+          "observed": "4/10"
+        },
+        {
+          "clause": "original and exact-action = 0 at zero",
+          "met": true,
+          "observed": "0, 0"
+        },
+        {
+          "clause": "original and exact-action = 0 at $100M",
+          "met": true,
+          "observed": "0, 0"
+        },
+        {
+          "clause": "original and exact-action = 0 at $1B",
+          "met": true,
+          "observed": "0, 0"
+        },
+        {
+          "clause": "original and exact-action = 0 at $10B",
+          "met": true,
+          "observed": "0, 0"
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "expectation": "Tail average and last iterate differ by less than 1 bps/yr",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "|avg \u2212 last| < 1 at zero",
+          "met": true,
+          "observed": "-0.35"
+        },
+        {
+          "clause": "|avg \u2212 last| < 1 at $100M",
+          "met": true,
+          "observed": "0.42"
+        },
+        {
+          "clause": "|avg \u2212 last| < 1 at $1B",
+          "met": true,
+          "observed": "0.20"
+        },
+        {
+          "clause": "|avg \u2212 last| < 1 at $10B",
+          "met": true,
+          "observed": "0.13"
+        }
+      ]
+    },
+    {
+      "id": "E11",
+      "expectation": "D10: $1B SE 0.5 to 0.8, missing a target of about 0.43; met at $10B; n/a at zero and $100M",
+      "verdict": "partly met",
+      "parts": [
+        {
+          "clause": "$1B SE in [0.5, 0.8]",
+          "met": false,
+          "observed": "0.94"
+        },
+        {
+          "clause": "$1B misses",
+          "met": true,
+          "observed": "target 0.59"
+        },
+        {
+          "clause": "met at $10B",
+          "met": true,
+          "observed": "0.43 vs 2.60"
+        },
+        {
+          "clause": "n/a at zero and $100M",
+          "met": true,
+          "observed": "n/a, n/a"
+        }
+      ]
+    },
+    {
+      "id": "E12",
+      "expectation": "Across-seed SD of agent \u2212 oracle at $1B at least 0.5",
+      "verdict": "met",
+      "parts": [
+        {
+          "clause": "SD \u2265 0.5",
+          "met": true,
+          "observed": "4.32"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "commit": "1787f0dd5643e06eea457ce76a32ea833d2a8d9c",
+    "src_dirty": false,
+    "sha256": {
+      "src/tc_drift/run.py": "c66eba4fd89b2fe40265340f69bd1f30b506400af049ed2b33c457c91bfa37b8",
+      "src/tc_drift/tune.py": "0d7725bfb116f0b86663906f7560c4ede24d66dfdc5dabf2d0cedc06aad1fde5",
+      "src/tc_drift/agent.py": "e92238ce7d13054b1c091f0b15c8e7e1703ad37a1d3aa70b725d8d4bf3f1007c",
+      "src/tc_drift/features.py": "33e25e3235f86da5d4f086e6652fb746b2210e37ef6ee335fd5ac858ff43a525",
+      "src/tc_drift/train.py": "2b2eee1032ef2010292f7d9e17bb5caf7c3c7564e9c04ef92af468311686d025",
+      "src/tc_drift/env.py": "4e8efcd86b48ac0b7c810e1f9dadb12598a532a109311d87a73831f21efed007",
+      "src/tc_drift/evaluate.py": "bf3e3ea4318753995e151426810789abb854a942812e3b4bbfecab2477b1b1d8",
+      "src/tc_drift/config.py": "d61fbbcd3d2312afa03a03298971d84c5cc82811b1d1ddae0e5c8b416672ef5a",
+      "src/tc_drift/spec.py": "1ec87813e61d11a1c42c6bf46b26f859146f8a5ad0ee742f340a6bb117bf7e01",
+      "src/tc_drift/calibration.py": "9fc9c75f0c7e5622b899459a218da686abb403c9c25dbd1499943964130079c3",
+      "src/environment.py": "b648773a8739d8920384bc0c72e2b9fba94ab6ee3cd10d2cc32b754fc69bdcb2"
+    },
+    "python": "3.13.9",
+    "numpy": "2.3.5",
+    "machine": "arm64",
+    "seed_plan": {
+      "master_seed": 20261016,
+      "n_runs": 10,
+      "bit_generator": "PCG64 via numpy.random.default_rng(SeedSequence)",
+      "streams": {
+        "training_returns": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 0))",
+        "training_agent": "SeedSequence(master_seed, spawn_key=(20261002, 0, run, 1))",
+        "evaluation_returns": "SeedSequence(master_seed, spawn_key=(20261002, 1))"
+      },
+      "numpy_version": "2.3.5"
+    },
+    "threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    }
+  },
+  "hyperparameters": {
+    "alpha_value": 0.0003,
+    "alpha_cost": 0.0003,
+    "beta": 2.302585092994046e-06,
+    "target_refresh_every": 1000,
+    "l2": 0.0,
+    "cost_rls_after": 301030,
+    "cost_rls_prior": 0.001
+  }
+}
