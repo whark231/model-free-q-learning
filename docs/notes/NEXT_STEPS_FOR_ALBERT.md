@@ -1,34 +1,40 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-20
-**Status (2026-11-20):** the required work is done and independently re-checked, and so are the FA runs. The TC redesign is built, checked and tuned, and your run driver is merged. Your open items are in the table below; everything else in this file is the dated record, with closed items marked. Closed TC items are collected in `REVIEW_HISTORY.md` §10, and the open list for both of us is `AUDIT_2026-11-06.md` §9.6.
+**Date:** 2026-11-06, updated 2026-11-22
+**Status (2026-11-22):** the required work and the FA runs are done and independently re-checked. The 40 TC agent runs are done, with the summary statistics re-derived from the committed per-path values by Albert (2026-11-20) and by William (2026-11-22); the per-path scoring itself was not re-run by a separate route. What is left is writing plus small code and repo tasks. Your open items are in the table below; everything else in this file is the dated record, with closed items marked. Your audit's correction plan (`AUDIT_2026-11-20.md` §6) is the master list for what is left. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
 
 ---
 
-## Open for you, 2026-11-20
+## Open for you, 2026-11-22
 
-**TL;DR / In plain terms:** your earlier items are done. What is open for you now: run and score the 40 TC agent runs, settle two decisions with me, and write your report sections. Your three questions to me are answered (below).
+**TL;DR / In plain terms:** thank you for the runs. I re-derived the headline numbers from your committed per-path values and they all match. No further runs are planned (decided 2026-11-22), so what is open for you is mostly writing: your report sections, the stale parts of the skeleton, the "why these settings" text, a few README lines, one test fix, and six decisions with me.
 
 **Key concepts to understand**
-- **One commit for all 40 runs.** Each run records the commit checked out when it starts, and scoring refuses seeds trained on different code. Run them from a copy of the repo pinned to one commit, and commit nothing there until all 40 are done.
+- **Recorded versus justified.** `src/config.py` records B = 20, 13M episodes, 10 seeds and ε at 1% halfway. Part III grades the reasons ("report and justify"), and your audit found none written for most of them (H1).
 
 **Key takeaways**
-- Nothing in Parts I to VI changed.
+- Nothing in Parts I to VI changed, and no result needs rerunning.
+- The TC numbers in `results/tc-drift/runs/README.md` are checked: each level's agent − oracle mean and across-seed SD, the seed-averaged path SE, agent − always-rebalance, agent − myopic, the lowest seed against trade once then hold, the split and the oracle's lead with its SE, re-derived from `values.npz` on 2026-11-22, and the split sums to agent − oracle on every path within 6e-14.
 
 | Item | What |
 |---|---|
-| TC runs | After `feature/docs-closeout` merges (it changes `tune.py`, one of the files `run.py` hashes): `git worktree add -b run/tc-drift-final ../mfq-runs origin/dev`; copy `results/tc-drift/oracle/*.npz` into `../mfq-runs/results/tc-drift/oracle/` (git-ignored, so the worktree lacks them; `load_oracle_tables` re-checks them against the committed summary); run `python -m src.tc_drift.run all` there; commit the results on `run/tc-drift-final` once all 40 are scored, and keep `values.npz`. Go/no-go Nov 24 |
-| D-G | With me: how the first TC design is reported, and who writes the TC section (prospectus §4) |
-| Report schedule | Agreed 2026-11-20, as you proposed: draft sections by Nov 24, full draft by Nov 26 (D-H) |
-| Report scope | With me: final non-TC runs (probably none), which post-hoc runs the report covers in full, and how the two unmet oracle directions are presented (design §8) |
-| Report text | Call `never_trade_policy` "trade once, then hold" in tables and text; caveat post-convergence weights (F-L10); mark E1 to E12 met or not met |
-| Your report sections | Data/Calibration, and convergence analysis and visualizations (prospectus §4) |
-| F-L9, L7 | The episodes column (partly fixed, low priority); `all-three`'s comparison set (with me) |
+| Your report sections | You lead the report (A20 step 10). Data/Calibration, convergence analysis and visualizations, and the writing of Theory/Benchmark from my derivation (prospectus §4). Section drafts Nov 24, full draft Nov 26 (D-H) |
+| Skeleton after the runs | Fill `REPORT_SKELETON.md` §6.5 "TO FILL AFTER THE TC RUNS" from `results/tc-drift/runs/README.md`: the E1 to E12 table, the values table, hold fraction and turnover, and the commit `1787f0d` (your step 11). Also stale there: "These files do not exist on 2026-11-20"; the TC slide takeaway ("TO FILL", and the 1.3 bps/yr design line, which is 1.78 on the runs' 4,000 paths); the open-decisions rows for the go/no-go (met) and M2 (the per-seed logs are committed); Appendix A's "Windows: 672 passing" (760 of 761 on 2026-11-22). Who writes the TC section's text is still to agree. In tables, name the split term "own target − always rebalance" and keep "favourite target's utility loss" for the μ, Σ diagnostic; the runs README uses both as "favourite target" |
+| A20-H1 | "Why these settings" in `EXPERIMENTS.md` (B, episodes, seeds, ε at halfway, K), including that the 13M budget was sized with a benchmark-scored demo before settings were fixed |
+| A20-H2, your half | Methods prose for the reward and the agent, and the four empty documentation cells in `README.md` (the derivation is mine) |
+| README (A20-M3, A20-M7) | Record that the 40 TC runs came from clean commit `1787f0d` and must come from one clean commit; line 74 gives `run all` as "about 3 h" (it took 2 h 14 min); lines 85 to 86 say `values.npz` and the per-seed `.npz` "stay local" (now committed); line 128 still says `runs/<level>/` exists "once the agent runs finish"; point to `reports/tc-drift/report.html` and `python -m src.tc_drift.report`. The oracle timing question from 2026-11-20 (20 minutes against 1 to 2.5 hours) is still open |
+| TC report test on Windows | `test_committed_report_matches_a_rebuild` fails here (Windows, Python 3.10, matplotlib 3.10.9; your Mac has 3.10.6). `data.json` rebuilds byte for byte, so no number differs; the HTML differs only inside the SVG figures: the matplotlib version string, and one marker path written `0` instead of `-0`. Proposed fix: compare `data.json` and the HTML with the `<svg>` blocks removed, and compare the SVGs only when `matplotlib.__version__` matches the version that built the committed report. Your file, so I have not changed it |
+| Report text | Call `never_trade_policy` "trade once, then hold" in text (the HTML report already does); caveat post-convergence weights (F-L10) |
+| Housekeeping (A20-M6, A20-L12, A20-L15) | `HANDOFF.md` on your Mac and the memory pointer to it; `CLAUDE.md:27` says to read the PDF with `pypdf`, which your Mac lacks (`pip install pypdf`, or change the line; it works on mine); the empty notebook; your stale local branches. `origin/feature/tc-drift-run` and `origin/run/tc-drift-final` are merged and can be deleted on GitHub |
+| With me | Six decisions: D-G (your audit's recommendation: one paragraph and the four-row table); who writes the TC section; A20-M2 (commit the six oracle tables, recommended yes); which post-hoc runs get full treatment (A20-M8, your skeleton §6 proposal); L7; and the `dev` into `main` merge with a fresh-clone check (tests, data rebuild, `run_experiments --dry-run`; no retraining). Final runs: none, decided 2026-11-22. F-L9 stays yours, low priority |
+| Presentation | Both, not started |
 
 ## From William, 2026-11-20 (evening): answers, and three suggestions for `run.py`
 
 **TL;DR / In plain terms:** your questions are answered, and your run driver is the one we use. Three optional improvements to it follow; none blocks the runs. I also edited a few of your files' status lines (listed at the end).
+
+*Outcome, 2026-11-22:* you took suggestions 1 and 2 (PR #47); 3 was not needed, since scoring took about 13 minutes a level. PR #43 is closed. The oracle-timing question at the end is still open (your audit's M7).
 
 **Answers to your 2026-11-20 note.** E1 to E12 stay as you registered them; I am not adding to them (D-F). `tune.run_one` now defaults to `m = config.M_EVAL_PILOTS`, with a test (merged with this note). 40,050 is right. Check 5: yes to both questions (D-I, design §5).
 
