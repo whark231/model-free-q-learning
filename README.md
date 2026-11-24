@@ -71,7 +71,7 @@ expected direction and run time.
 ```bash
 python -m src.tc_drift.oracle_runs              # 20 min to 2.5 h, depending on the machine
 git checkout results/tc-drift/oracle/summary.json   # keep the committed summary (see below)
-python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; about 3 h on a 10-core Mac
+python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; 2 h 14 min on a 10-core Mac (2026-11-20)
 python -m src.tc_drift.run train --level aum_1b --seed 0   # one run
 python -m src.tc_drift.run evaluate --level aum_1b         # score one level (all 10 seeds; --seeds 0 1 2 for fewer)
 ```
@@ -82,10 +82,16 @@ other change means the tables did not reproduce. `run.py` checks the tables
 against the committed summary, so restore it first. Levels are `zero`,
 `aum_100m`, `aum_1b` and `aum_10b`. Results go to
 `results/tc-drift/runs/<level>/`: `summary.json`, `per_seed.csv` and one
-`seed<i>.json` record per run are small; `values.npz` and the per-seed
-`.npz` training logs stay local. Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
+`seed<i>.json` record per run, the per-seed `.npz` training logs (θ at every
+checkpoint) and `values.npz` (per-path values of every policy), about 9 MB in
+all, are committed (`.gitignore` exceptions). Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
 master seed 20261016 (`src/tc_drift/spec.py`; tuning used 20261112), and `run all` skips any run that already
-has a finished record, so an interrupted batch can be restarted.
+has a finished record, so an interrupted batch can be restarted. All 40
+reported runs must come from one commit with a clean tree; the final runs came
+from `1787f0d` (`src_dirty: false` in every record; results and E1 to E12
+verdicts in `results/tc-drift/runs/README.md`). The HTML report is rebuilt
+from the committed files with `python -m src.tc_drift.report`, which writes
+`reports/tc-drift/report.html` and `data.json`.
 
 **The first transaction-cost design** (kept as a negative result) runs through
 its own script with a configuration file (`docs/methods/TRANSACTION_COSTS.md`):
@@ -125,8 +131,9 @@ tuned on a separate master seed, **20261103**, never on the reported one
 | `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (grouped weight bars, learning curve, cumulative regret, losses by seed) |
 | `results/comparison_g5_grid20_vs_grid25/`, `results/grid10-robustness/comparison_*` | The action-space resolution comparisons |
 | `results/tc-quadratic-cost/` | The first transaction-cost design's sweep, one JSON per cost level |
-| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` once the agent runs finish |
+| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` (the 40 final agent runs, 2026-11-20) |
 | `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
+| `reports/tc-drift/report.html` | The TC-with-drift final runs (outside the registry; `python -m src.tc_drift.report`) |
 
 Training logs (`run_*.npz`) are not committed; every summary and report is.
 See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.

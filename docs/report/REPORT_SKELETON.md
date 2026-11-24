@@ -719,7 +719,7 @@ The TC go/no-go that the 2026-11-20 skeleton listed for 2026-11-24 no longer app
 
 ## Issues found while updating (2026-11-23)
 
-Nothing below was fixed. Only this file was edited.
+Items 1 to 6 and 16 to 19 are notes for the writer. Items 7 to 15 were rechecked on 2026-11-24 and are marked fixed or open.
 
 **Source disagreements (both values cited where they are used).**
 
@@ -730,20 +730,21 @@ Nothing below was fixed. Only this file was edited.
 5. Visits needed to separate the top two portfolios: "about 139,000" in the 2026-11-20 skeleton (one standard error, single mean) against 1,097,318 in `reports/full_run_2026-10-22/data.json` (two standard errors, difference of means). §5.6 now uses the committed figure.
 6. F13 (weights chart in the original HTML report) averages the ten seeds' portfolios; §5.3 says never to report the average. Use F1.
 
-**Stale text in other docs.**
+**Stale text in other docs (rechecked 2026-11-24 on `dev` at `2704fde`).**
 
-7. `docs/methods/TC_DRIFT_DESIGN.md:3` (status line) says "The 40 agent runs have not started". They ran on 2026-11-20. Shared file; flag to William.
-8. `docs/PROJECT_PROSPECTUS.md:5` says the 40 runs "are ready to launch" and "What remains is the TC agent runs and their analysis". William's file; flag, do not edit.
-9. `README.md:128` describes `results/tc-drift/runs/<level>/` as existing "once the agent runs finish", and no line of `README.md` mentions `reports/tc-drift/` or `python -m src.tc_drift.report`.
-10. `reports/README.md`, "Reports outside this pipeline", lists `reports/tc-quadratic-cost/` only. `reports/tc-drift/` is also outside the registry and is not mentioned.
-11. `docs/notes/NEXT_STEPS_FOR_ALBERT.md:21` still lists the TC runs as a to-do with "Go/no-go Nov 24".
-12. `CLAUDE.md` §4's doc table has no rows for `docs/reviews/AUDIT_2026-11-20.md`, `docs/report/REPORT_SKELETON.md` or `results/tc-drift/runs/README.md` (`docs/README.md` has the first two).
-13. `HANDOFF.md` (untracked, dated 2026-10-09) is six weeks out of date, and Claude's memory index points to it (audit M6, unchanged).
-14. `reports/tc-quadratic-cost/report.html` still carries the two sentences `TRANSACTION_COSTS.md` says should change (old M8). Depends on D-G.
+7. Fixed (William, PR #49): `docs/methods/TC_DRIFT_DESIGN.md:3` now says the runs finished.
+8. Fixed (William, PR #49): `docs/PROJECT_PROSPECTUS.md:5` status rewritten.
+9. Fixed (`feature/stale-text-cleanup`): `README.md` run time (2 h 14 min), committed `.npz` files, the clean-commit rule and `1787f0d`, `runs/<level>/` row, and pointers to `reports/tc-drift/` and `python -m src.tc_drift.report`.
+10. Fixed (`feature/stale-text-cleanup`): `reports/README.md` "Reports outside this pipeline" now describes `reports/tc-drift/`.
+11. Fixed (William, PR #49): the go/no-go to-do is gone from `docs/notes/NEXT_STEPS_FOR_ALBERT.md`.
+12. Fixed (`feature/stale-text-cleanup`): `CLAUDE.md` §4 has rows for the 2026-11-20 audit, this skeleton and `results/tc-drift/runs/README.md`.
+13. Partly fixed: Claude's memory no longer points to `HANDOFF.md` as the start-here brief. The file itself (untracked, dated 2026-10-09) is still on Albert's Mac.
+14. Open, depends on D-G: `reports/tc-quadratic-cost/report.html` still carries the two sentences `TRANSACTION_COSTS.md` says should change (old M8).
+15. New, William's files (flagged, not edited): `docs/PROJECT_PROSPECTUS.md:67` says this skeleton's "TC results part is still to fill", and `docs/notes/NEXT_STEPS_FOR_ALBERT.md:23` lists "Skeleton after the runs" as open. Both were done in PR #48.
 
 **Could not fill.**
 
-15. The agent row of Table TC-1 is a mean computed for this skeleton from `per_seed[].agent.mean_value_bps`; no committed file stores that mean as one field.
-16. Why the agent's timing is worth 6.2 bps/yr at $10B while it holds less often than the oracle, and why the target error shrinks at $10B, have no committed analysis.
-17. The rendered appearance of the browser-drawn charts (F7 to F28) was not checked; their titles, captions and data were read from the HTML source and `data.json`.
-18. The test suite was not rerun for this update.
+16. The agent row of Table TC-1 is a mean computed for this skeleton from `per_seed[].agent.mean_value_bps`; no committed file stores that mean as one field.
+17. Why the agent's timing is worth 6.2 bps/yr at $10B while it holds less often than the oracle, and why the target error shrinks at $10B, have no committed analysis.
+18. The rendered appearance of the browser-drawn charts (F7 to F28) was not checked; their titles, captions and data were read from the HTML source and `data.json`.
+19. The test suite was not rerun for this update.

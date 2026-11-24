@@ -190,6 +190,16 @@ the reasoning still applies to new runs.
 not in `registry.json` and has no `tldr`, `takeaways` or `caveats` block;
 its text is fixed in the script (`TRANSACTION_COSTS.md`).
 
+`reports/tc-drift/` is built by `python -m src.tc_drift.report` from the
+committed files in `results/tc-drift/runs/<level>/` (`summary.json`,
+`per_seed.csv`, `seed<i>.json`, `seed<i>.npz`). It covers the 40 final TC
+agent runs and is not in `registry.json`, because that design (three ETFs,
+63-day blocks, trading costs) is not comparable with the nine-asset runs. The
+build is deterministic, and `src/tests/test_tc_drift_report.py` checks that the
+committed report matches a rebuild. That check compares the SVG figures byte
+for byte, so it fails under a different matplotlib version even when
+`data.json` is identical.
+
 ## Assumptions
 
 - Experiments within one run share one settings file (`run_experiments.py`
