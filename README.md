@@ -44,6 +44,7 @@ From the repo root:
 python -m pytest src/tests -q          # all tests pass
 python -m src.data.clean               # rebuild data/processed/ from the committed raw data
 python -m src.run_experiments --results-dir results/repro   # baseline-v1: train and evaluate into a new folder
+python -m src.benchmarks.closed_form_table   # budget-only closed-form weights, results/benchmarks/
 ```
 
 A fresh clone has each run's manifest and summaries but not its training

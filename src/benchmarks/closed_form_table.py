@@ -60,7 +60,7 @@ def main():
         }
         if checks[gamma]["budget_error"] > 1e-10 or checks[gamma]["foc_spread"] > 1e-12:
             raise RuntimeError(f"closed form fails its own conditions at gamma={gamma}: {checks[gamma]}")
-        if checks[gamma]["max_abs_diff_vs_numerical"] > 1e-4:
+        if checks[gamma]["max_abs_diff_vs_numerical"] > 1e-5:
             raise RuntimeError(f"closed form disagrees with numerical solve at gamma={gamma}: {checks[gamma]}")
         rows.append(
             {"gamma": gamma, **dict(zip(TICKERS, w)), "utility_bps_per_year": utility(w, mu, sigma, gamma) * BPS_PER_YEAR}
