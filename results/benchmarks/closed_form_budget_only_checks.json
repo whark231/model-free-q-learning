@@ -1,0 +1,17 @@
+{
+  "3": {
+    "budget_error": 8.881784197001252e-16,
+    "foc_spread": 2.0328790734103208e-19,
+    "max_abs_diff_vs_numerical": 1.378524524198177e-06
+  },
+  "5": {
+    "budget_error": 6.661338147750939e-16,
+    "foc_spread": 2.778268066994105e-19,
+    "max_abs_diff_vs_numerical": 1.4693258660325448e-06
+  },
+  "8": {
+    "budget_error": 6.661338147750939e-16,
+    "foc_spread": 7.792703114739563e-19,
+    "max_abs_diff_vs_numerical": 3.774758283725532e-15
+  }
+}
