@@ -90,7 +90,7 @@ slides.append(slide(
 <li><b>Reward</b>: 20-day realized mean − (γ/2) × realized variance, so E[reward] = U(w)</li>
 <li><b>Update</b>: Q(a) ← Q(a) + (1/N(a))·[R − Q(a)], discount 0</li>
 <li><b>ε-greedy</b>, ε = e<sup>−βt</sup>, 1% at the halfway episode</li>
-<li>Settings and convergence rule fixed 16 Oct, first run 22 Oct</li>
+<li>Settings and convergence rule fixed before any full-scale run</li>
 </ul>
 <div class="stats">
 {stat("13M", "episodes per seed (260M simulated days)")}
@@ -155,7 +155,7 @@ slides.append(slide(
     wide("fig_fa", [
         stat("43.5 → 15.7", "20% grid, γ = 5: constant-α table vs splines (baseline 17.6)", "teal"),
         stat("11.7 → 78.8", "10% grid, γ = 5: 1/N table vs constant-α splines (paired +67.1, SE 9.1)", "orange"),
-        stat("0.976 vs 0.543", "Spearman on the 10% grid, splines vs table; splines find 0% of the true top ten"),
+        stat("0.976 vs 0.543", "Spearman on the 10% grid at γ = 5, splines vs table; at the median splines find none of the true top ten"),
     ], "No constant-α table was run on the 10% grid, so that comparison also changes the step rule; on the 20% grid the constant "
        "step alone costs the table 25.9 bps/yr at γ = 5. Step sizes were tuned by scoring final portfolios on simulated draws."),
     tag=POST, kicker="Bonus extension 1 · a negative result on the 10% grid"))
@@ -172,12 +172,13 @@ slides.append(slide(
 
 # 12 ----------------------------------------------------------- TC results
 slides.append(slide(
-    "With costs the agent loses to the oracle everywhere; its timing adds 0.8 at $1B and 6.2 at $10B",
+    "The agent's gap to the oracle narrows as costs rise, from 13.1 bps/yr to 2.8",
     wide("fig_tc_split", [
         stat("−13.1 · −13.1 · −10.0 · −2.8", "agent − oracle, bps/yr, at zero, $100M, $1B, $10B; negative on all 40 seeds", "orange"),
-        stat("+6.2", "bps/yr from timing at $10B (0.8 at $1B), where it beats always rebalancing by 5.0", "teal"),
+        stat("+6.2", "bps/yr from trade timing at $10B, against the oracle's 7.8 lead over always rebalancing; the agent beats always rebalancing by 5.0", "teal"),
         stat("8 met, 4 partly", "of 12 expectations registered before the runs"),
-    ]),
+    ], "Most of the narrowing at $10B comes from a target closer to the best one, which we have not explained. "
+       "There the agent is statistically indistinguishable from the myopic policy, which knows μ, Σ and the costs (−0.5, SE 0.54)."),
     tag=POST, kicker="Bonus extension 2 · results"))
 
 # 13 ---------------------------------------------------------- conclusions
@@ -214,7 +215,7 @@ slides.append(slide(
 slides.append(slide(
     "Backup: where the transaction-cost agent heads, and how often it holds",
     wide("fig_tc_targets_hold", [
-        stat("18% to 32%", "IEF in every favourite target at zero, $100M, $1B; the best target holds 14%", "orange"),
+        stat("18% to 32%", "IEF in every favorite target at zero, $100M, $1B; the best target holds 14%", "orange"),
         stat("0.17 vs 0.45", "share of blocks with no trade at $10B, agent vs oracle"),
         stat("2.11% vs 1.55%", "turnover per block at $10B, agent vs oracle"),
     ], "Why the target error shrinks at $10B has not been investigated."),

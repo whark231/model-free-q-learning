@@ -1,7 +1,7 @@
 ---
 title: "Model-Free Q-Learning and Optimal Portfolio Choice with Nine Assets"
 author: "Albert Aldrich and William Harkless"
-date: "Data Science for Finance, Fall 2026. Final draft, 25 November 2026"
+date: "Data Science for Finance, Fall 2026"
 ---
 
 ## Abstract
