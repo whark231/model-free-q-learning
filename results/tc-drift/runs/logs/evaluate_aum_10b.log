@@ -1,0 +1,113 @@
+[aum_10b] seed 0: agent - oracle -2.04 (0.36), converged False
+[aum_10b] seed 1: agent - oracle -5.92 (0.66), converged True
+[aum_10b] seed 2: agent - oracle -2.19 (0.39), converged False
+[aum_10b] seed 3: agent - oracle -5.35 (0.61), converged False
+[aum_10b] seed 4: agent - oracle -2.63 (0.41), converged True
+[aum_10b] seed 5: agent - oracle -1.81 (0.34), converged False
+[aum_10b] seed 6: agent - oracle -1.38 (0.32), converged False
+[aum_10b] seed 7: agent - oracle -2.45 (0.37), converged True
+[aum_10b] seed 8: agent - oracle -0.52 (0.30), converged False
+[aum_10b] seed 9: agent - oracle -3.43 (0.50), converged True
+{
+  "level": "aum_10b",
+  "across_seeds": {
+    "agent_minus_oracle_mean": {
+      "mean": -2.7713200122285326,
+      "sd_across_seeds": 1.696908209129369,
+      "se_across_seeds": 0.5366094921086135,
+      "min": -5.921917478389823,
+      "max": -0.522680927849624
+    },
+    "agent_minus_always_rebalance_mean": {
+      "mean": 5.013888954969788,
+      "sd_across_seeds": 1.6969082091293688,
+      "se_across_seeds": 0.5366094921086135,
+      "min": 1.863291488808498,
+      "max": 7.262528039348697
+    },
+    "agent_minus_trade_once_then_hold_mean": {
+      "mean": 24.34497761436082,
+      "sd_across_seeds": 1.696908209129369,
+      "se_across_seeds": 0.5366094921086135,
+      "min": 21.194380148199524,
+      "max": 26.593616698739726
+    },
+    "agent_minus_myopic_mean": {
+      "mean": -0.5033394570341757,
+      "sd_across_seeds": 1.6969082091293688,
+      "se_across_seeds": 0.5366094921086135,
+      "min": -3.653936923195466,
+      "max": 1.7452996273447325
+    },
+    "agent_minus_last_iterate_mean": {
+      "mean": 0.1331433603566224,
+      "sd_across_seeds": 0.7392193552554438,
+      "se_across_seeds": 0.23376168530883626,
+      "min": -1.2038393131730376,
+      "max": 1.3866570817510107
+    },
+    "last_iterate_minus_oracle_mean": {
+      "mean": -2.904463372585155,
+      "sd_across_seeds": 1.7888638738867395,
+      "se_across_seeds": 0.5656884265474301,
+      "min": -5.765123132736502,
+      "max": -0.8276407757324601
+    },
+    "split_agent_minus_own_target_mean": {
+      "mean": 6.156034936225344,
+      "sd_across_seeds": 0.9498365410794863,
+      "se_across_seeds": 0.30036468746672645,
+      "min": 4.805518871916078,
+      "max": 7.951112187474757
+    },
+    "split_own_target_minus_always_rebalance_mean": {
+      "mean": -1.1421459812555552,
+      "sd_across_seeds": 1.835499668088303,
+      "se_across_seeds": 0.5804359595642115,
+      "min": -5.514483740295152,
+      "max": 0.4305612080463152
+    },
+    "agent_hold_fraction": {
+      "mean": 0.17057166666666665,
+      "sd_across_seeds": 0.049585977586233405,
+      "se_across_seeds": 0.015680462917855586,
+      "min": 0.059944444444444446,
+      "max": 0.2132138888888889
+    },
+    "agent_turnover_per_block": {
+      "mean": 0.02106973767096074,
+      "sd_across_seeds": 0.0017204826981886568,
+      "se_across_seeds": 0.0005440644001188205,
+      "min": 0.017950742285474497,
+      "max": 0.023899403557827183
+    },
+    "agent_cost_bps_per_block": {
+      "mean": 0.9190217150221021,
+      "sd_across_seeds": 0.09014947584997608,
+      "se_across_seeds": 0.028507767355626816,
+      "min": 0.7337521982700126,
+      "max": 1.0397066075650163
+    },
+    "favourite_target_utility_loss_bps": {
+      "mean": 1.7925675580588547,
+      "sd_across_seeds": 1.9038159121644098,
+      "se_across_seeds": 0.6020394528110599,
+      "min": 0.0,
+      "max": 5.58235526243919
+    },
+    "d12_converged_count": {
+      "2026_11_12_original_primary_last_iterate": 0,
+      "2026_11_19_exact_action_last_iterate": 0,
+      "2026_11_19_tail_average": 0,
+      "2026_11_20_operative": 4
+    },
+    "train_hours_mean": 0.33019999999999994
+  },
+  "d10": {
+    "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+    "target_se": 2.595069655732774,
+    "mean_agent_minus_oracle_se": 0.42585423159830416,
+    "applicable": true,
+    "met": true
+  }
+}

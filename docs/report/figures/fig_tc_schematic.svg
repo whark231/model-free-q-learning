@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="800.39952pt" height="310.79952pt" viewBox="0 0 800.39952 310.79952" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.6, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 310.79952 
+L 800.39952 310.79952 
+L 800.39952 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 18.63272 159.634039 
+L 152.967184 159.634039 
+Q 160.112634 159.634039 160.112634 153.119764 
+L 160.112634 95.794142 
+Q 160.112634 89.279867 152.967184 89.279867 
+L 18.63272 89.279867 
+Q 11.48727 89.279867 11.48727 95.794142 
+L 11.48727 153.119764 
+Q 11.48727 159.634039 18.63272 159.634039 
+z
+" clip-path="url(#p00231d1162)" style="fill: #1d3557"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 261.578026 91.23415 
+L 460.221542 91.23415 
+Q 467.366992 91.23415 467.366992 84.719874 
+L 467.366992 30.651391 
+Q 467.366992 24.137115 460.221542 24.137115 
+L 261.578026 24.137115 
+Q 254.432576 24.137115 254.432576 30.651391 
+L 254.432576 84.719874 
+Q 254.432576 91.23415 261.578026 91.23415 
+z
+" clip-path="url(#p00231d1162)" style="fill: #e76f51"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 261.578026 224.776791 
+L 460.221542 224.776791 
+Q 467.366992 224.776791 467.366992 218.262515 
+L 467.366992 164.194031 
+Q 467.366992 157.679756 460.221542 157.679756 
+L 261.578026 157.679756 
+Q 254.432576 157.679756 254.432576 164.194031 
+L 254.432576 218.262515 
+Q 254.432576 224.776791 261.578026 224.776791 
+z
+" clip-path="url(#p00231d1162)" style="fill: #2a9d8f"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 554.541484 159.634039 
+L 774.62135 159.634039 
+Q 781.7668 159.634039 781.7668 153.119764 
+L 781.7668 95.794142 
+Q 781.7668 89.279867 774.62135 89.279867 
+L 554.541484 89.279867 
+Q 547.396034 89.279867 547.396034 95.794142 
+L 547.396034 153.119764 
+Q 547.396034 159.634039 554.541484 159.634039 
+z
+" clip-path="url(#p00231d1162)" style="fill: #457b9d"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 162.570583 110.450307 
+Q 207.272276 85.371487 250.608878 61.058518 
+" clip-path="url(#p00231d1162)" style="fill: none; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 243.461573 61.399141 
+L 250.608878 61.058518 
+L 246.592994 66.980736 
+z
+" clip-path="url(#p00231d1162)" style="fill: #22303f; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 162.570583 138.463599 
+Q 207.272276 163.542419 250.608878 187.855388 
+" clip-path="url(#p00231d1162)" style="fill: none; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 246.592994 181.93317 
+L 250.608878 187.855388 
+L 243.461573 187.514765 
+z
+" clip-path="url(#p00231d1162)" style="fill: #22303f; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 469.782201 60.37132 
+Q 507.383484 83.743958 543.655407 106.290278 
+" clip-path="url(#p00231d1162)" style="fill: none; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 539.909238 100.193868 
+L 543.655407 106.290278 
+L 536.530577 105.629368 
+z
+" clip-path="url(#p00231d1162)" style="fill: #22303f; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 469.782201 188.542586 
+Q 507.383484 165.169948 543.655407 142.623628 
+" clip-path="url(#p00231d1162)" style="fill: none; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 536.530577 143.284538 
+L 543.655407 142.623628 
+L 539.909238 148.720038 
+z
+" clip-path="url(#p00231d1162)" style="fill: #22303f; stroke: #22303f; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 663.046943 161.571007 
+Q 375.190852 402.088001 88.450114 162.503215 
+" clip-path="url(#p00231d1162)" style="fill: none; stroke-dasharray: 4.81,2.08; stroke-dashoffset: 0; stroke: #8d99ae; stroke-width: 1.3; stroke-linecap: round"/>
+    <path d="M 91.309591 169.062437 
+L 88.450114 162.503215 
+L 95.413178 164.151167 
+z
+" clip-path="url(#p00231d1162)" style="fill: #8d99ae; stroke-dasharray: 4.81,2.08; stroke-dashoffset: 0; stroke: #8d99ae; stroke-width: 1.3; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(49.487921 121.333469)">State: drifted</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(57.94589 133.651062)">holdings s</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 10.2px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(283.411659 54.620692)">TRADE to one of 1,326 targets</text>
+    <text style="font-size: 10.2px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(282.6873 66.096011)">cost κ‖trade‖₁ + (λ/2)‖trade‖₂²</text>
+   </g>
+   <g id="text_3">
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(345.13455 188.104789)">HOLD</text>
+    <text style="font-size: 11px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(322.88705 200.422383)">cost 0, keep s</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10.2px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(576.855839 121.560631)">63 days: weights drift with returns</text>
+    <text style="font-size: 10.2px; font-family: 'DejaVu Sans'; fill: #ffffff" transform="translate(569.29987 132.9824)">reward = mean − (γ/2)·var − cost/63</text>
+   </g>
+   <g id="text_5">
+    <text style="font-size: 9.8px; font-family: 'DejaVu Sans'; text-anchor: middle; fill: #5b6777" x="378.763409" y="295.130962" transform="rotate(-0 378.763409 295.130962)">end-of-block holdings become the next state (discount 0.95 per block)</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p00231d1162">
+   <rect x="7.2" y="7.2" width="785.99952" height="296.39952"/>
+  </clipPath>
+ </defs>
+</svg>

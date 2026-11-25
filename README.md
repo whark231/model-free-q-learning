@@ -12,9 +12,11 @@ transaction costs (a stateful agent that pays to rebalance).
 
 ## Requirements
 
-Tested on two combinations. On 2026-11-20 all 757 tests passed on the Mac
+Tested on two combinations. On 2026-11-20 all 758 tests passed on the Mac
 (Python 3.13). On 2026-11-09 all 442 tests then in the suite passed on Windows
-with Python 3.10; it has not been rerun there since the TC-drift code was added:
+with Python 3.10, and on 2026-11-19 all 672 tests then in the suite passed there
+(`docs/reviews/AUDIT_2026-11-06.md` §9.5); the tests added since have not been
+run on Windows:
 
 - Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
   yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
@@ -69,7 +71,7 @@ expected direction and run time.
 ```bash
 python -m src.tc_drift.oracle_runs              # 20 min to 2.5 h, depending on the machine
 git checkout results/tc-drift/oracle/summary.json   # keep the committed summary (see below)
-python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; about 3 h on a 10-core Mac
+python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; 2 h 14 min on a 10-core Mac (2026-11-20)
 python -m src.tc_drift.run train --level aum_1b --seed 0   # one run
 python -m src.tc_drift.run evaluate --level aum_1b         # score one level (all 10 seeds; --seeds 0 1 2 for fewer)
 ```
@@ -80,10 +82,16 @@ other change means the tables did not reproduce. `run.py` checks the tables
 against the committed summary, so restore it first. Levels are `zero`,
 `aum_100m`, `aum_1b` and `aum_10b`. Results go to
 `results/tc-drift/runs/<level>/`: `summary.json`, `per_seed.csv` and one
-`seed<i>.json` record per run are small; `values.npz` and the per-seed
-`.npz` training logs stay local. Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
+`seed<i>.json` record per run, the per-seed `.npz` training logs (θ at every
+checkpoint) and `values.npz` (per-path values of every policy), about 9 MB in
+all, are committed (`.gitignore` exceptions). Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
 master seed 20261016 (`src/tc_drift/spec.py`; tuning used 20261112), and `run all` skips any run that already
-has a finished record, so an interrupted batch can be restarted.
+has a finished record, so an interrupted batch can be restarted. All 40
+reported runs must come from one commit with a clean tree; the final runs came
+from `1787f0d` (`src_dirty: false` in every record; results and E1 to E12
+verdicts in `results/tc-drift/runs/README.md`). The HTML report is rebuilt
+from the committed files with `python -m src.tc_drift.report`, which writes
+`reports/tc-drift/report.html` and `data.json`.
 
 **The first transaction-cost design** (kept as a negative result) runs through
 its own script with a configuration file (`docs/methods/TRANSACTION_COSTS.md`):
@@ -123,8 +131,9 @@ tuned on a separate master seed, **20261103**, never on the reported one
 | `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (grouped weight bars, learning curve, cumulative regret, losses by seed) |
 | `results/comparison_g5_grid20_vs_grid25/`, `results/grid10-robustness/comparison_*` | The action-space resolution comparisons |
 | `results/tc-quadratic-cost/` | The first transaction-cost design's sweep, one JSON per cost level |
-| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` once the agent runs finish |
+| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` (the 40 final agent runs, 2026-11-20) |
 | `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
+| `reports/tc-drift/report.html` | The TC-with-drift final runs (outside the registry; `python -m src.tc_drift.report`) |
 
 Training logs (`run_*.npz`) are not committed; every summary and report is.
 See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
@@ -157,7 +166,7 @@ See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
 | `src/` | All code; tests in `src/tests/` |
 | `data/` | `raw/` (committed, never re-downloaded), `interim/`, `processed/` (rebuilt by `src.data.clean`) |
 | `experiments/` | Run configurations for the transaction-cost script |
-| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/`; `tuning/` holds the FA step-size search |
+| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/` (the two `fa-spline-grid10-eps*` runs are in `results/<run_id>_2026-11-11/`); `tuning/` holds the FA step-size search |
 | `reports/` | One HTML report per run with its extracted `data.json`, the run list `registry.json`, and the hand-built `full_run_2026-10-22/` report |
 | `docs/` | Methods, reviews and audits, team notes, and the prospectus (`docs/README.md`) |
 | `notebooks/` | An empty placeholder notebook; no reported result uses it |

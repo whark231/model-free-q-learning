@@ -57,6 +57,11 @@ results/*
 !results/settings.json
 !results/*/
 results/**/*.npz
+# TC-drift final runs: the per-seed training logs (theta at every checkpoint)
+# and per-path values are small (about 9 MB in all) and let the scoring and
+# the seed-averaged path SE be redone without retraining (William, 2026-11-20).
+!results/tc-drift/runs/*/seed*.npz
+!results/tc-drift/runs/*/values.npz
 results/smoke*/
 results/.*.new/
 # Full-run console logs are small and are the only record of how a

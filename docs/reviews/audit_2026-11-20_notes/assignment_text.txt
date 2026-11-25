@@ -1,0 +1,233 @@
+SUGGESTED TERM PROJECT 3
+Model Free Q Learning and Optimal Portfolio Choice
+with Nine Assets
+Fall 2026
+This project asks whether a model-free reinforcement learning agent can learn a theoretically optimal
+portfolio using only realized returns. You will calibrate a controlled nine-asset environment from traded
+ETFs, solve the corresponding mean-variance problem, train a Q-learning agent without revealing the
+return moments, and measure how closely the learned policy approaches the best feasible benchmark.
+Central Research Question
+Can a model-free learning algorithm recover a near-optimal portfolio allocation when it observes realized
+rewards but does not know expected returns or covariances?
+The project contrasts economic theory with model-free machine learning in a controlled setting. A strong
+analysis should separate:
+• The continuous theoretical optimum from the best portfolio available on the discrete action grid
+• Learning error from approximation error created by portfolio-weight discretization
+• Calibration of the synthetic environment from evaluation on fresh simulated returns
+• Statistical convergence from economically meaningful convergence
+Project Objectives
+By completing the project, you will:
+• Construct and document a nine-ETF return dataset
+• Estimate a mean vector and covariance matrix and treat them as the ground truth of a synthetic
+environment
+• Compute theoretical optimal portfolios under clearly stated constraints
+• Design a feasible high-dimensional portfolio action set
+• Implement model-free Q-learning using simulated realized returns only
+• Evaluate accuracy, convergence speed, robustness, and computational tradeoffs
+Part I Data Construction and Ground Truth Environment
+Retain the original three ETFs, SPY, IEF, and GLD, and add six complementary ETFs. The resulting
+opportunity set covers three equity sleeves, three fixed-income sleeves, and three real-asset or alternative
+sleeves.
+Segment ETF Exposure Research role
+Equity SPY U.S. large-cap stocks Domestic growth and broad equity risk
+Equity EFA Developed markets outside the U.S. and
+Canada International and currency diversification
+Equity EEM Emerging-market stocks Country, growth, and emerging-market risk
+Fixed
+income IEF 7 to 10 year U.S. Treasuries Interest-rate duration and defensive exposure
+Segment ETF Exposure Research role
+Fixed
+income LQD U.S. dollar investment-grade corporate
+bonds Credit-spread and income exposure
+Fixed
+income TIP U.S. Treasury inflation-protected
+securities Inflation-linked fixed-income exposure
+Real assets GLD Gold bullion Precious-metal and defensive real-asset exposure
+Real assets VNQ U.S. equity real estate investment trusts Property, income, and rate-sensitive exposure
+Real assets DBC Energy, metals, agriculture, and inflation exposure
+Broad commodity futures Daily historical price links. SPY | EFA | EEM | IEF | LQD | TIP | GLD | VNQ | DBC
+On each page, select the common time period and Daily frequency, then choose Download. Use Adjusted
+Close, rather than the unadjusted closing price, when constructing returns.
+Data Sources and Construction
+ETF prices. Use the ticker-specific Yahoo Finance links above to download daily distribution-adjusted
+prices for all nine ETFs. Record the download date and verify the adjustment convention used by your
+code.
+Risk-free rate. If you model excess returns, obtain a daily risk-free rate from the Kenneth French Data
+Library or another clearly documented source.
+Your data construction must:
+• Use a common sample for all nine ETFs beginning no earlier than February 2006, because DBC has
+the latest inception date in the proposed universe
+• Use simple returns for the mean-variance analysis and explain any use of log returns elsewhere
+• Align trading dates and state how missing observations are handled
+• Treat distributions and splits consistently across ETFs
+• Keep return means, covariance estimates, risk aversion, and simulated rewards at the same time
+frequency
+• Report the calibration period, number of observations, annualized summary statistics, and the
+correlation matrix
+Ground Truth Environment
+Estimate the return moments from the historical ETF data, then hold those estimates fixed when
+generating synthetic training and evaluation data. They are not assumed to be the true moments of
+financial markets. They are the ground truth only within your controlled experiment.
+Let the nine-dimensional excess-return vector follow a stationary Gaussian process:
+𝑟 𝑡+1 = 𝜇 + 𝜀𝑡+1, 𝑤𝑖𝑡ℎ 𝜀𝑡+1∼ 𝒩(0, Σ)
+𝜇 ∈ ℝ9 and Σ ∈ ℝ9×9
+The Q-learning agent may observe simulated realized returns and rewards, but it may not use the
+calibrated mean vector, covariance matrix, or theoretical optimal weights during training. Those objects
+are reserved for benchmark construction and evaluation.
+Part II Theoretical Portfolio Benchmarks
+Assume a mean-variance investor with a clearly stated risk-aversion parameter. Under the full-investment
+budget constraint, the theoretical problem is:
+𝛾
+𝑚𝑎𝑥𝑤 𝜇⊤𝑤 −
+𝑤⊤Σ𝑤 , subject to 𝟏⊤𝑤 = 1.
+2
+Derive or verify the closed-form solution for the budget-only problem. Then solve the same problem
+numerically under the feasible set used by the learning agent. The main comparison must use identical
+constraints for theory and learning.
+Required Baseline Constraint
+Use a long-only, fully invested portfolio as the primary nine-asset specification. This restriction creates a
+finite and interpretable action space for tabular Q-learning.
+Every portfolio weight must be nonnegative, and the nine weights must sum to one.
+Bounded Shorting and Leverage Extension
+As a bonus extension, allow bounded short positions or leverage. State the lower and upper bounds and
+apply the same bounds to both the theoretical optimizer and the learning agent.
+Each weight must lie within its stated lower and upper bounds, and the nine weights must still sum to one.
+For every specification, report two benchmarks: the continuous optimum and the best portfolio available in
+the agent's discrete action set. This separates the loss caused by discretization from the loss caused by
+incomplete learning.
+Part III Reinforcement Learning Design
+State
+The required baseline is stateless because the synthetic returns are independent and identically
+distributed. If you add state variables, they must be observable at the decision date, and you must explain
+why they contain useful information in the simulated environment.
+Action Space
+Each action is a feasible nine-component portfolio-weight vector. Because the weights sum to one, only
+eight components are independent. A fine Cartesian grid becomes very large, so action-space design is a
+central research decision.
+Weight increment Feasible actions Suggested use
+25% 495 Fast prototype and debugging
+20% 1,287 Recommended baseline
+10% 43,758 Finer robustness check if computationally feasible
+5% 3,108,105 Usually impractical for tabular Q-learning
+You may instead use a fixed library of randomly sampled feasible portfolios. If you do, generate it
+independently of the calibrated moments, fix the random seed, use the same library in every comparable
+run, and report its size and coverage. Do not insert the theoretical optimum into the action set.
+Reward
+Choose a reward that matches the theoretical objective. The recommended approach is an episodic
+realized mean-variance reward: for each selected portfolio, simulate a short batch of returns and compute
+its realized mean minus one-half times risk aversion times its realized variance.
+A one-period quadratic-utility reward is also permissible:
+𝑅𝑡+1 = 𝑟 𝑝,𝑡+1−
+𝛾
+2
+2 𝑟 𝑝,𝑡+1
+However, the expected value of this one-period reward depends on the second moment, not only the
+variance. If you use it, derive the corresponding theoretical benchmark and do not compare it
+mechanically with a different mean-variance objective.
+Q Learning Algorithm
+Implement and explain the standard Q-learning update:
+𝑄(𝑠𝑡, 𝑎𝑡) ← 𝑄(𝑠𝑡, 𝑎𝑡) + 𝛼[𝑅𝑡+1 + 𝜌 max
+𝑎′ 𝑄(𝑠𝑡+1, 𝑎′) − 𝑄(𝑠𝑡, 𝑎𝑡)]
+For the required stateless baseline, the update simplifies to:
+𝑄(𝑎𝑡) ← 𝑄(𝑎𝑡) + 𝛼[𝑅𝑡+1 + 𝜌 max
+𝑎′ 𝑄(𝑎′) − 𝑄(𝑎𝑡)]
+Because the baseline has no state transition that depends on the chosen action, setting the discount
+factor to zero provides a clean bandit-like benchmark. If you use a positive discount factor, explain its role
+and confirm that it does not change the ranking of actions through a common continuation value.
+Epsilon-greedy exploration is required. A permissible decay schedule is:
+𝜀𝑡 = 𝑒−𝛽𝑡
+Report and justify:
+• Learning-rate rule and whether it changes with action visits
+• Initial exploration rate and exploration-decay parameter
+• Discount factor
+• Number of training episodes and simulated returns per episode
+• Q-value initialization, random seeds, and tie-breaking rule
+Part IV Training and Convergence
+Train the agent on simulated returns from the calibrated environment. Evaluate it on new simulated draws
+that were not used to update Q-values. Run multiple random seeds so that conclusions do not depend on
+a single training path.
+You must define convergence before examining the final results. Possible criteria include:
+• The greedy action remains unchanged for a prespecified number of episodes
+• The maximum change in Q-values falls below a stated tolerance
+• A moving average of portfolio weights or rewards stabilizes
+• The learning gap relative to the best discrete action falls below a prespecified threshold
+Report how many observations and episodes are required to reach the criterion, how often convergence
+occurs across seeds, and whether the result changes with the size of the action set.
+Part V Required Comparison
+Portfolio Weights
+After convergence, simulate a separate steady-state evaluation sample and compute the average learned
+weights:
+1
+𝑇 ∑ 𝑤𝑡
+𝑄𝐿
+𝑡
+̅ 𝑄𝐿 =
+𝑤
+Compare the learned allocation with both theoretical benchmarks using:
+• A grouped bar chart for all nine asset weights
+• Absolute weight differences by asset
+• The L1 distance between portfolios
+• Euclidean distance ∥ 𝑤
+̅ 𝑄𝐿− 𝑤∗ ∥, where 𝑤∗ is the continuous theoretical benchmark
+Economic Performance
+For the learned portfolio, continuous optimum, best discrete action, and equal-weight portfolio, report:
+• Mean return, volatility, and the objective value implied by your chosen reward
+• The discretization gap between the continuous and best discrete benchmarks
+• The learning gap between the best discrete action and the learned policy
+• The distribution of performance gaps across random seeds
+Convergence Speed
+At minimum, include:
+• A learning curve based on moving-average reward or objective value
+• Cumulative regret or reward difference relative to the best discrete action
+• The number of observations needed to approach a clearly defined level of optimality
+• A comparison of convergence under at least two action-space resolutions
+Part VI Robustness and Research Challenges
+Conduct at least two robustness checks, including one that changes the action-space design and one that
+changes an economic or statistical assumption.
+• Coarser versus finer portfolio-weight grids
+• Different risk-aversion parameters
+• Alternative calibration windows
+• Sample covariance versus a shrinkage covariance estimate
+• Different training budgets, episode lengths, and random seeds
+• Gaussian returns versus a fat-tailed return distribution
+Your discussion should explicitly address:
+• Estimation error in expected returns and covariances
+• Conditioning and numerical stability of the covariance matrix
+• The curse of dimensionality in a nine-asset action space
+• Discretization error and possible benchmark leakage
+• Consistency between the reward and theoretical objective
+• The limits of learning from a stationary simulated environment
+Final Deliverables
+Research Report
+Submit a research report of approximately 10 to 15 pages with the following structure:
+• Introduction and central research question
+• ETF data, sample construction, and calibration
+• Theoretical benchmark and feasible portfolio set
+• Q-learning design and implementation
+• Convergence and benchmark comparison
+• Robustness, research challenges, and limitations
+• Conclusion
+The report should answer the central question directly. It should explain what the agent learned, how close
+it came to the best attainable action, and what prevented exact recovery.
+Replication Code
+Submit clean and reproducible Python code that:
+• Downloads or imports and cleans the nine ETF return series
+• Estimates and documents the calibrated environment
+• Computes the theoretical continuous and discrete benchmarks
+• Constructs the action space without using benchmark information
+• Trains the Q-learning agent across multiple random seeds
+• Reproduces every reported table, figure, and robustness check
+Include a short README with run instructions, package requirements, the random seeds used, and the
+expected output files.
+Evaluation Criteria
+Component Weight
+Data construction and calibrated environment 20%
+Theoretical benchmark and feasible-set design 20%
+Q-learning design and implementation 20%
+Convergence analysis and benchmark comparison 20%
+Economic interpretation, robustness, and insight 20%
+Bonus Credit
+Significant bonus credit may be earned for a well-executed bounded-shorting extension, transaction costs
+and rebalancing, a state-dependent return process, function approximation for the large action space, or a
+disciplined comparison of the original three-asset problem with the nine-asset problem. Complexity alone
+does not earn bonus credit. The extension must be correctly designed, benchmarked, and interpreted.

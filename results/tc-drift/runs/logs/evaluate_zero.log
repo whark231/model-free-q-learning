@@ -1,0 +1,113 @@
+[zero] seed 0: agent - oracle -12.38 (1.08), converged False
+[zero] seed 1: agent - oracle -20.34 (1.31), converged True
+[zero] seed 2: agent - oracle -15.19 (1.25), converged True
+[zero] seed 3: agent - oracle -12.96 (1.10), converged True
+[zero] seed 4: agent - oracle -8.20 (0.83), converged False
+[zero] seed 5: agent - oracle -5.82 (0.83), converged False
+[zero] seed 6: agent - oracle -16.22 (1.26), converged True
+[zero] seed 7: agent - oracle -17.74 (1.29), converged True
+[zero] seed 8: agent - oracle -8.42 (0.90), converged False
+[zero] seed 9: agent - oracle -14.16 (1.20), converged False
+{
+  "level": "zero",
+  "across_seeds": {
+    "agent_minus_oracle_mean": {
+      "mean": -13.14378346655962,
+      "sd_across_seeds": 4.578842399453734,
+      "se_across_seeds": 1.447957102922432,
+      "min": -20.34352087773014,
+      "max": -5.821917591927422
+    },
+    "agent_minus_always_rebalance_mean": {
+      "mean": -13.105967784786205,
+      "sd_across_seeds": 4.578842399453733,
+      "se_across_seeds": 1.4479571029224318,
+      "min": -20.305705195956723,
+      "max": -5.784101910154008
+    },
+    "agent_minus_trade_once_then_hold_mean": {
+      "mean": 9.883676802562793,
+      "sd_across_seeds": 4.578842399453734,
+      "se_across_seeds": 1.447957102922432,
+      "min": 2.683939391392276,
+      "max": 17.20554267719499
+    },
+    "agent_minus_myopic_mean": {
+      "mean": -13.14378346655962,
+      "sd_across_seeds": 4.578842399453734,
+      "se_across_seeds": 1.447957102922432,
+      "min": -20.34352087773014,
+      "max": -5.821917591927422
+    },
+    "agent_minus_last_iterate_mean": {
+      "mean": -0.35412997608693736,
+      "sd_across_seeds": 0.7184783617287112,
+      "se_across_seeds": 0.2272028072609079,
+      "min": -1.3340161028550817,
+      "max": 0.8763595737419049
+    },
+    "last_iterate_minus_oracle_mean": {
+      "mean": -12.789653490472682,
+      "sd_across_seeds": 4.586395196522015,
+      "se_across_seeds": 1.4503455070665132,
+      "min": -19.230761424749915,
+      "max": -4.830978557054449
+    },
+    "split_agent_minus_own_target_mean": {
+      "mean": 0.0013744885346245405,
+      "sd_across_seeds": 1.0418079825892008,
+      "se_across_seeds": 0.32944861095269173,
+      "min": -1.9194881641235595,
+      "max": 1.662775886566106
+    },
+    "split_own_target_minus_always_rebalance_mean": {
+      "mean": -13.107342273320828,
+      "sd_across_seeds": 4.570660197907927,
+      "se_across_seeds": 1.4453696636065019,
+      "min": -18.386217031833162,
+      "max": -4.305311027260887
+    },
+    "agent_hold_fraction": {
+      "mean": 0.34587527777777777,
+      "sd_across_seeds": 0.27385348401824916,
+      "se_across_seeds": 0.08660007546701876,
+      "min": 0.025044444444444446,
+      "max": 0.7292777777777777
+    },
+    "agent_turnover_per_block": {
+      "mean": 0.02062465425917453,
+      "sd_across_seeds": 0.0077271521810448,
+      "se_across_seeds": 0.002443540071883934,
+      "min": 0.01015088047733279,
+      "max": 0.029164553765553436
+    },
+    "agent_cost_bps_per_block": {
+      "mean": 0.0,
+      "sd_across_seeds": 0.0,
+      "se_across_seeds": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "favourite_target_utility_loss_bps": {
+      "mean": 12.905403688484196,
+      "sd_across_seeds": 4.348695166028084,
+      "se_across_seeds": 1.3751781574412831,
+      "min": 4.9299409901864655,
+      "max": 17.11469499677435
+    },
+    "d12_converged_count": {
+      "2026_11_12_original_primary_last_iterate": 0,
+      "2026_11_19_exact_action_last_iterate": 0,
+      "2026_11_19_tail_average": 0,
+      "2026_11_20_operative": 5
+    },
+    "train_hours_mean": 0.3368555555555556
+  },
+  "d10": {
+    "rule": "agent-minus-oracle paired SE below a third of the oracle's lead over always rebalancing",
+    "target_se": 0.012605227257805116,
+    "mean_agent_minus_oracle_se": 1.1045011025298188,
+    "applicable": false,
+    "met": false
+  }
+}

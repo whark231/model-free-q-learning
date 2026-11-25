@@ -15,7 +15,7 @@
 **Key takeaways**
 
 - As run, the sweep shows that this design fails. What costs do to a learner is still unmeasured. See the Outcome section.
-- `AUDIT_2026-11-06.md` §6.2 lists redesign options. A decision is needed before any further TC run.
+- `AUDIT_2026-11-06.md` §6.2 lists redesign options. The decision was taken on 2026-11-12: the extension was redesigned with drift (`TC_DRIFT_DESIGN.md`), and this first design is kept as a negative result.
 
 ---
 
@@ -69,4 +69,4 @@ Full scale: 10 seeds × 13M blocks per cost level, γ = 5, discount 0.95, α = 1
 
 **Reproducing the committed results.** The committed results are four single-variant files (`no-cost.json`, `low-cost.json`, `anchor.json`, `high-cost.json`), which `python -m src.tc_sweep_report` requires. They were produced from single-variant configurations that are not in the repo; the command above with `quadratic-cost.json` writes one file with all four. Commit those configurations, or document the exact commands (`AUDIT_2026-11-06.md` M9).
 
-**Next.** Options are in `AUDIT_2026-11-06.md` §6.2. The registered discount and learning-rate comparisons would inherit the same failure: on a small grid with about 19× more visits per pair, discount 0 left a 92 bps/yr gap and a constant α = 3.2e-4 a 264 bps/yr gap (reviewer's tests, not re-checked).
+**Next.** The redesign chosen from the options in `AUDIT_2026-11-06.md` §6.2 is in `TC_DRIFT_DESIGN.md`. The registered discount and learning-rate comparisons would inherit the same failure: on a small grid with about 19× more visits per pair, discount 0 left a 92 bps/yr gap and a constant α = 3.2e-4 a 264 bps/yr gap (reviewer's tests, not re-checked).

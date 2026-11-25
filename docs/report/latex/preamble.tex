@@ -1,0 +1,38 @@
+% LaTeX preamble for REPORT.md, inserted by pandoc (see ../build.sh).
+\usepackage{etoolbox}
+\usepackage{libertinus-otf}          % Libertinus text and math, with Greek and minus signs
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,skip=4pt}
+\captionsetup[figure]{labelformat=empty} % the figure number is written in the caption text
+\usepackage{float}
+\usepackage{xcolor}
+\definecolor{linkblue}{HTML}{1F4E79}
+\AtBeginDocument{\hypersetup{colorlinks=true,linkcolor=linkblue,urlcolor=linkblue,citecolor=linkblue}}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\itshape Model-Free Q-Learning and Optimal Portfolio Choice}
+\fancyhead[R]{\small\itshape Aldrich and Harkless}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14pt}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{14pt plus 3pt minus 2pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt plus 2pt minus 2pt}{4pt}
+% Tables: smaller type and tighter rows so the wide ones fit the text width.
+\AtBeginEnvironment{longtable}{\small\renewcommand{\arraystretch}{1.1}}
+\setlength{\LTpre}{6pt}\setlength{\LTpost}{6pt}
+% Figures and tables float to the top or bottom of the page, LaTeX style.
+\makeatletter\def\fps@figure{htbp}\makeatother
+\setlength{\parskip}{4pt plus 1pt}
+\setlength{\parindent}{0pt}
+\AtBeginEnvironment{verbatim}{\footnotesize}
+\AtBeginEnvironment{Shaded}{\footnotesize}
+% Figure paths in REPORT.md are relative to docs/report/.
+\graphicspath{{../}}
+\captionsetup[table]{labelformat=empty,position=top}
+\renewcommand{\topfraction}{0.85}\renewcommand{\bottomfraction}{0.6}\renewcommand{\textfraction}{0.12}\renewcommand{\floatpagefraction}{0.75}
