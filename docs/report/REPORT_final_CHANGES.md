@@ -61,6 +61,17 @@ Prose in the main text fell from about 8,000 words (v2) to about 6,000. Repetiti
 - "DBC began trading the day before" is now "the day after DBC's first price in the data" (`CLEANING_LOG.json`: 2006-02-06).
 - Figure 1 is now cited in Section 5.3.
 
+## Slides and speaker notes
+
+`slides/build_slides.py` and `slides/SPEAKER_NOTES.md` now match this draft:
+- Slide 4 drops the settings-commit dates.
+- Slide 10 says the ranking statistics are at γ = 5.
+- Slide 12 is reframed as the gap narrowing as costs rise, with the unexplained-target caveat and the myopic comparison.
+- Note 10 drops the untested "biased at the peak" explanation, which is cut from the report.
+- "Favourite" is now "favorite".
+
+The notes now cite `REPORT_final.md`. `slides.html` and `slides.pdf` are rebuilt (16 slides, printed with headless Chrome on Windows).
+
 ## For the team to decide
 
 1. **E6 verdict (Table A3).** E6 registered "Agent loses to myopic at every level" and is marked Met. At $10B the shortfall (−0.5, SE 0.54, ahead on 5 of 10 seeds) is not distinguishable from zero. "Partly met" may fit better, but changing it changes the "eight met, four partly met" count in Section 6.4, the Table A3 caption, `results/tc-drift/runs/README.md` and `reports/tc-drift/`. Not changed.
