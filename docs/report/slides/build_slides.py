@@ -40,9 +40,24 @@ def split(fig: str, left: str, ratio: str = "") -> str:
 POST = "post hoc"
 slides = []
 
+# 0 ---------------------------------------------------------------- landing
+GROUPS = [("Equity", "SPY · EFA · EEM"), ("Bonds", "IEF · LQD · TIP"), ("Real assets", "GLD · VNQ · DBC")]
+slides.append('''<section class="slide landing">
+<div class="land-top">Data Science for Finance · Fall 2026</div>
+<div class="land-main">
+<div class="land-bar"></div>
+<h1>Model-Free Q-Learning and Optimal Portfolio Choice with Nine Assets</h1>
+<p class="land-sub">Can an agent that only sees rewards find a near-optimal portfolio?</p>
+</div>
+<div class="land-tickers">''' + "".join(
+    f'<div class="grp"><div class="g-lab">{lab}</div><div class="g-tk">{tk}</div></div>' for lab, tk in GROUPS
+) + '''</div>
+<div class="land-authors">Albert Aldrich <span>and</span> William Harkless</div>
+</section>''')
+
 # 1 ------------------------------------------------------------------ title
 slides.append(f'''<section class="slide title">
-<div class="kicker">Data Science for Finance · Fall 2026 · Albert Aldrich and William Harkless</div>
+<div class="kicker">The question</div>
 <h1>Can an agent that only sees rewards find a near-optimal portfolio?</h1>
 <div class="split wide-fig"><div class="text">
 <p class="lead">Nine ETFs, a simulator calibrated once, a Q-learning agent choosing among 1,287 long-only portfolios.</p>
@@ -52,6 +67,59 @@ slides.append(f'''<section class="slide title">
 </div></div>
 <div class="figure">{img("fig_gap_ladder")}</div></div>
 </section>''')
+
+# 1b -------------------------------------------------------------- pipeline
+def box(head: str, body: str, cls: str = "") -> str:
+    return f'<div class="pbox {cls}"><div class="ph">{head}</div><div class="pb">{body}</div></div>'
+
+
+ARROW = '<div class="parr">→</div>'
+slides.append(slide(
+    "From raw prices to a trained agent",
+    f'''<div class="pipe">
+<div class="prow-lab">Data and calibration <span>· run once</span></div>
+<div class="prow">
+<div class="pstack">
+{box("Yahoo Finance", "9 ETFs, daily Adjusted Close", "src")}
+{box("Kenneth French", "daily risk-free rate", "src")}
+</div>
+{ARROW}
+{box("Clean and align", "simple returns minus the risk-free rate; inner join on dates<br><b>5,152 days</b>, 7 Feb 2006 to 31 Jul 2026")}
+{ARROW}
+{box("Estimate once", "daily μ (9 means) and Σ (9 × 9 covariance)")}
+{ARROW}
+{box("Frozen simulator", "draws r = μ + Lz, z ~ N(0, I), L the Cholesky factor of Σ<br>the ground truth of the experiment", "truth")}
+</div>
+<svg class="pconn" viewBox="0 0 1168 40" preserveAspectRatio="none"><defs><marker id="ah" markerWidth="10" markerHeight="10" refX="5" refY="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L10,0 L5,9 z" fill="#2a9d8f" transform="translate(0,0)"/></marker></defs>
+<path d="M1024,0 V18 H338 V31" fill="none" stroke="#2a9d8f" stroke-width="2" marker-end="url(#ah)"/>
+<text x="681" y="13" text-anchor="middle" font-size="13" font-weight="700" fill="#2a9d8f" letter-spacing="1.2">RETURNS FOR EVERY EPISODE</text></svg>
+<div class="prow2">
+<div class="loop">
+<div class="prow-lab">Training loop <span>· one episode</span></div>
+<div class="lsteps">
+{box("1 · Choose", "ε-greedy: one of 1,287 long-only portfolios")}
+{ARROW}
+{box("2 · Simulate", "hold it for B = 20 days of fresh simulated returns")}
+{ARROW}
+{box("3 · Reward", "R = mean − (γ/2) × sample variance of those 20 days")}
+{ARROW}
+{box("4 · Update", "Q(a) ← Q(a)<br>&nbsp;&nbsp;+ [R − Q(a)] / N(a)<br>N(a) = visits to a")}
+</div>
+<div class="lback"><span>repeat</span></div>
+<div class="lmult">
+<div class="chip"><b>× 13M</b> episodes per seed (260M simulated days)</div>
+<div class="chip"><b>× 10</b> seeds, each with its own training streams</div>
+</div>
+</div>
+{ARROW}
+<div class="pstack">
+{box("Score", "each seed's greedy portfolio, exactly from μ and Σ; 10,000 fresh episodes as a check", "eval")}
+{box("Benchmarks", "optimum and best grid portfolio from μ and Σ, never given to the agent", "bench")}
+</div>
+</div>
+<p class="note">The agent sees only its action index and a scalar reward. It never sees μ, Σ or the benchmarks; unit tests check that its code does not import them.</p>
+</div>''',
+    kicker="Part I · data and calibration"))
 
 # 2 ------------------------------------------------------------------- data
 slides.append(slide(
@@ -268,6 +336,45 @@ li { margin-bottom:9px; }
 .col3 .stat { flex:0 0 auto; min-height:118px; }
 .col3 .stat .num { font-size:40px; }
 .col3 .stat .lab { font-size:17px; }
+.slide.landing { background:var(--navy); color:#fff; padding:56px 72px 52px; justify-content:space-between; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.land-top { font-size:15px; text-transform:uppercase; letter-spacing:2px; color:#a8c5da; font-weight:600; }
+.land-main { margin-top:-10px; }
+.land-bar { width:96px; height:6px; background:var(--teal); border-radius:3px; margin-bottom:26px; }
+.slide.landing h1 { color:#fff; font-size:54px; line-height:1.08; letter-spacing:-0.8px; max-width:1050px; margin:0 0 22px; }
+.land-sub { font-size:26px; line-height:1.3; color:#d4e2ec; margin:0; max-width:980px; }
+.land-tickers { display:flex; gap:22px; }
+.land-tickers .grp { flex:1; border-top:2px solid rgba(255,255,255,0.25); padding-top:12px; }
+.g-lab { font-size:13px; text-transform:uppercase; letter-spacing:1.6px; color:#8fb3cc; font-weight:600; }
+.g-tk { font-size:24px; font-weight:600; margin-top:4px; letter-spacing:0.5px; }
+.land-authors { font-size:24px; font-weight:600; }
+.land-authors span { font-weight:400; color:#a8c5da; }
+.slide.landing .pageno { display:none; }
+.pipe { flex:1; display:flex; flex-direction:column; min-height:0; }
+.prow-lab { font-size:14px; text-transform:uppercase; letter-spacing:1.3px; font-weight:700; color:var(--navy); margin:0 0 8px; }
+.prow-lab span { color:var(--grey); font-weight:600; }
+.prow, .lsteps, .prow2 { display:flex; align-items:stretch; gap:0; }
+.prow > .pbox, .lsteps > .pbox { flex:1; }
+.pstack { display:flex; flex-direction:column; gap:10px; flex:0 0 205px; }
+.pstack .pbox { flex:1; }
+.pbox { background:var(--light); border-top:5px solid var(--blue); border-radius:4px; padding:9px 12px 10px; }
+.pbox.src { border-color:var(--grey); }
+.pbox.truth { border-color:var(--navy); background:#e2e8f1; }
+.pbox.eval { border-color:var(--teal); }
+.pbox.bench { border-color:var(--orange); }
+.ph { font-size:19px; font-weight:700; color:var(--navy); margin-bottom:3px; }
+.pb { font-size:16px; line-height:1.32; color:#3b4757; }
+.parr { flex:0 0 34px; display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--blue); font-weight:700; }
+.prow2 { flex:1; min-height:0; }
+.pconn { display:block; width:1168px; height:40px; overflow:visible; }
+.loop { flex:1; border:2px dashed var(--teal); border-radius:10px; padding:12px 14px 14px; display:flex; flex-direction:column; justify-content:space-between; }
+.lsteps .pbox { border-color:var(--teal); background:#fff; box-shadow:0 0 0 1px #d8dee8 inset; }
+.lback { position:relative; height:26px; margin:0 9.5% 4px; border:2px solid var(--teal); border-top:none; border-radius:0 0 10px 10px; }
+.lback span { position:absolute; left:50%; bottom:-11px; transform:translateX(-50%); background:#fff; padding:0 8px; font-size:13px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:1.2px; }
+.lback::before { content:""; position:absolute; left:-7px; top:-9px; border:6px solid transparent; border-bottom:9px solid var(--teal); border-top:none; }
+.lmult { display:flex; gap:12px; margin-top:16px; }
+.chip { flex:1; background:var(--teal); color:#fff; border-radius:4px; padding:7px 12px; font-size:15.5px; }
+.chip b { font-size:19px; margin-right:4px; }
+.prow2 > .pstack { flex-basis:230px; }
 .pageno { position:absolute; right:56px; bottom:14px; font-size:13px; color:#9aa4b2; }
 #hint { position:fixed; bottom:8px; left:12px; color:#6f7b8a; font-size:12px; }
 @page { size: 13.333in 7.5in; margin:0; }

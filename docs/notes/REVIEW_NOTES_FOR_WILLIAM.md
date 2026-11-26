@@ -1,14 +1,14 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-11-09, updated 2026-11-22
-**Status:** open items only. Closed items are in `REVIEW_HISTORY.md`, `AUDIT_2026-11-06.md` §2 and the "Closed since 2026-11-20" list below. Albert's audit (`AUDIT_2026-11-20.md` §6) is the correction plan for what is left. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
+**Date:** 2026-11-09, updated 2026-11-25
+**Status:** open items only. Closed items are in `REVIEW_HISTORY.md`, `AUDIT_2026-11-06.md` §2 and the two "Closed" lists below. Albert's audit (`AUDIT_2026-11-20.md` §6) is the correction plan for what is left. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
 
 ---
 
 ## TL;DR / In plain terms
 
-The 40 transaction-cost runs are done and scored (Albert, 2026-11-20), and nothing else needs running. What is left is writing (the report, with section drafts Nov 24 and the full draft Nov 26, the slides, and the documentation gaps Albert's audit found) plus small code and repo tasks. Three of the gaps are yours: the Part II derivation in prose, a script for the closed-form benchmark table, and the FA analyses that have no committed script.
+Everything is run, and the report and slides are written (final draft 2026-11-25). Two decisions are left with Albert (the E6 verdict, and making the final draft `REPORT.md`), then the merge into `main`, a fresh-clone check and submission by Nov 30.
 
 **Key concepts to understand**
 
@@ -24,36 +24,39 @@ The 40 transaction-cost runs are done and scored (Albert, 2026-11-20), and nothi
 
 ---
 
-## Still open (2026-11-22)
+## Still open (2026-11-25)
 
 | Item | What | Who |
 |---|---|---|
-| Report | Not started. Outline `docs/report/REPORT_SKELETON.md`, every number tied to a committed file. Section drafts Nov 24, full draft Nov 26 (D-H) | Both |
-| Your report sections | Theory/Benchmark (the derivation), Q-learning (including constant α versus 1/N) and the FA extension (prospectus §4). FA from `AUDIT_2026-11-06.md` §2.3 and `EXPERIMENTS.md` §8.7 and §8.8, with the measured shrinkage and the tuning disclosure (tuned by simulating the same environment, on separate seeds, at γ = 5 only; M12) | You |
-| A20-H2 | No methods prose for Part II: the closed-form derivation, its three verification routes, and the identical constraints for theory and learning. Write `docs/methods/BENCHMARKS.md` or go straight to report §3 | You draft the derivation, Albert the rest |
-| A20-H3 | The budget-only closed-form portfolio is in no committed table. A read-only script (for example `python -m src.benchmarks.report_table`) writing the budget-only and long-only portfolios for γ = 3, 5, 8 to a new file, with a test. γ = 5: U = 925.9 bps/yr budget-only against 530.5 long-only (Albert's audit; re-checked by an independent KKT solve in the 2026-11-22 review) | You |
-| A20-H4 | The surrogate study table, the γ = 8 mean-field calculation and the shrinkage slopes have no committed script. Commit them, or the report words them as hypotheses (skeleton's default if not committed by Nov 24) | You |
-| A20-M1 | The TC oracle summary and the seven tuning files (six seed records and `tuning/summary.json`) carry `src_dirty: true` (produced from uncommitted code on this machine). Disclose in the report. Rerunning the oracle from a clean commit (20 minutes to 2.5 hours (8,452 s once, not a clean timing)) is optional; with no further runs planned, I recommend disclosure only | You |
-| TC section | Who writes it (prospectus §4: proposed for Albert). The interpretation is not written. Open questions: why the favourite-target error is so much smaller at $10B (not investigated); E1's range was missed away from zero (the pilot's 2 to 6 bps/yr utility loss understated the runs' 9.75 at $1B); c1 is poorly learned (at or below 0.15 of the truth on 6 of 10 seeds at $1B, below 0.2 on all 10 at $10B, up to 15 times too high at $100M) while c2 is within a factor of 2 on 10 of 10 at $1B and $10B. Text to carry: the two oracle directions not met (trade once, then hold does not approach the oracle as costs grow; myopic holds less than the oracle under λ only); the oracle's in-sample V is about 5 bps/yr high at M = 2,000; D12 tracks the target the agent trades to and says nothing about when it holds; D12's 2026-11-12 original rule is reported for its probe primary only (its secondary, within 25 bps of the oracle, is not computed); probes are read only at checkpoints, so a flip that reverts between two is not seen (design §7); check 5 as a two-SE bound (D-I); TC-13 and the tail-average change (design §14 risk 5); every disclosure in skeleton §6.5 | Both |
-| Report text, non-TC | L9 (take the Part V items from `evaluation/`); L10 (the γ = 8 cause is untested); `RUN_ISSUES_2026-10-22.md` Findings 4, 5, 8 and 9; A20-M5 (why gaps use the known moments) | William and Albert by section |
-| TC-8, D-G | How the first TC design is reported. M7, M8, M9, M11, the TC halves of M1 and F-L12, and showing `ignore_cost` in the old tables (H2) wait on it. Albert's audit recommends one paragraph and the four-row table, with M7 to M11 closed as not reported (A20-M4) | Both |
-| A20-M2 | Commit the six TC oracle tables (about 1.05 MB) so scoring needs no rebuild (20 minutes to 2.5 hours (8,452 s once, not a clean timing)). The runs' per-seed logs and per-path values are committed already | Both |
-| Post-hoc coverage | Which post-hoc runs the report covers in full (A20-M8, skeleton §6; it matches your 2026-10-28 paragraph at the end of History) | Both |
-| M12, F-L10 | Report text: the FA tuning disclosure; caveats on weights where no seed converged | William (FA) and Albert (convergence), in the draft |
-| F-L9 | Episodes column in `performance.csv` (partly fixed: `INDEX.md` gives days = episodes × B). Say it in the report. Low priority | Albert |
-| L7 | Whether `all-three`'s report should compare with its single-change runs | With Albert |
-| Presentation | Not started | Both |
-| `dev` into `main` | `dev` is 5 commits ahead of `main` (PRs #46 and #47). Merge after the last change, then a fresh-clone check (tests, data rebuild and `run_experiments --dry-run`; no retraining) | Both |
+| E6 verdict | Table A3 marks E6 ("agent loses to myopic at every level") as met. At $10B the shortfall (−0.5, SE 0.54, ahead on 5 of 10 seeds) is not distinguishable from zero, so "partly met" may fit better. Changing it changes the eight-met count in report §6.4, the Table A3 caption, `results/tc-drift/runs/README.md` and `reports/tc-drift/` (`REPORT_final_CHANGES.md`) | Both |
+| Promote the final draft | Copy `REPORT_final.md` over `REPORT.md` once accepted, so `sh docs/report/build.sh` and Appendix B's build command reproduce the submitted PDF. v1 stays in git history | Both |
+| `dev` into `main` | `dev` is 8 commits ahead of `main` on 2026-11-25 (`main` last updated by PR #52, 2026-11-24). Merge after the last change, then a fresh-clone check (tests, data rebuild and `run_experiments --dry-run`; no retraining) | Both |
+| Merged remote branches | Merged into `dev` and safe to delete on GitHub: `feature/docs-after-tc-runs`, `feature/report-draft`, `feature/report-final`, `feature/report-remove-drafting-notes`, `feature/report-skeleton-tc-update`, `feature/report-v2-aa`, `feature/stale-text-cleanup`, `feature/tc-drift-run`, `run/tc-drift-final` | Either |
 
 ## Your next steps
 
-1. **Your report sections**, for the section drafts due Nov 24.
-2. **H3 then H2.** The script is small and gives report §3 its table; the derivation text follows from it.
-3. **H4 by Nov 24**: commit the three scripts or accept hypothesis wording.
-4. **With Albert:** D-G, who writes the TC section, M2, post-hoc coverage and L7.
-5. **Before submission, with Albert:** merge `dev` into `main`, then the fresh-clone check.
+1. **With Albert:** decide E6 and whether to promote the final draft.
+2. **Before submission:** merge `dev` into `main`, run the fresh-clone check, submit by Nov 30.
 
-## Closed since 2026-11-20
+## Closed 2026-11-25
+
+**TL;DR / In plain terms:** the report and slides are written, and they settle every open writing item. The code items are done (Albert, `58d23e5`) or no longer needed.
+
+- **Report:** final draft `docs/report/REPORT_final.md` and `.pdf` (PRs #53 and #54), from Albert's v1 (2026-11-24) and v2, then your markup, shortened to 13 pages of main text and references. Changes in `REPORT_final_CHANGES.md`. Your sections (Theory/Benchmark, Q-learning, FA) are in it.
+- **Presentation:** `docs/report/slides/`, 15 slides plus 3 backup, matched to the final draft, with a title slide and a pipeline diagram (slide 3). Notes in `SPEAKER_NOTES.md`.
+- **A20-H2:** the derivation is in report §3. No separate `BENCHMARKS.md` was written.
+- **A20-H3:** `src/benchmarks/closed_form_table.py` writes `results/benchmarks/closed_form_budget_only.csv` and checks it against a numerical solve (agreement 1.47e-6; Albert, `58d23e5`).
+- **A20-H4:** no script committed. The report words the γ = 8 cause as "one hypothesis, which we have not tested" and reports neither the surrogate table nor the shrinkage slopes.
+- **A20-M1:** disclosed in Appendix C, item 9 (the oracle summary and tuning records came from uncommitted code; the final agent runs did not). The oracle was not rerun.
+- **A20-M2:** the six TC oracle tables are committed (`58d23e5`).
+- **TC section:** written. It covers the split, the unexplained target improvement at $10B, the cost-coefficient results and the registered expectations (Table A3).
+- **D-G (TC-8):** the first design gets one paragraph (report §6.4) and Figure A13, and no tables. So M7, M8, M9, M11, the TC halves of M1 and F-L12, and H2's `ignore_cost` column are closed as not reported (A20-M4).
+- **Post-hoc coverage (A20-M8):** settled by report §6, which follows your 2026-10-28 paragraph under History.
+- **M12:** the FA tuning disclosure is in report §6.3. **F-L9:** report Table 3 gives episodes and days (13M episodes, 260M days).
+- **Report text, non-TC** (L9, L10, A20-M5, and F-L10): written into the report. A20-M5 is in §5 ("Gaps use the known μ and Σ") and L10 in §6.3. The `RUN_ISSUES_2026-10-22.md` findings 4, 5, 8 and 9 and F-L10 were not rechecked one by one against the final text.
+- **L7** (`all-three`'s comparison set): left as it is. The report does not depend on it.
+
+## Closed 2026-11-20 to 2026-11-22
 
 **TL;DR / In plain terms:** the TC runs are done and checked, your three suggestions to Albert are settled, and two small items need no work.
 
