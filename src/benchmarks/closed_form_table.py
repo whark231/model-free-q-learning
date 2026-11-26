@@ -68,8 +68,9 @@ def main():
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     table = pd.DataFrame(rows)
-    table.to_csv(OUT_DIR / "closed_form_budget_only.csv", index=False, float_format="%.6f")
-    (OUT_DIR / "closed_form_budget_only_checks.json").write_text(json.dumps(checks, indent=2) + "\n")
+    # LF on every platform, so a rebuild on Windows matches the committed bytes.
+    table.to_csv(OUT_DIR / "closed_form_budget_only.csv", index=False, float_format="%.6f", lineterminator="\n")
+    (OUT_DIR / "closed_form_budget_only_checks.json").write_text(json.dumps(checks, indent=2) + "\n", newline="\n")
     print(table.round(4).to_string(index=False))
     print(json.dumps(checks, indent=2))
 

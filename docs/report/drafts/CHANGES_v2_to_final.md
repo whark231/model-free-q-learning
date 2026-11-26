@@ -8,7 +8,7 @@
 
 **Key takeaways**
 - Five places deliberately keep a short version of something marked yellow, because the assignment requires it or because a claim would otherwise be left without its caveat (listed below). Delete them if you disagree.
-- Two items need a team decision (end of file).
+- Two items needed a team decision; both are closed (end of file).
 
 ## Shortening
 
@@ -79,6 +79,8 @@ Two slides were added afterwards, taking the deck to 15 slides plus 3 backup:
 The speaker notes are renumbered to match. At the times given the talk now runs about 11 minutes.
 
 ## For the team to decide
+
+*Closed 2026-11-26.* (1) E6 is kept as met: it is scored on the across-seed mean, as E1 is, and Table A3 and the conclusion carry the caveat. (2) The final draft is promoted: `REPORT_final.*` is now `docs/report/REPORT.*`, and this file moved to `docs/report/drafts/`.
 
 1. **E6 verdict (Table A3).** E6 registered "Agent loses to myopic at every level" and is marked Met. At $10B the shortfall (−0.5, SE 0.54, ahead on 5 of 10 seeds) is not distinguishable from zero. "Partly met" may fit better, but changing it changes the "eight met, four partly met" count in Section 6.4, the Table A3 caption, `results/tc-drift/runs/README.md` and `reports/tc-drift/`. Not changed.
 2. **Promote to `REPORT.md`?** `build.sh` builds only `REPORT.md`, and Appendix B's build command describes that file. Once this draft is accepted, copy it over `REPORT.md` (v1 stays in git history) so that `sh docs/report/build.sh` reproduces the submitted PDF.

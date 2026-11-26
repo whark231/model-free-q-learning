@@ -200,7 +200,7 @@ and put the length check into the reward function instead.
 ### 2.7 What the simulator deliberately does not do
 
 - **It does not compute rewards.** The reward lives in `src/rewards.py` and
-  needs γ, which is still undecided. The simulator never touches γ.
+  needs γ (set to 5 on 2026-10-16, `src/config.py`). The simulator never touches γ.
 - **It holds no state.** The baseline is stateless. The transaction-cost
   extension needs holdings as state, which belongs in a layer on top of this
   class.

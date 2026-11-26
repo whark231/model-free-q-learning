@@ -1,25 +1,23 @@
 # Next Steps
 
 **From:** William
-**Date:** 2026-11-06, updated 2026-11-25
-**Status (2026-11-25):** all runs are done, and the report (final draft `docs/report/REPORT_final.md`) and slides are written. The TC summary statistics were re-derived from the committed per-path values by Albert (2026-11-20) and by William (2026-11-22); the per-path scoring itself was not re-run by a separate route. What is left is two decisions, housekeeping, the merge and submission. Your open items are in the table below; everything else in this file is the dated record, with closed items marked. Your audit's correction plan (`AUDIT_2026-11-20.md` §6) is the master list for what is left. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
+**Date:** 2026-11-06, closed 2026-11-26
+**Status:** closed 2026-11-26. The report (`docs/report/REPORT.md`) and slides are done and nothing is open in the repo. The TC summary statistics were re-derived from the committed per-path values by Albert (2026-11-20) and by William (2026-11-22); the per-path scoring itself was not re-run by a separate route.
 
 ---
 
-## Open for you, 2026-11-25
+## Closed at project end (2026-11-26)
 
-**TL;DR / In plain terms:** thank you for v1 and v2 of the report, the closed-form script and the oracle tables. The final draft (`REPORT_final.md`) is your v2 with my markup applied and shortened, and the slides match it. What is left for you: two decisions with me, a few housekeeping items on your Mac, and the merge and submission together.
+**TL;DR / In plain terms:** thank you for v1 and v2 of the report, the closed-form script and the oracle tables. The final draft is your v2 with my markup applied and shortened, and it is now `docs/report/REPORT.md`. Nothing in the repo is left for you; two items live on your Mac.
 
-**Key takeaways**
-- No result changed. The final draft's changes from your v2 are listed in `docs/report/REPORT_final_CHANGES.md`, including five places where I kept a short version of something I had marked for cutting, and why.
-- The slides now open with a title slide, and slide 4 is a diagram of the data pipeline and training loop (Part I).
-
-| Item | What |
+| Item | Outcome |
 |---|---|
-| With me | Two decisions. (1) E6: Table A3 marks it met, but at $10B the agent is statistically indistinguishable from myopic (−0.5, SE 0.54), so "partly met" may fit better. (2) Copy `REPORT_final.md` over `REPORT.md` so `build.sh` reproduces the submitted PDF |
-| Housekeeping (A20-M6, A20-L12, A20-L15) | `HANDOFF.md` on your Mac and the memory pointer to it; `pypdf` on your Mac for `CLAUDE.md`'s PDF instruction; the empty notebook; your stale local branches. Nine merged branches can be deleted on GitHub (list in `REVIEW_NOTES_FOR_WILLIAM.md`) |
-| Oracle timing | The README gives the oracle run as 20 minutes to 2.5 hours, design §5 as 1 to 2.5 hours. Low priority; the report does not quote it |
-| Before submission, together | `dev` into `main` (8 commits ahead on 2026-11-25), then the fresh-clone check (tests, data rebuild, `run_experiments --dry-run`; no retraining) |
+| E6 verdict | Kept as met: E6 is scored on the across-seed mean, as E1 is, and Table A3 and the conclusion print the caveat (SE 0.54, 5 of 10 seeds at $10B) |
+| Promote the final draft | Done. Your v1 and v2 are in `docs/report/drafts/` with the change logs |
+| Oracle timing (A20-M7) | The README now gives the committed oracle run's time (8,452 s) instead of a range |
+| Empty notebook (A20-L15) | Removed, with the two empty `results/tuning/*.err` files |
+| On your Mac, not in the repo (A20-M6, A20-L12, A20-L15) | `HANDOFF.md` and its memory pointer, `pip install pypdf` for `CLAUDE.md`'s PDF instruction, and your stale local branches. Handle them when convenient |
+| `dev` into `main` | William opens the pull request |
 
 ## Closed 2026-11-25 (from the 2026-11-22 list)
 

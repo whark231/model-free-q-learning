@@ -61,4 +61,4 @@ Under "what would change the story" (§7): E1 failed away from zero, not toward 
 
 The HTML report is `reports/tc-drift/report.html` (`python -m src.tc_drift.report`); it applies each expectation's clauses as written, and its verdicts are the ones above.
 
-Not yet done: the report's interpretation, the "trade once, then hold" naming in tables, and why the favourite-target error is so much smaller at $10B (not investigated).
+The interpretation is in report §6.4 (`docs/report/REPORT.md`), which uses the "trade once, then hold" naming. Why the favourite-target error is so much smaller at $10B was not investigated, and the report says so.

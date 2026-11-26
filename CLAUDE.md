@@ -122,10 +122,10 @@ just deliver results. Do not skip the "why."
 
 ### 3.1 Write like a human: follow the no-ai-slop rules
 
-Apply `no-ai-slop-main/skills/no-ai-slop/SKILL.md` to **everything written for a
+Apply `.claude/no-ai-slop/skills/no-ai-slop/SKILL.md` to **everything written for a
 human reader**: chat replies, markdown docs, commit messages, PR descriptions,
 code comments, and every word of the final report. Check the output against
-`no-ai-slop-main/skills/no-ai-slop/eval.md` before sending it.
+`.claude/no-ai-slop/skills/no-ai-slop/eval.md` before sending it.
 
 The rules that get broken most often here:
 
@@ -181,15 +181,17 @@ Existing docs (`docs/README.md` is the index; docs cite each other by file name)
 | `docs/methods/ENVIRONMENT.md` | Part I simulator: interface, seeds, leakage guard, verification (Albert) |
 | `docs/methods/EVALUATION.md` | Parts IV-V evaluation: gap and convergence definitions, outputs, verification (Albert) |
 | `docs/methods/EXPERIMENTS.md` | Fixed experiment settings, how to run them, where results go (Albert) |
-| `docs/notes/REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps |
-| `docs/notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps (William) |
+| `docs/notes/REVIEW_NOTES_FOR_WILLIAM.md` | William's items (closed 2026-11-26) |
+| `docs/notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's items (closed 2026-11-26) (William) |
 | `docs/methods/FA_INTEGRATION_NOTES.md` | Function-approximation extension: design, edits to Albert's files, tuning (William) |
 | `docs/methods/TRANSACTION_COSTS.md` | Transaction-cost extension: model, benchmarks, run configurations (Albert) |
 | `docs/methods/TC_DRIFT_DESIGN.md` | Transaction costs with drift: redesign, oracle, agent, frozen interface `src/tc_drift/spec.py` (William and Albert) |
 | `docs/reviews/RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan |
 | `docs/reviews/AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs |
 | `docs/reviews/AUDIT_2026-11-20.md` | Repo audit before the report: findings, results inventory, correction plan (Albert) |
-| `docs/report/REPORT_SKELETON.md` | Skeleton of the final report and slides: sections, numbers with sources, figure inventory, slide outline (Albert) |
+| `docs/report/REPORT.md` | The submitted report (`.pdf` beside it; slides in `docs/report/slides/`) |
+| `docs/report/drafts/` | Earlier drafts, the report skeleton and the change logs between drafts |
+| `results/README.md` | Map of the results folder to the report |
 | `results/tc-drift/runs/README.md` | TC-with-drift final runs: results table, E1 to E12 verdicts (Albert) |
 | `docs/reviews/REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas |
 | `reports/README.md` | Adding a run, extracting it, and building reports that compare runs (Albert) |

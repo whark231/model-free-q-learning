@@ -1,6 +1,6 @@
 # Speaker notes: Model-Free Q-Learning and Optimal Portfolio Choice with Nine Assets
 
-**TL;DR / In plain terms:** fifteen slides plus three backup slides for questions. At the times given the talk runs about 11 minutes, so cut a few seconds a slide if the limit is 10. Each note is written to be spoken. Every number is in `docs/report/REPORT_final.md` and was checked against the committed result files.
+**TL;DR / In plain terms:** fifteen slides plus three backup slides for questions. At the times given the talk runs about 11 minutes, so cut a few seconds a slide if the limit is 10. Each note is written to be spoken. Every number is in `docs/report/REPORT.md` and was checked against the committed result files.
 
 **Key concepts to have ready**
 

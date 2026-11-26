@@ -3,8 +3,8 @@
 **TL;DR / In plain terms:** the project's write-ups live here; the root
 `README.md`, `CLAUDE.md` and `reports/README.md` stay where they are. Start
 with the prospectus for the plan, `methods/` for how each part works,
-`reviews/` for what was checked and fixed, and `notes/` for each person's open
-items.
+`reviews/` for what was checked and fixed, and `notes/` for each person's
+items (all closed 2026-11-26 except the final `dev` into `main` pull request).
 
 The documents refer to each other by file name (for example "`EXPERIMENTS.md`
 §8.7"). Every document name in this folder is unique, so the table below says
@@ -24,11 +24,12 @@ predate this folder (moved 2026-11-09) and are left unchanged.
 | `methods/TC_DRIFT_DESIGN.md` | Transaction costs with drift (the reported extension): the redesign, oracle, agent, interfaces, sweep, tuning, run driver, expected directions and risks | William and Albert |
 | `reviews/AUDIT_2026-11-06.md` | Whole-project audit: open issues, verified checks, candidate final runs | William (with Claude), for both |
 | `reviews/AUDIT_2026-11-20.md` | Repo audit before the report: findings, results inventory, assignment checklist, correction plan (working notes in `reviews/audit_2026-11-20_notes/`) | Claude, for Albert |
-| `report/REPORT_SKELETON.md` | Skeleton of the final report: sections, claims, numbers with source files, figures, disclosures | Claude, for Albert |
+| `report/REPORT.md`, `report/REPORT.pdf` | The submitted report; `report/slides/` has the slides and speaker notes | Albert and William |
+| `report/drafts/` | Earlier drafts (v1, v2), the report skeleton and the change logs between drafts | Albert, William, Claude |
 | `reviews/RUN_ISSUES_2026-10-22.md` | Issues found in the first full-scale run and their fix plan | Claude, for Albert |
 | `reviews/REVIEW_HISTORY.md` | Closed review issues, settled decisions, rejected ideas | Both |
-| `notes/REVIEW_NOTES_FOR_WILLIAM.md` | William's open items and next steps | Albert, kept up by William |
-| `notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's open items and next steps | William |
+| `notes/REVIEW_NOTES_FOR_WILLIAM.md` | William's items, all closed 2026-11-26 | Albert, kept up by William |
+| `notes/NEXT_STEPS_FOR_ALBERT.md` | Albert's items, all closed 2026-11-26 | William |
 
 `reports/README.md` (adding a run and building its report) stays beside the
 reports it describes.

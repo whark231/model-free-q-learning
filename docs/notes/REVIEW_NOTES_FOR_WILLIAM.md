@@ -1,14 +1,14 @@
 # Notes for William
 
 **From:** Albert, kept up to date by William
-**Date:** 2026-11-09, updated 2026-11-25
-**Status:** open items only. Closed items are in `REVIEW_HISTORY.md`, `AUDIT_2026-11-06.md` §2 and the two "Closed" lists below. Albert's audit (`AUDIT_2026-11-20.md` §6) is the correction plan for what is left. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
+**Date:** 2026-11-09, closed 2026-11-26
+**Status:** closed 2026-11-26. Nothing is open. The last items are in "Closed at project end" below; earlier closed items are in `REVIEW_HISTORY.md`, `AUDIT_2026-11-06.md` §2 and the "Closed" lists below. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
 
 ---
 
 ## TL;DR / In plain terms
 
-Everything is run, and the report and slides are written (final draft 2026-11-25). Two decisions are left with Albert (the E6 verdict, and making the final draft `REPORT.md`), then the merge into `main`, a fresh-clone check and submission by Nov 30.
+Everything is run, the report and slides are written, and the project closed on 2026-11-26. The report is `docs/report/REPORT.md` and `.pdf`. The last step is the `dev` into `main` pull request and submission.
 
 **Key concepts to understand**
 
@@ -24,25 +24,22 @@ Everything is run, and the report and slides are written (final draft 2026-11-25
 
 ---
 
-## Still open (2026-11-25)
+## Closed at project end (2026-11-26)
 
-| Item | What | Who |
-|---|---|---|
-| E6 verdict | Table A3 marks E6 ("agent loses to myopic at every level") as met. At $10B the shortfall (−0.5, SE 0.54, ahead on 5 of 10 seeds) is not distinguishable from zero, so "partly met" may fit better. Changing it changes the eight-met count in report §6.4, the Table A3 caption, `results/tc-drift/runs/README.md` and `reports/tc-drift/` (`REPORT_final_CHANGES.md`) | Both |
-| Promote the final draft | Copy `REPORT_final.md` over `REPORT.md` once accepted, so `sh docs/report/build.sh` and Appendix B's build command reproduce the submitted PDF. v1 stays in git history | Both |
-| `dev` into `main` | `dev` is 8 commits ahead of `main` on 2026-11-25 (`main` last updated by PR #52, 2026-11-24). Merge after the last change, then a fresh-clone check (tests, data rebuild and `run_experiments --dry-run`; no retraining) | Both |
-| Merged remote branches | Merged into `dev` and safe to delete on GitHub: `feature/docs-after-tc-runs`, `feature/report-draft`, `feature/report-final`, `feature/report-remove-drafting-notes`, `feature/report-skeleton-tc-update`, `feature/report-v2-aa`, `feature/stale-text-cleanup`, `feature/tc-drift-run`, `run/tc-drift-final` | Either |
-
-## Your next steps
-
-1. **With Albert:** decide E6 and whether to promote the final draft.
-2. **Before submission:** merge `dev` into `main`, run the fresh-clone check, submit by Nov 30.
+| Item | Outcome |
+|---|---|
+| E6 verdict | Kept as met. E6 is scored on the across-seed mean, as E1 is, and the mean is below myopic at every level (−0.5 at $10B). Table A3 prints the SE (0.54) and the 5-of-10 seed count beside it, and the conclusion says the agent is statistically indistinguishable from myopic at $10B. No count changed |
+| Promote the final draft | Done. `REPORT_final.*` is now `docs/report/REPORT.*`; v1, v2, the skeleton and the change logs are in `docs/report/drafts/` |
+| Fresh-clone check | Done on Windows: the data rebuild matches the committed files to floating-point rounding and the dry run lists the four baseline experiments (prospectus row 14). No retraining |
+| `dev` into `main` | William opens the pull request after the repo cleanup |
+| Merged remote branches | Not deleted. Optional: `feature/docs-after-tc-runs`, `feature/report-draft`, `feature/report-final`, `feature/report-remove-drafting-notes`, `feature/report-skeleton-tc-update`, `feature/report-v2-aa`, `feature/stale-text-cleanup`, `feature/tc-drift-run` and `run/tc-drift-final` are merged into `dev` and can be deleted on GitHub at any time |
+| Repo cleanup | The README was rewritten for graders and recruiters, `results/README.md` maps the results folder, the empty notebook and two empty `.err` logs were removed, and the writing-style checklist moved to `.claude/no-ai-slop/` |
 
 ## Closed 2026-11-25
 
 **TL;DR / In plain terms:** the report and slides are written, and they settle every open writing item. The code items are done (Albert, `58d23e5`) or no longer needed.
 
-- **Report:** final draft `docs/report/REPORT_final.md` and `.pdf` (PRs #53 and #54), from Albert's v1 (2026-11-24) and v2, then your markup, shortened to 13 pages of main text and references. Changes in `REPORT_final_CHANGES.md`. Your sections (Theory/Benchmark, Q-learning, FA) are in it.
+- **Report:** final draft (now `docs/report/REPORT.md` and `.pdf`) (PRs #53 and #54), from Albert's v1 (2026-11-24) and v2, then your markup, shortened to 13 pages of main text and references. Changes in `CHANGES_v2_to_final.md` (`docs/report/drafts/`). Your sections (Theory/Benchmark, Q-learning, FA) are in it.
 - **Presentation:** `docs/report/slides/`, 15 slides plus 3 backup, matched to the final draft, with a title slide and a pipeline diagram (slide 4). Notes in `SPEAKER_NOTES.md`.
 - **A20-H2:** the derivation is in report §3. No separate `BENCHMARKS.md` was written.
 - **A20-H3:** `src/benchmarks/closed_form_table.py` writes `results/benchmarks/closed_form_budget_only.csv` and checks it against a numerical solve (agreement 1.47e-6; Albert, `58d23e5`).

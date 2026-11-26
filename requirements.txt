@@ -2,7 +2,7 @@
 # suite (`python -m pytest src/tests -q`) passes with this exact set; the test
 # count is in README.md. Only packages the code imports are listed: jupyter,
 # seaborn and tqdm were dropped on 2026-11-09 because nothing imports them
-# (notebooks/exploration.ipynb is an empty placeholder; AUDIT_2026-11-06.md L3).
+# (the empty placeholder notebook was removed on 2026-11-26; AUDIT_2026-11-06.md L3).
 #
 # numpy>=2.3 requires Python>=3.11 (a hard floor, not just untested), so this
 # project runs on two verified combinations rather than one: Python 3.10 with

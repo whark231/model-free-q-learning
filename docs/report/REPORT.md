@@ -1,39 +1,35 @@
 ---
 title: "Model-Free Q-Learning and Optimal Portfolio Choice with Nine Assets"
 author: "Albert Aldrich and William Harkless"
-date: "Data Science for Finance, Fall 2026. Draft of 24 November 2026"
+date: "Data Science for Finance, Fall 2026"
 ---
 
 ## Abstract
 
-We ask whether a model-free learner can recover a near-optimal mean-variance portfolio from realized rewards alone. Nine ETFs are calibrated on 5,152 daily excess returns (February 2006 to July 2026), the estimated moments are frozen as the ground truth of a Gaussian simulator, and a stateless tabular Q-learning agent chooses among the 1,287 long-only portfolios on a 20% weight grid. At risk aversion γ = 5 the continuous long-only optimum is worth 530.5 bps/yr of certainty-equivalent return. Across ten seeds the median gap is 14.1 bps/yr to the best portfolio on the grid and 19.8 bps/yr to the continuous optimum, while an equal-weight portfolio is 310.9 bps/yr behind. Three seeds of ten select the best grid portfolio exactly. Exact recovery fails because the best and second-best grid portfolios differ by 10.5 bps/yr while one 20-day episode's reward has a standard deviation near 3,900 bps/yr. A finer grid lowers discretization error and raises learning error, and at this training budget the total gap does not improve. Two bonus extensions are reported with their failures. Spline function approximation with a constant step size beats a constant-step table on the 20% grid at two of three risk aversions. On the 10% grid it loses to the $1/N$ table at every risk aversion, in a comparison that changes the step-size rule along with the representation. With transaction costs and drifting holdings, the agent trails a numerical oracle at all four cost levels (by 13.1, 13.1, 10.0 and 2.8 bps/yr). Its trade timing adds 0.8 bps/yr at the \$1 billion cost level and 6.2 at \$10 billion, and nothing measurable below that. The four baseline experiments were specified before any result existed; every other run is labelled post hoc.
+We ask whether a model-free learner can recover a near-optimal mean-variance portfolio from realized rewards alone. Nine ETFs are calibrated on 5,152 daily excess returns (February 2006 to July 2026), the estimated moments become the fixed truth of a Gaussian simulator, and a stateless tabular Q-learning agent chooses among the 1,287 long-only portfolios on a 20% weight grid. At risk aversion γ = 5, across ten seeds, the median learned portfolio is 14.1 bps/yr of certainty-equivalent return behind the best grid portfolio and 19.8 behind the continuous optimum, which is worth 530.5; equal weighting is 310.9 behind. Three seeds of ten find the best grid portfolio exactly. Exact recovery fails because the two best grid portfolios differ by 10.5 bps/yr while one 20-day episode's reward has a standard deviation near 3,900. A finer grid trades discretization error for learning error and does not lower the total gap at this budget. Two post hoc extensions are reported with their failures. Spline function approximation beats a constant-step table on the 20% grid at two of three risk aversions and loses to the $1/N$ table on the 10% grid, in a comparison that also changes the step-size rule. With transaction costs and drifting holdings, the agent trails a full-information oracle by 13.1 bps/yr at zero cost and 2.8 at \$10 billion. Its trade timing is worth 6.2 bps/yr there, but most of the narrowing comes from a target closer to the best one, which we have not explained. Only the four baseline experiments were specified before any full-scale run.
 
 ## 1. Introduction and central research question
 
-The assignment poses one question: "Can a model-free learning algorithm recover a near-optimal portfolio allocation when it observes realized rewards but does not know expected returns or covariances?" We answer it in a controlled experiment. A mean vector μ and covariance matrix Σ are estimated once from nine traded ETFs and then treated as the truth of a synthetic market. A mean-variance investor who knows μ and Σ can solve for the optimal portfolio directly. Our agent never sees them. It picks a portfolio, holds it for a short episode of simulated returns, receives the realized mean-variance reward, and updates a table with one value per portfolio.
+Can a model-free learning algorithm recover a near-optimal portfolio allocation when it observes realized rewards but does not know expected returns or covariances? We study the question in a controlled experiment. A mean vector μ and covariance matrix Σ are estimated once from nine ETFs and then treated as the truth of a synthetic market. The agent never sees them. It picks a portfolio, holds it for a short episode of simulated returns, receives the realized mean-variance reward, and updates one value per portfolio.
 
-Three portfolios and two gaps organize the report. The continuous optimum $w^*$ is the best long-only, fully invested portfolio with any weights. The best grid portfolio is the best one the agent is allowed to choose. The learned portfolio is what the agent chose. The discretization gap is the loss of the best grid portfolio against $w^*$, and the learning gap is the loss of the learned portfolio against the best grid portfolio. Their sum is the total gap. Every gap is a certainty-equivalent loss, $252 \times 10^4 \times \Delta U$ in basis points per year, where $U$ is daily mean-variance utility. It reads as the sure annual return the investor gives up.
+Three portfolios define the gaps we report. The continuous optimum $w^*$ is the best long-only, fully invested portfolio; the best grid portfolio is the best one the agent may choose; the learned portfolio is the one it chose. The discretization gap is the best grid portfolio's loss against $w^*$, the learning gap is the learned portfolio's loss against the best grid portfolio, and their sum is the total gap. Each gap is a certainty-equivalent loss, $252 \times 10^4 \times \Delta U$ in bps/yr with $U$ daily mean-variance utility, so it reads as the sure annual return the investor gives up. Section 3 separates the continuous optimum from the best grid portfolio and Section 5 separates learning from discretization error. Calibration uses historical data once, and evaluation uses simulated draws that never updated a Q-value (Section 2). Section 5 reports statistical convergence (the agent's table stops changing) beside economic convergence (its choice stays within 25 bps/yr of the best available).
 
-The report keeps apart the four things the assignment asks to separate: the continuous optimum and the best grid portfolio (Section 3); learning error and discretization error (Section 5); calibration, which uses historical data once, and evaluation, which uses simulated draws that never updated a Q-value (Section 2); and statistical convergence (the agent's own table stops changing) and economic convergence (the chosen portfolio stays within 25 bps/yr of the best available), reported side by side in Section 5.
-
-The answer, at γ = 5 on the 20% grid, is a median gap across ten seeds of 14.1 bps/yr to the best attainable portfolio and 19.8 bps/yr to the continuous optimum, out of 530.5 bps/yr available, where equal weighting loses 310.9. Three seeds of ten recover the best grid portfolio exactly. The others stop on a close neighbour because the differences among the top portfolios are about 370 times smaller than the noise in a single reward.
-
-Only the four baseline experiments (γ = 5 on the 20% and 25% grids, γ = 3 and γ = 8 on the 20% grid) had their settings and convergence rules fixed before any result existed. The settings were committed on 16 October 2026 and the first full run finished on 22 October. All other runs were designed after seeing the baseline and are labelled post hoc wherever they appear. Several of them had an expected direction written down before they ran, and we report whether each expectation was met.
+Only the four baseline experiments (γ = 5 on the 20% and 25% grids, γ = 3 and γ = 8 on the 20% grid) had their settings and convergence rules fixed before any full-scale run. Every other run is labeled post hoc wherever it appears.
 
 ## 2. ETF data, sample construction, and calibration
 
-**Universe and sources.** The nine ETFs are those the assignment specifies: SPY, EFA and EEM (equity), IEF, LQD and TIP (fixed income), and GLD, VNQ and DBC (real assets). Daily prices come from Yahoo Finance through `yfinance` 1.7.0, downloaded on 24 September 2026. The raw files are committed to the repository and never downloaded again, because Yahoo restates adjusted history and a new download would change the calibration. The daily risk-free rate is the Kenneth French Data Library daily factor file. The environment is defined on excess returns.
+**Universe and sources.** The nine ETFs are SPY, EFA and EEM (equity), IEF, LQD and TIP (fixed income), and GLD, VNQ and DBC (real assets). Daily prices come from Yahoo Finance through `yfinance` 1.7.0 and the daily risk-free rate from the Kenneth French Data Library. The environment is defined on excess returns.
 
-**Returns and adjustment.** Returns are simple returns on the Adjusted Close, $r_t = P_t / P_{t-1} - 1$. No log returns are used anywhere in the project. We verified the adjustment convention in two ways: the Adjusted Close and Close columns differ only on distribution dates, by the amount the distribution implies (worst discrepancy $6.0 \times 10^{-4}$), and the EEM three-for-one split of 24 July 2008 leaves no jump in the return series.
+**Returns and adjustment.** Returns are simple returns on the Adjusted Close, $r_t = P_t / P_{t-1} - 1$; no log returns are used. We verified the adjustment convention two ways: Adjusted Close and Close differ only on distribution dates, by the amount the distribution implies (worst discrepancy $6.0 \times 10^{-4}$), and EEM's three-for-one split of 24 July 2008 leaves no jump in the returns.
 
-**Sample.** The calibration sample runs from 7 February 2006 to 31 July 2026 and has 5,152 daily observations. The start is set by DBC, which began trading on 6 February 2006. The end is set by the risk-free file, which stops on 31 July 2026; we truncated the sample there in preference to forward-filling the rate. Dates are aligned by an inner join across the nine ETFs. Nothing is imputed, forward-filled or interpolated. The 5,214 raw rows for SPY reduce to 5,152 through five documented drops (1 incomplete final session, 23 dates before DBC's inception, 1 date missing at the vendor, 1 row lost to differencing, 36 dates after the risk-free file ends). Extreme days are kept, including EEM's +22.77% on 13 October 2008.
+**Sample.** The sample runs from 7 February 2006, the day after DBC's first price in the data, to 31 July 2026, where the risk-free file ends (we truncated rather than forward-fill the rate), for 5,152 daily observations. Dates are aligned by an inner join across the nine ETFs. The 5,214 raw SPY rows lose 23 dates before DBC's inception, 36 after the risk-free file ends, one incomplete final session, one date missing at the vendor and one row to differencing. Extreme days such as EEM's +22.77% on 13 October 2008 are kept.
 
-**One frequency.** The mean vector, the covariance matrix, risk aversion and all rewards are daily. Annualization (×252 for means and utilities, ×√252 for volatilities) is applied only when reporting.
+**One frequency.** μ, Σ, risk aversion and all rewards are daily. Annualization (×252 for means and utilities, ×√252 for volatilities) is for reporting only.
 
-**Table 1.** Annualized summary statistics of daily excess returns, 7 February 2006 to 31 July 2026 (5,152 observations). The standard error is that of the annualized mean.
+**Table 1.** Annualized summary statistics of daily excess returns, 7 February 2006 to 31 July 2026. SE is the standard error of the annualized mean; kurtosis is excess kurtosis.
 
-| ETF | Exposure | Mean (%) | SE of mean (%) | Volatility (%) | Sharpe | Excess kurtosis |
-|---|---|---:|---:|---:|---:|---:|
+| ETF | Exposure | Mean (%) | SE (%) | Vol. (%) | Sharpe | Kurtosis |
+|------|------------------------------|----------:|------------:|------------:|--------:|-----------:|
 | SPY | U.S. large-cap stocks | 10.7 | 4.27 | 19.3 | 0.55 | 15.0 |
 | EFA | Developed markets ex U.S. | 6.1 | 4.73 | 21.4 | 0.29 | 13.9 |
 | EEM | Emerging-market stocks | 7.5 | 6.20 | 28.0 | 0.27 | 17.8 |
@@ -44,26 +40,11 @@ Only the four baseline experiments (γ = 5 on the 20% and 25% grids, γ = 3 and 
 | VNQ | U.S. REITs | 8.9 | 6.42 | 29.0 | 0.31 | 17.2 |
 | DBC | Broad commodity futures | 2.3 | 4.27 | 19.3 | 0.12 | 3.0 |
 
-**Table 2.** Correlation matrix of daily excess returns (lower triangle).
+Figure A1 gives the correlation matrix. SPY and GLD have the two highest Sharpe ratios (0.55 and 0.50) and a correlation of 0.07, and IEF is negatively correlated with SPY (−0.29), which anticipates the optimum in Section 3. The three equity funds are close substitutes (correlations 0.82 to 0.88), as are IEF and TIP (0.76).
 
-| | SPY | EFA | EEM | IEF | LQD | TIP | GLD | VNQ |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| EFA | 0.88 | | | | | | | |
-| EEM | 0.82 | 0.87 | | | | | | |
-| IEF | −0.29 | −0.25 | −0.26 | | | | | |
-| LQD | 0.20 | 0.23 | 0.18 | 0.57 | | | | |
-| TIP | −0.10 | −0.06 | −0.08 | 0.76 | 0.54 | | | |
-| GLD | 0.07 | 0.17 | 0.19 | 0.21 | 0.15 | 0.27 | | |
-| VNQ | 0.74 | 0.68 | 0.65 | −0.15 | 0.18 | −0.04 | 0.06 | |
-| DBC | 0.39 | 0.43 | 0.43 | −0.20 | 0.07 | 0.06 | 0.36 | 0.26 |
+**Ground-truth environment.** The simulator draws $r_{t+1} = \mu + L z_{t+1}$ with $z \sim \mathcal{N}(0, I_9)$ and $L$ the Cholesky factor of Σ, so returns are independent $\mathcal{N}(\mu, \Sigma)$ draws. The moments are the truth inside the experiment only. Training returns, exploration draws and evaluation returns come from separate random streams of one master seed, so evaluation never reuses training data and seed $i$ sees the same returns in every comparable run.
 
-SPY and GLD have the two highest Sharpe ratios (0.55 and 0.50) and a correlation of 0.07, and IEF is negatively correlated with SPY (−0.29). These three facts anticipate the optimal portfolio in Section 3. The three equity funds are close substitutes (correlations of 0.82 to 0.88), as are IEF and TIP (0.76). The covariance matrix has condition number 268.07 and smallest eigenvalue $3.10 \times 10^{-6}$, so it is positive definite and its Cholesky factor is numerically stable. Figure A1 in the appendix shows the correlation matrix as a heat map.
-
-**Ground-truth environment.** The simulator draws $r_{t+1} = \mu + L z_{t+1}$ with $z \sim \mathcal{N}(0, I_9)$ and $L$ the Cholesky factor of Σ, so that $r \sim \mathcal{N}(\mu, \Sigma)$ independently across days. The moments are fixed for every training and evaluation draw. They are the truth inside the experiment and are not a claim about future markets. Training returns, the agent's exploration draws and evaluation returns come from separate random streams derived from one master seed (20261016), so evaluation data never overlaps training data and seed $i$ sees the same simulated returns in every comparable run.
-
-**Leakage guard.** The agent's code cannot import the data loader, the benchmark module or the data files; unit tests enforce an import allowlist. The agent receives its own action index and a scalar reward, and nothing else.
-
-Two properties of the data bear on later sections. Excess kurtosis is large for most of the ETFs (58.9 for LQD, 17.8 for EEM, 17.2 for VNQ, 15.0 for SPY), while the simulator is Gaussian, so the simulated world has thinner tails than the data it was calibrated on (Section 6.5). The French daily risk-free series takes only three distinct values. An error in the rate shifts every element of μ by the same constant, which under the budget constraint adds the same amount to every feasible portfolio's utility and leaves the optimal weights unchanged. Numerically, the largest change in any optimal weight is $3.6 \times 10^{-9}$.
+**Leakage guard.** The agent receives only its action index and a scalar reward. Unit tests stop its code from importing the data loader, the benchmark module or the data files.
 
 ## 3. Theoretical benchmark and feasible portfolio set
 
@@ -71,117 +52,104 @@ Two properties of the data bear on later sections. Excess kurtosis is large for 
 
 $$U(w) = w^\top \mu - \frac{\gamma}{2}\, w^\top \Sigma\, w .$$
 
-The baseline risk aversion is γ = 5, with γ = 3 and γ = 8 as robustness values. We chose γ = 5 on 16 October 2026, before any run. It lies inside the range of 2 to 7 that the meta-analysis of Elminejad, Havranek and Irsova (2022) reports for the finance literature, below the median near 7 from the household survey of Barsky et al. (1997), and well under the upper bound of 10 that Mehra and Prescott (1985) regard as plausible. A value implied by the dataset itself (2.9) was considered and rejected so that the data would not select its own risk aversion.
+The baseline is γ = 5, with γ = 3 and γ = 8 as robustness values. γ = 5 lies inside the range of 2 to 7 that the meta-analysis of Elminejad, Havranek and Irsova (2025) reports for the finance literature, is consistent with the household survey of Barsky et al. (1997), in which most respondents fall in the least risk-tolerant category, and is well under the bound of 10 that Mehra and Prescott (1985) regard as plausible. We rejected the value the data imply (2.9) so that the data would not choose their own risk aversion.
 
-**Budget-only closed form.** With only the constraint $\mathbf{1}^\top w = 1$, the Lagrangian is $\mathcal{L} = w^\top\mu - \tfrac{\gamma}{2} w^\top \Sigma w - \eta(\mathbf{1}^\top w - 1)$. The first-order condition $\mu - \gamma \Sigma w - \eta \mathbf{1} = 0$ gives $w = \tfrac{1}{\gamma}\Sigma^{-1}(\mu - \eta \mathbf{1})$, and substituting into the budget constraint gives the multiplier:
+**Budget-only closed form.** With only $\mathbf{1}^\top w = 1$, the first-order condition of $\mathcal{L} = w^\top\mu - \tfrac{\gamma}{2} w^\top \Sigma w - \eta(\mathbf{1}^\top w - 1)$ is $\mu - \gamma \Sigma w - \eta \mathbf{1} = 0$, and the budget constraint fixes the multiplier:
 
 $$w_{\text{budget}} = \frac{1}{\gamma}\,\Sigma^{-1}\left(\mu - \eta\,\mathbf{1}\right), \qquad \eta = \frac{\mathbf{1}^\top \Sigma^{-1}\mu - \gamma}{\mathbf{1}^\top \Sigma^{-1}\mathbf{1}} .$$
 
-Since Σ is positive definite the objective is strictly concave and this stationary point is the unique maximum. The implementation is verified against an independent numerical solve, against the budget constraint, and against the long-only solver in cases where the closed form happens to be long-only. At the calibrated moments the long-only constraints bind (six of the nine optimal long-only weights are zero, Table 3), so the budget-only solution lies outside the agent's feasible set and is not the benchmark for the learning comparison.
+Our implementation agrees with an independent numerical solve to within $1.5 \times 10^{-6}$ (Appendix B). The portfolio takes short positions, so it lies outside the agent's feasible set and is not the benchmark for the learning comparison.
 
-**Feasible set and the two benchmarks.** The agent's feasible set is long-only and fully invested: $w_i \ge 0$ and $\sum_i w_i = 1$. The theoretical benchmark is solved numerically under exactly these constraints, so theory and learning face identical restrictions. For every specification we report two benchmarks. The continuous optimum $w^*$ maximizes $U$ over the whole simplex. The best grid portfolio maximizes $U$ over the agent's finite action set and is found by evaluating every action.
+**Feasible set and the two benchmarks.** The agent's feasible set is long-only and fully invested ($w_i \ge 0$, $\sum_i w_i = 1$), and the benchmark is solved numerically under the same constraints. For every specification we report two benchmarks: the continuous optimum $w^*$, which maximizes $U$ over the simplex, and the best grid portfolio, found by evaluating every action.
 
-**Action set.** An action is a vector of nine weights in multiples of a step $h$ that sum to one. The set is generated from the number of assets and the step alone. No moment enters its construction and the optimum is not inserted. The counts match the assignment's table: 495 portfolios at $h$ = 25%, 1,287 at 20% (the baseline), 43,758 at 10%, and 3,108,105 at 5%, which we count and do not train.
+**Action set.** An action is nine weights in multiples of a step $h$ that sum to one, generated from the asset count and $h$ alone; no moment enters and the optimum is not inserted. There are 495 portfolios at $h$ = 25%, 1,287 at 20% (the baseline), 43,758 at 10% and 3,108,105 at 5% (counted only).
 
-**Table 3.** Continuous long-only optimum and best 20% grid portfolio. Only SPY, IEF and GLD have positive weight; the other six ETFs are zero in every row. Return and volatility are annualized.
+**Table 2.** Continuous long-only optimum $w^*$ and best 20% grid portfolio, weights in percent; the other six ETFs are zero in every row. Return and volatility (Vol.) are annualized; $U(w^*)$ and the discretization gap are in bps/yr.
 
-| γ | $w^*$ (SPY, IEF, GLD) | Return | Volatility | $U(w^*)$, bps/yr | Best 20% grid (SPY, IEF, GLD) | Discretization gap, bps/yr |
-|---|---|---:|---:|---:|---|---:|
-| 3 | 0.5502, 0, 0.4498 | 10.00% | 13.89% | 710.8 | 0.6, 0, 0.4 | 2.47 |
-| 5 | 0.4688, 0.1363, 0.3948 | 8.86% | 11.92% | 530.5 | 0.4, 0.2, 0.4 | 5.74 |
-| 8 | 0.3562, 0.3899, 0.2539 | 6.79% | 8.66% | 379.2 | 0.4, 0.4, 0.2 | 6.13 |
+| γ | $w^*$ SPY | $w^*$ IEF | $w^*$ GLD | Return | Vol. | $U(w^*)$ | Grid SPY | Grid IEF | Grid GLD | Gap |
+|---|--------:|--------:|--------:|-------:|--------:|--------:|-----:|-----:|-----:|-------:|
+| 3 | 55.0 | 0.0 | 45.0 | 10.00% | 13.89% | 710.8 | 60 | 0 | 40 | 2.47 |
+| 5 | 46.9 | 13.6 | 39.5 | 8.86% | 11.92% | 530.5 | 40 | 20 | 40 | 5.74 |
+| 8 | 35.6 | 39.0 | 25.4 | 6.79% | 8.66% | 379.2 | 40 | 40 | 20 | 6.13 |
 
-The optimum holds at most three of the nine ETFs at any γ, and two at γ = 3. As risk aversion rises, weight moves from equities and gold into Treasuries (Figure A2). The best grid portfolio has the same support as $w^*$ at every γ. At γ = 5 the discretization gap depends on the step as follows: 11.74 bps/yr on the 25% grid, 5.74 on the 20% grid and 1.29 on the 10% grid. At γ = 3 and γ = 8 the best 10% portfolio is the best 20% portfolio, so the finer grid does not reduce the gap (2.47 and 6.13 on both).
-
-The bounded-shorting bonus extension was not attempted.
+The optimum holds three of the nine ETFs (two at γ = 3) and moves from equities and gold into Treasuries as γ rises (Figure A2). The best grid portfolio has the same support. At γ = 5 the discretization gap is 11.74, 5.74 and 1.29 bps/yr on the 25%, 20% and 10% grids. At γ = 3 and γ = 8 the best 10% portfolio is the best 20% portfolio, so the gap stays at 2.47 and 6.13.
 
 ## 4. Q-learning design and implementation
 
-**State.** The baseline is stateless. Returns are independent and identically distributed, so nothing observable at the decision date predicts the next episode.
+**State and action.** The baseline is stateless: returns are independent and identically distributed, so nothing observable predicts the next episode. Each episode the agent selects one of the 1,287 grid portfolios and holds it for $B$ days.
 
-**Action.** Each episode the agent selects one of the 1,287 grid portfolios and holds its weights for $B$ days.
-
-**Reward.** The reward is the episodic realized mean-variance reward the assignment recommends. For the chosen portfolio's daily excess returns $p_1, \dots, p_B$,
+**Reward.** The reward is the episodic realized mean-variance reward. For the chosen portfolio's daily excess returns $p_1, \dots, p_B$,
 
 $$R = \bar{p} - \frac{\gamma}{2}\, s_p^2, \qquad s_p^2 = \frac{1}{B-1}\sum_{t=1}^{B} (p_t - \bar{p})^2 .$$
 
-Because the sample mean and the sample variance with divisor $B-1$ are unbiased, $E[R \mid w] = U(w)$ exactly. The reward and the theoretical objective therefore agree in expectation, and the benchmark needs no adjustment. We did not use the one-period quadratic reward, whose expectation depends on the second moment.
+The sample mean and the sample variance with divisor $B-1$ are unbiased, so $E[R \mid w] = U(w)$ exactly and the benchmark needs no adjustment.
 
-**Update.** The standard Q-learning update is $Q(s_t,a_t) \leftarrow Q(s_t,a_t) + \alpha\left[R_{t+1} + \rho \max_{a'} Q(s_{t+1},a') - Q(s_t,a_t)\right]$. With no state and discount factor ρ = 0 it becomes
+**Update and exploration.** The Q-learning update
+
+$$Q(s_t,a_t) \leftarrow Q(s_t,a_t) + \alpha\left[R_{t+1} + \rho \max_{a'} Q(s_{t+1},a') - Q(s_t,a_t)\right]$$
+
+becomes, with no state and ρ = 0 (the assignment's "clean bandit-like benchmark"),
 
 $$Q(a_t) \leftarrow Q(a_t) + \alpha_t \left[ R_{t+1} - Q(a_t) \right].$$
 
-The assignment describes ρ = 0 as "a clean bandit-like benchmark". A positive ρ would add the same continuation value to every action's target and would not change their ranking.
+A positive ρ would add the same continuation value to every action and leave the ranking unchanged. Actions are ε-greedy with $\varepsilon_t = e^{-\beta t}$, $t$ counting episodes: with probability $\varepsilon_t$ the agent draws a portfolio uniformly at random, and otherwise it takes the highest Q-value.
 
-**Exploration.** Actions are ε-greedy with $\varepsilon_t = e^{-\beta t}$, where $t$ counts episodes. With probability $\varepsilon_t$ the agent draws a portfolio uniformly at random; otherwise it takes the portfolio with the highest Q-value.
-
-**Table 4.** Settings of the pre-registered runs, with the reason for each.
+**Table 3.** Settings of the pre-registered runs, with the reason for each.
 
 | Setting | Value | Reason |
-|---|---|---|
-| Learning rate | $\alpha = 1/N(a)$, where $N(a)$ counts visits to $a$ | Makes $Q(a)$ the sample mean of the rewards received for $a$, the unbiased estimate of $U(w_a)$ in a stationary problem, and satisfies the usual step-size conditions. Section 6.3 measures the cost of a constant rate |
+|------------------|------------------------------------------|------------------------------------------|
+| Learning rate | $\alpha = 1/N(a)$, $N(a)$ = visits to $a$ (constant rate in Section 6.3) | $Q(a)$ is the sample mean of $a$'s rewards, an unbiased estimate of $U(w_a)$ |
 | Discount factor | ρ = 0 | No state carries over between episodes |
-| Q initialization | 0 for every action | No prior information; with $1/N$ the first visit overwrites it |
-| Returns per episode | $B$ = 20 days | About one trading month. Long enough for a variance estimate, short enough to allow 13 million updates. Section 6.2 tests $B$ = 63 |
-| Episodes | 13,000,000 per seed (260 million simulated days) | Sized from a pilot of about 13 million episodes (see the disclosure below). Section 6.2 doubles it |
-| Exploration | $\varepsilon_0 = 1$, $\beta \approx 7.08 \times 10^{-7}$, so ε = 1% at the halfway episode | Over the run the agent makes about 1.41 million random picks, about 1,097 per portfolio, nearly all in the first half Figure A3 shows the schedule. Section 6.2 tests 3% |
-| Seeds | 10, from master seed 20261016 | Enough to report a distribution of gaps |
-| Tie-breaking | Uniformly random among maximal actions while training; lowest index when reporting the final portfolio | Random ties avoid favouring low-index portfolios during learning; a fixed rule makes the reported portfolio reproducible |
+| Q initialization | 0 for every action | The first visit overwrites it under $1/N$ |
+| Episode length | $B$ = 20 days ($B$ = 63 in Section 6.2) | About one trading month; enough days to estimate a variance |
+| Episodes | 13 million per seed, 260 million simulated days (doubled in Section 6.2) | Sized from a pilot (note below) |
+| Exploration | $\varepsilon_0 = 1$, $\beta \approx 7.08 \times 10^{-7}$, ε = 1% at the halfway episode (Figure A3; 3% in Section 6.2) | About 1,097 random visits per portfolio, nearly all in the first half |
+| Seeds | 10, from master seed 20261016 | A distribution of gaps |
+| Tie-breaking | Random while training; lowest index when reporting | No bias toward low-index portfolios; a reproducible report |
 | Evaluation | 10,000 fresh episodes per seed, exploration off | Separate random stream, never used for updates |
 
-**Disclosures.** The settings were fixed in commit `07bfb64` on 16 October 2026, and the first full run was on 22 October. Benchmark information entered one design choice. The episode budget was sized from a pilot of about 13 million episodes that came within roughly 2% of the best grid portfolio's value, and we scored that pilot against the benchmark ourselves. The agent never saw the benchmark, and no benchmark information entered the action set. An illustrative demonstration (γ = 5, $B$ = 20, 2 million episodes) was also run before the settings were fixed.
-
-**Noise in one reward.** At $B$ = 20 the reward of the best grid portfolio has a standard deviation of about 3,900 bps/yr in annualized units, 7.43 times its expected value of 524.8. The daily value is 0.0015478, from `reports/full_run_2026-10-22/data.json`; the `baseline-v1` report stores 0.0015519, which is 0.3% higher.
+**Use of the benchmark.** The training budget was sized with a 13-million-episode pilot that we scored against the benchmark, and a 2-million-episode demonstration ran before the settings were fixed. The agent never saw the benchmark, and none of it entered the action set.
 
 ## 5. Convergence and benchmark comparison
 
-Everything in this section comes from the four pre-registered experiments. All four trained ten seeds without failure.
-
 ### 5.1 Convergence criteria, defined before the results
 
-The primary rule is statistical and uses only the agent's own table. A seed has converged when its greedy portfolio stops changing and then stays unchanged until the end of training, for at least $K$ = 1.3 million episodes (10% of the budget). Three further rules were pre-registered. Two are statistical: the greedy portfolio is unchanged for any window of $K$ episodes, and the largest change in any Q-value stays below $10^{-5}$ in every later 10,000-episode window. The third is economic and uses the benchmark for evaluation only: the greedy portfolio stays within 25 bps/yr of the best grid portfolio from some checkpoint onward. The 25 bps/yr line is 4.8% of the best grid portfolio's value at γ = 5 and contains 4 of the 1,287 portfolios, the best one included.
-
-One descriptive measure, "settled", was added on 9 November after the results were known and is labelled post hoc. It records the first time the greedy portfolio equals the seed's final portfolio and thereafter leaves it only for brief excursions.
+This section reports the four pre-registered experiments, ten seeds each. The primary rule uses only the agent's own table: a seed has converged when its greedy portfolio stops changing and stays unchanged to the end of training, for at least $K$ = 1.3 million episodes (10% of the budget). Three further rules were pre-registered. Two are statistical: the greedy portfolio is unchanged for some window of $K$ episodes, and the largest change in any Q-value stays below $10^{-5}$ in every later 10,000-episode window. The third is economic and uses the benchmark for evaluation only: the greedy portfolio stays within 25 bps/yr of the best grid portfolio from some checkpoint on. That line is 4.8% of the best grid portfolio's value at γ = 5 and admits 4 of the 1,287 portfolios. One descriptive measure, "settled", was added post hoc: the first time the greedy portfolio equals the seed's final portfolio and afterwards leaves it only briefly.
 
 ### 5.2 How often and how fast
 
-**Table 5.** Convergence across ten seeds. Times are simulated days of training (episodes × 20) out of a budget of 260 million. The primary rule's time includes its waiting window.
+**Table 4.** Convergence across ten seeds. Times are simulated days of training (episodes × 20) out of 260 million. The primary rule's time includes its waiting window.
 
-| Experiment | Primary rule met | Median days | Settled (post hoc), median days | Within 25 bps/yr for good | Median days |
-|---|---:|---:|---:|---:|---:|
-| γ = 5, 20% grid | 9 of 10 | 185.1M | 47.1M | 7 of 10 | 25.8M |
-| γ = 5, 25% grid | 10 of 10 | 101.2M | 18.5M | 9 of 10 | 9.6M |
-| γ = 3, 20% grid | 8 of 10 | 192.6M | 26.4M | 6 of 10 | 22.2M |
-| γ = 8, 20% grid | 9 of 10 | 153.2M | 27.9M | 7 of 10 | 25.8M |
+| Experiment | Primary rule: seeds met · median days | Within 25 bps/yr for good: seeds met · median days | Settled (post hoc): median days |
+|----------------------|--------------------------|--------------------------|--------------------|
+| γ = 5, 20% grid | 9 of 10 · 185.1M | 7 of 10 · 25.8M | 47.1M |
+| γ = 5, 25% grid | 10 of 10 · 101.2M | 9 of 10 · 9.6M | 18.5M |
+| γ = 3, 20% grid | 8 of 10 · 192.6M | 6 of 10 · 22.2M | 26.4M |
+| γ = 8, 20% grid | 9 of 10 · 153.2M | 7 of 10 · 25.8M | 27.9M |
 
-Under the primary rule, 9 of 10 seeds converge at γ = 5 on the 20% grid, at a median of 185.1 million simulated days (9.25 million episodes). The economic criterion is met by fewer seeds and much sooner: 7 of 10 are within 25 bps/yr for good by a median of 25.8 million days. Statistical convergence therefore does not imply economic convergence, and the reverse also fails. Seed 8 at γ = 5 satisfies the primary rule while 47.3 bps/yr from the best grid portfolio, and seeds within 25 bps/yr continue to switch among near-equivalent portfolios for a long time.
-
-Every seed settles on its final portfolio in the first third of training (median 47.1 million days at γ = 5). The primary rule reports later dates because the greedy portfolio makes brief excursions to a rival and returns, and each excursion restarts the rule's clock (Figures A6 and A7). The seeds that fail the primary rule (1 at γ = 5, 2 at γ = 3, 1 at γ = 8) are kept in every table and figure below. The economic criterion is read at checkpoints every 10,000 episodes; read at every episode it is met at a median of 155.7 million days at γ = 5, about six times later.
+At γ = 5 on the 20% grid, 9 of 10 seeds meet the primary rule, at a median of 185.1 million simulated days (9.25 million episodes). The economic rule is met by fewer seeds and much sooner (7 of 10, median 25.8 million days). Neither kind of convergence implies the other. Seed 8 meets the primary rule 47.3 bps/yr from the best grid portfolio, and seeds within 25 bps/yr keep switching among near-equivalent portfolios for a long time. Every seed settles on its final portfolio in the first third of training (median 47.1 million days); the primary rule dates later because brief excursions to a rival restart its clock (Figures A6 and A7). Seeds that miss the primary rule stay in every table and figure. The economic rule is read every 10,000 episodes; read every episode, it is met about six times later (median 155.7 million days).
 
 ### 5.3 Learned weights against the benchmarks
 
-Exploration is off after training, so each seed's steady-state average weight vector $\bar{w}^{QL}$ over the evaluation sample equals its final greedy portfolio. We report the ten seeds one by one. An average across seeds is a blend that no seed chose, and it can lie off the grid and score better than any grid portfolio.
+With exploration off, each seed's average weight vector $\bar{w}^{QL}$ over the evaluation sample equals its final greedy portfolio, so we report seeds one by one; an average across seeds is a blend no seed chose. At γ = 5 every seed holds SPY (40% or 60%) and GLD (20% or 40%), and none holds EFA, EEM, VNQ or DBC. Eight of ten add a bond fund (IEF in six, LQD in two, TIP in one; seed 8 holds two). Five seeds hold exactly the optimum's three assets, and three of them (seeds 0, 5 and 9) hold the best grid portfolio (40/20/40). The median L1 and Euclidean distances to $w^*$ are 0.331 and 0.216, against an L1 distance of 0.138 for the best grid portfolio itself; Table A4 gives every seed's weight differences. Figure 1 shows the weights. The agent follows the optimum across γ. At γ = 3 all ten seeds hold SPY and GLD and five hold the best grid portfolio (60/0/40); at γ = 8 every seed holds IEF and five hold the best grid portfolio (40/40/20).
 
-At γ = 5 every seed holds SPY (40% or 60%) and GLD (20% or 40%), and no seed holds EFA, EEM, VNQ or DBC. Eight of ten add a bond ETF: IEF in six seeds, LQD in two and TIP in one, with seed 8 holding two of them. Seeds 1 and 6 hold no bond. Five seeds hold exactly the three assets of the optimum, and three of those (seeds 0, 5 and 9) hold the best grid portfolio (0.4, 0.2, 0.4). The ten seeds end on seven distinct portfolios. Across seeds the median L1 distance to $w^*$ is 0.331 and the median Euclidean distance is 0.216; the three seeds on the best grid portfolio are at 0.138, the distance of the grid itself. For the median seed (seed 1: 0.6 SPY, 0.4 GLD) the absolute differences from $w^*$ are 0.131 in SPY, 0.136 in IEF and 0.005 in GLD, and Table A4 gives them for all ten seeds.
-
-The agent follows the optimum as γ changes. At γ = 3 all ten seeds hold SPY and GLD, seven hold nothing else, and five hold the best grid portfolio (0.6, 0, 0.4). At γ = 8 every seed holds IEF, at 20% or 40%, and five hold the best grid portfolio (0.4, 0.4, 0.2).
-
-![**Figure 1.** Portfolio weights at γ = 5 on the 20% grid. Left: the continuous optimum, the best grid portfolio, the median seed by learning gap (the sixth of ten) and equal weight. Right: each seed's final portfolio, ordered by its learning gap in bps/yr.](figures/fig_weights.png)
+![**Figure 1.** Portfolio weights at γ = 5 on the 20% grid. Left: the continuous optimum, the best grid portfolio, the median seed by learning gap and equal weight. Right: each seed's final portfolio, ordered by its learning gap in bps/yr.](figures/fig_weights.png)
 
 ### 5.4 Economic performance and gaps
 
-**Table 6.** Performance at γ = 5 on the 20% grid, from the exact moments. The learned row gives the median of each column across the ten seeds; the columns are medians taken separately and are no single seed's values. The median seed by gap (seed 1) has return 10.07%, volatility 14.12%, utility 508.9 and total gap 21.6.
+**Table 5.** Performance at γ = 5 on the 20% grid, from the exact moments. The column-medians row takes each column's median across the ten seeds separately, so it matches no single seed.
 
 | Portfolio | Return | Volatility | $U$, bps/yr | Loss vs. $w^*$, bps/yr |
-|---|---:|---:|---:|---:|
+|----------------------------------|----------:|----------:|----------:|--------------------:|
 | Continuous optimum | 8.86% | 11.92% | 530.5 | 0 |
 | Best grid portfolio | 8.28% | 11.01% | 524.8 | 5.7 |
-| Learned, median across seeds (range) | 8.28% | 11.11% | 510.7 | 19.8 (5.7 to 53.1) |
+| Learned, upper-median seed (seed 1; seed 6 identical) | 10.07% | 14.12% | 508.9 | 21.6 |
+| Learned, column medians (range) | 8.28% | 11.11% | 510.7 | 19.8 (5.7 to 53.1) |
 | Equal weight | 5.62% | 11.71% | 219.6 | 310.9 |
 
-All gaps above are computed from the known μ and Σ, since 10,000 fresh evaluation episodes give the best grid portfolio's realized value (485.8 bps/yr) a standard error of 39.4 and confirm only large differences, such as equal weight's shortfall of 308.8 (standard error 21.1).
+Gaps use the known μ and Σ. The 10,000 fresh evaluation episodes give the best grid portfolio's realized value (485.8 bps/yr) a standard error of 39.4, enough to confirm only large differences such as equal weight's shortfall (308.8, standard error 21.1).
 
-**Table 7.** Gaps across ten seeds, bps/yr. The total gap is the discretization gap plus the learning gap.
+**Table 6.** Gaps across ten seeds, bps/yr. The total gap is the discretization gap plus the learning gap.
 
 | Experiment | Discretization gap | Learning gap, mean / median (range) | Total gap, mean / median | Exactly best grid portfolio |
 |---|---:|---:|---:|---:|
@@ -190,33 +158,31 @@ All gaps above are computed from the known μ and Σ, since 10,000 fresh evaluat
 | γ = 3, 20% grid | 2.47 | 30.6 / 10.0 (0 to 81.1) | 33.0 / 12.5 | 5 of 10 |
 | γ = 8, 20% grid | 6.13 | 13.0 / 5.7 (0 to 53.1) | 19.2 / 11.9 | 5 of 10 |
 
-The learned portfolio recovers 96% of the certainty-equivalent return available at γ = 5 (510.7 of 530.5 bps/yr at the median across seeds) and closes 94% of the distance between equal weight and the optimum. On the 20% grid the learning gap is larger than the discretization gap at every γ on average, and at γ = 5 and γ = 3 at the median across seeds. The distribution across seeds is skewed (Figure A5). Between three and five seeds have a learning gap of exactly zero, and the worst seed is 47.3 bps/yr behind at γ = 5 and 81.1 behind at γ = 3, which is why the means exceed the medians.
+The median learned portfolio keeps 96% of the available certainty-equivalent return (510.7 of 530.5 bps/yr) and closes 94% of the distance from equal weight to the optimum. On the 20% grid the learning gap exceeds the discretization gap at every γ in the mean, and at γ = 5 and γ = 3 in the median. The distribution is skewed (Figure A5): three to five seeds per experiment have no learning gap, and the worst is 47.3 bps/yr behind at γ = 5 and 81.1 at γ = 3.
 
 ### 5.5 Learning curve, regret and action-space resolution
 
-![**Figure 2.** Left: moving-average training reward, median across seeds, expressed as a certainty equivalent. It includes exploratory episodes, so it lies below the best grid portfolio until ε is small. Right: average regret, which is cumulative regret against the best grid portfolio of each grid divided by the number of episodes so far. Cumulative regret is this value times the episode count, so a falling average means cumulative regret is growing more slowly than the episode count.](figures/fig_learning_curve.png)
+![**Figure 2.** Left: moving-average training reward, median across seeds, as a certainty equivalent; it includes exploratory episodes. Right: average regret, the cumulative regret against each grid's best portfolio divided by the number of episodes so far.](figures/fig_learning_curve.png)
 
-The training reward rises as exploration decays and levels off just below the best grid portfolio's value from about the halfway episode (Figure 2). Regret is concentrated in the exploring half of training. Averaged over the whole run, the median across seeds is 65.5 bps/yr per episode on the 20% grid and 58.1 on the 25% grid, relative to holding the best grid portfolio throughout. Nearly all of it is the price of exploration, since the final greedy portfolio's median shortfall is the 14.1 and 2.5 bps/yr in Table 7.
+Training reward rises as exploration decays and levels off just below the best grid portfolio's value from about the halfway episode (Figure 2). Averaged over the run, median regret is 65.5 bps/yr per episode on the 20% grid and 58.1 on the 25% grid. Nearly all of it is the price of exploration, since the final portfolios' median shortfalls are 14.1 and 2.5 (Table 6).
 
-![**Figure 3.** Loss of the greedy portfolio against its own grid's best portfolio during training (median across seeds at each checkpoint; the band covers the middle half of seeds; the vertical scale is linear below 10 and logarithmic above). Left: the pre-registered 20% and 25% grids. Right: the post hoc comparison of the 20% and 10% grids under longer episodes and a doubled budget (Section 6.1).](figures/fig_convergence_resolution.png)
+![**Figure 3.** Loss of the greedy portfolio against its own grid's best portfolio during training (median across seeds; the band covers the middle half of seeds; the vertical scale is linear below 10 and logarithmic above). Left: the pre-registered 20% and 25% grids. Right: the post hoc 20% and 10% grids under longer episodes and a doubled budget (Section 6.1).](figures/fig_convergence_resolution.png)
 
-The 25% grid has 495 portfolios against 1,287. Its discretization gap is twice as large (11.74 against 5.74 bps/yr) and its learning gap is much smaller (median 2.5 against 14.1). It converges on all ten seeds at a median of 101.2 million days, against nine seeds at 185.1 million, and the median time to stay within 25 bps/yr for good is 9.6 million days against 25.8 million. The median total gap is 14.3 bps/yr on the coarser grid and 19.8 on the finer one. At this training budget the coarser grid is the better choice at γ = 5, because the learning error it avoids exceeds the discretization error it adds.
+The 25% grid, with 495 portfolios, doubles the discretization gap (11.74 against 5.74 bps/yr) and cuts the median learning gap from 14.1 to 2.5. It meets the primary rule on all ten seeds (median 101.2 million days, against nine seeds at 185.1 million) and stays within 25 bps/yr for good sooner (9.6 against 25.8 million days). Its median total gap is lower (14.3 against 19.8), so at this budget the coarser grid is the better choice at γ = 5.
 
 ### 5.6 What prevented exact recovery
 
-The agent's problem is to rank portfolios whose expected rewards are nearly equal using very noisy samples. At γ = 5 the second-best grid portfolio (TIP in place of IEF) is 10.5 bps/yr behind the best, and four portfolios, the best included, lie within 25 bps/yr of the best. One episode's reward has a standard deviation near 3,900 bps/yr. Separating the top two at two standard errors of the difference in their sample means requires about 1.1 million evaluations of each. During exploration each portfolio receives about 1,097 random visits, three orders of magnitude fewer.
-
-In the seven seeds that missed the best portfolio on the 20% grid, it was tried between 1,118 and 4,282 times (Figure A8). Once ε is small the agent revisits only its current favourite, so a good portfolio whose early sample mean was unlucky is rarely tried again. A post hoc diagnostic added on 4 November is consistent with this account. The learned Q-values rank the whole grid well (median Spearman correlation with true utility 0.821) and the very top poorly (at the median across seeds, 35% of the true top ten appear in the table's own top ten).
+The agent must rank portfolios whose expected rewards are nearly equal from very noisy samples. At γ = 5 the second-best grid portfolio (TIP in place of IEF) is 10.5 bps/yr behind the best, and one episode's reward has a standard deviation near 3,900 bps/yr. Separating the two at two standard errors takes about 1.1 million evaluations of each; exploration gives each portfolio about 1,097. In the seven seeds that missed the best portfolio it was tried 1,118 to 4,282 times (Figure A8). Once ε is small the agent revisits only its current favorite, so a portfolio whose early sample mean was unlucky is rarely tried again. A post hoc diagnostic fits this account: across the whole grid the learned Q-values order portfolios much as true utility does (median rank correlation 0.821), but only about a third of the ten truly best portfolios appear in the agent's own top ten (median 3.5 of 10).
 
 ## 6. Robustness, research challenges, and limitations
 
-Section 6.1 changes the action-space design and Section 6.2 changes economic and statistical assumptions, which are the two robustness checks the assignment requires. Risk aversion (γ = 3 and 8) and the 25% grid were pre-registered. Every other run in this section is post hoc. Sections 6.3 and 6.4 report the two bonus extensions, and Section 6.5 addresses the six research challenges.
+Section 6.1 changes the action-space design and Section 6.2 the economic and statistical assumptions; apart from risk aversion and the 25% grid, every run here is post hoc. Sections 6.3 to 6.5 cover the two bonus extensions and the six research challenges.
 
 ### 6.1 Action-space design: the 10% grid (post hoc)
 
-The 10% grid has 43,758 portfolios, 34 times the baseline. It was run with longer episodes ($B$ = 63), twice the episodes (26 million) and slower exploration decay (ε = 3% at halfway). Its comparison is therefore the 20% grid under the same three settings (the run named `all-three` in Section 6.2) and not the baseline. Expected directions were registered on 27 October, before training.
+The 10% grid has 43,758 portfolios, 34 times the baseline. It was run with $B$ = 63, 26 million episodes and ε = 3% at halfway, so its comparison is the 20% grid under the same settings (`all-three`, Section 6.2). Expected directions were registered before training.
 
-**Table 8.** The 20% and 10% grids under identical settings (B = 63, 26 million episodes, ε = 3% at halfway), ten seeds each, bps/yr. The paired change is the 10% grid's total gap minus the 20% grid's, seed by seed.
+**Table 7.** The 20% and 10% grids under identical settings (B = 63, 26 million episodes, ε = 3% at halfway), ten seeds each, bps/yr. The paired change is the 10% grid's total gap minus the 20% grid's, seed by seed.
 
 | γ | Discretization gap, 20% → 10% | Mean learning gap, 20% → 10% | Exactly best, 20% → 10% | Paired change in total gap (SE) | Primary rule met, 20% → 10% |
 |---|---:|---:|---:|---:|---:|
@@ -224,37 +190,31 @@ The 10% grid has 43,758 portfolios, 34 times the baseline. It was run with longe
 | 3 | 2.5 → 2.5 | 4.0 → 22.0 | 8 → 4 of 10 | +18.0 (7.5) | 10 → 0 of 10 |
 | 8 | 6.1 → 6.1 | 1.1 → 5.8 | 9 → 1 of 10 | +4.6 (1.6) | 10 → 0 of 10 |
 
-At γ = 5 the finer grid offers 4.4 bps/yr less discretization error, and none of it appears in what the agent learns. The paired change in the total gap is −0.6 bps/yr with a standard error of 3.7. At γ = 3 and γ = 8 the best 10% portfolio coincides with the best 20% portfolio, so the finer grid can only add learning error, and it does (+18.0 and +4.6 bps/yr).
-
-No seed of the thirty meets the primary convergence rule on the 10% grid. Each portfolio receives about 85 random visits from exploration. At γ = 5 the grid's best portfolio was tried between 81 and 4,114 times per seed (median 116), while each seed's final portfolio was tried 19 to 22 million times. The weights reported for these seeds are final greedy portfolios and are not converged ones. The economic criterion is still met by 10, 5 and 10 of the ten seeds at γ = 5, 3 and 8, so the agent reaches the right neighbourhood and keeps moving inside it (right panel of Figure 3; Figure A9 for all three γ). The Q-table's rank correlation with true utility falls to a median of 0.543 at γ = 5.
-
-The registered directions held for the learning gap, the discretization gap and convergence; the expectation that almost no seed would find the exact best portfolio failed at γ = 3, where four did. On that grid at γ = 3 the second-best portfolio is 0.04 bps/yr behind the best, so "exactly best" carries almost no economic meaning there. The run did not test a larger budget on the 10% grid, so it does not say how much more training would close the gap.
+At γ = 5 the finer grid removes 4.4 bps/yr of discretization error and none of it reaches the learned portfolio (paired change in the total gap −0.6, standard error 3.7). At γ = 3 and γ = 8 the best portfolio is the same on both grids, so the finer grid only adds learning error (+18.0 and +4.6). No seed of the thirty meets the primary rule. Exploration gives each portfolio about 85 visits, and at γ = 5 the best portfolio was tried a median of 116 times per seed while each final portfolio was tried 19 to 22 million times. The weights reported for these seeds are therefore final greedy portfolios that never met the convergence rule. The economic rule still holds for 10, 5 and 10 seeds at γ = 5, 3 and 8, so the agent reaches the right neighborhood and keeps moving within it (Figures 3 and A9). The registered directions held for the learning gap, the discretization gap and convergence. The expectation that almost no seed would find the exact best portfolio failed at γ = 3, where four did and the runner-up is only 0.04 bps/yr behind. A larger budget on this grid was not tested.
 
 ### 6.2 Economic and statistical assumptions
 
-**Risk aversion (pre-registered).** Tables 3 and 7 give the results for γ = 3 and γ = 8. The optimum shifts from equities and gold toward Treasuries as γ rises, and the learned portfolios shift with it (Section 5.3). The median learning gap is 10.0 bps/yr at γ = 3 and 5.7 at γ = 8, against 14.1 at γ = 5, and five seeds of ten are exactly right at each. The mean gap is largest at γ = 3 (30.6) because four seeds end more than 55 bps/yr behind; the second-best portfolio is also further from the best there (20.0 bps/yr, against 10.5 at γ = 5 and 11.5 at γ = 8).
+**Risk aversion (pre-registered).** Tables 2 and 6 give the results for γ = 3 and γ = 8, and the learned portfolios move toward Treasuries with the optimum (Section 5.3). The median learning gap is 10.0 bps/yr at γ = 3 and 5.7 at γ = 8, against 14.1 at γ = 5, with five exact seeds at each. The mean is largest at γ = 3 (30.6) because four seeds end more than 55 bps/yr behind.
 
-**Episode length, training budget and exploration (post hoc).** Four tabular variants were registered on 27 October and run on 28 and 29 October. Each changes one setting of the baseline, and the fourth changes all three.
+**Episode length, training budget and exploration (post hoc).** Four tabular variants were registered before they ran. Each changes one baseline setting, and the fourth changes all three (Table 8, Figure A10).
 
-**Table 9.** Mean learning gap on the 20% grid, bps/yr, ten seeds. In parentheses: the change from the baseline and the standard error of the seed-by-seed difference. The runs share starting seeds but consume the random streams differently, so the differences are not paired draw for draw and the standard errors are approximate.
+**Table 8.** Mean learning gap on the 20% grid, bps/yr, ten seeds; Δ is the change from the baseline, with its standard error in parentheses. The runs share starting seeds but not draws, so the standard errors are approximate.
 
-| Run | Change from baseline | γ = 5 | γ = 3 | γ = 8 |
-|---|---|---:|---:|---:|
-| Baseline | | 17.6 | 30.6 | 13.0 |
-| `b63` | $B$ = 63 days | 5.1 (−12.5, SE 6.2) | 10.0 (−20.6, SE 10.4) | 9.1 (−3.9, SE 6.6) |
-| `n26m` | 26 million episodes | 8.3 (−9.3, SE 5.3) | 16.2 (−14.3, SE 14.7) | 5.0 (−8.0, SE 7.2) |
-| `eps-decay` | ε = 3% at halfway | 16.1 (−1.5, SE 7.2) | 4.0 (−26.6, SE 11.1) | 11.6 (−1.4, SE 9.2) |
-| `all-three` | All of the above | 7.9 (−9.7, SE 5.9) | 4.0 (−26.6, SE 11.7) | 1.1 (−11.9, SE 5.4) |
+| Run | Change from baseline | γ = 5 gap | γ = 5 Δ (SE) | γ = 3 gap | γ = 3 Δ (SE) | γ = 8 gap | γ = 8 Δ (SE) |
+|-------------|-------------------------|-------:|------------:|-------:|------------:|-------:|------------:|
+| Baseline | | 17.6 | | 30.6 | | 13.0 | |
+| `b63` | $B$ = 63 days | 5.1 | −12.5 (6.2) | 10.0 | −20.6 (10.4) | 9.1 | −3.9 (6.6) |
+| `n26m` | 26 million episodes | 8.3 | −9.3 (5.3) | 16.2 | −14.3 (14.7) | 5.0 | −8.0 (7.2) |
+| `eps-decay` | ε = 3% at halfway | 16.1 | −1.5 (7.2) | 4.0 | −26.6 (11.1) | 11.6 | −1.4 (9.2) |
+| `all-three` | All of the above | 7.9 | −9.7 (5.9) | 4.0 | −26.6 (11.7) | 1.1 | −11.9 (5.4) |
 
-With $B$ = 63 the median gap at γ = 5 falls from 14.1 to 0.0 and six seeds of ten are exactly right against three. The medians and exact counts at γ = 3 and γ = 8 do not change, and the mean gap falls most at γ = 3 (−20.6, against −12.5 at γ = 5). A 63-day episode uses about three times the simulated data of a 20-day one, so this is not a comparison at equal data. Doubling the episodes lowers the mean gap at every γ while the medians move both ways (14.1 to 10.5, 10.0 to 20.0, 5.7 to 0.0). It gives about 2,200 random visits per portfolio, still far below the roughly one million needed to separate the top two. Slower exploration decay leaves γ = 5 and γ = 8 unchanged, raises training regret (median 65.5 to 77.3 bps/yr per episode at γ = 5), and at γ = 3 gives eight exact seeds against five, a difference that ten seeds cannot establish. All three changes together give the best tabular results (median gaps of 6.2, 0.0 and 0.0, with 5, 8 and 9 seeds exactly right and all thirty meeting the primary rule), and that run cannot attribute the gain to any one setting. Figure A10 shows every seed.
-
-Most single differences in Table 9 are within two standard errors of zero; the exceptions are `b63` at γ = 5, `eps-decay` and `all-three` at γ = 3, and `all-three` at γ = 8. Alternative calibration windows, shrinkage covariance estimates and fat-tailed returns were not run.
+With $B$ = 63 the median gap at γ = 5 falls from 14.1 to 0.0 and six seeds are exact against three, but a 63-day episode uses three times the simulated data. Doubling the episodes lowers the mean gap at every γ, while the medians move both ways (14.1 to 10.5, 10.0 to 20.0, 5.7 to 0.0), and still gives only about 2,200 random visits per portfolio, far below the million needed to separate the top two. Slower exploration decay changes little at γ = 5 and γ = 8 and raises training regret (65.5 to 77.3 bps/yr per episode at γ = 5). All three changes together give the best tabular results (median gaps of 6.2, 0.0 and 0.0, and all thirty seeds meet the primary rule) without showing which change matters. Most single differences are within two standard errors of zero; the exceptions are `b63` at γ = 5, `eps-decay` and `all-three` at γ = 3, and `all-three` at γ = 8. Alternative calibration windows, shrinkage covariance estimates and fat-tailed returns were not run.
 
 ### 6.3 Extension: function approximation (post hoc)
 
-The table treats 1,287 portfolios as unrelated, although portfolios with similar weights have similar utility. Function approximation replaces the table with $\hat{Q}(a) = \theta^\top \phi(w_a)$ and updates θ by stochastic gradient steps on the same rewards. We test two feature maps. Quadratic features (45 columns) match the quadratic form of $U$ and serve as a correctly specified reference. Additive and pairwise cubic B-splines (909 columns, rank 369 on the 20% grid) assume only smoothness and are the model of interest. The $1/N(a)$ rule has no counterpart for shared parameters, so these runs use a constant step size, tuned on a separate master seed (20261103) at γ = 5 only. Each step size was chosen by training the tuning seeds in full and scoring their final greedy portfolios on 200,000 simulated evaluation episodes. This is validation through the simulator, which an investor with one history of returns could not do. No closed-form benchmark entered the choice. The like-for-like tabular comparison is therefore a table with a constant step size (`tabular-const`, α = 3.2 × 10⁻⁴), and the baseline is shown for reference. The runs were registered on 5 and 11 November before training.
+A table treats the 1,287 portfolios as unrelated, though portfolios with similar weights have similar utility. Function approximation replaces it with $\hat{Q}(a) = \theta^\top \phi(w_a)$, updated by stochastic gradient steps on the same rewards. We use quadratic features (45 columns), which match the form of $U$ and serve as a correctly specified reference, and additive and pairwise cubic B-splines (909 columns, rank 369 on the 20% grid), which assume only smoothness. Shared parameters have no $1/N(a)$ rule, so these runs use a constant step size, tuned at γ = 5 on separate seeds by scoring fully trained agents on simulated evaluation episodes. An investor with one return history could not validate this way, but no closed-form benchmark entered the choice. The like-for-like comparison is therefore a constant-step table (`tabular-const`, α = 3.2 × 10⁻⁴). All runs were registered before training.
 
-**Table 10.** Mean learning gap, bps/yr, ten seeds. The 10% grid runs use B = 63 and 26 million episodes.
+**Table 9.** Mean learning gap, bps/yr, ten seeds. The 10% grid runs use B = 63 and 26 million episodes.
 
 | Grid | Run | γ = 5 | γ = 3 | γ = 8 |
 |---|---|---:|---:|---:|
@@ -266,35 +226,27 @@ The table treats 1,287 portfolios as unrelated, although portfolios with similar
 | 10% | Splines, ε = 3% at halfway | 78.8 | 140.6 | 59.6 |
 | 10% | Splines, ε = 10% at halfway | 81.4 | 155.6 | 60.2 |
 
-Replacing $1/N$ with a constant step raises the table's mean gap at every γ (paired differences of +25.9, +76.6 and +30.2 bps/yr, with standard errors 11.5, 24.6 and 8.0). At γ = 5 all ten constant-step seeds held their final portfolio for the last 1.3 million episodes and none was on the best portfolio, so under a constant step the primary rule measures stability and says little about accuracy. Against that constant-step table, splines on the 20% grid lower the gap at γ = 5 and γ = 3 (−27.8 and −61.8, standard errors 11.9 and 24.2) and raise it at γ = 8 (+11.4, standard error 5.1). Against the $1/N$ baseline they are level at γ = 5 (−1.8, standard error 9.5) and 41.6 bps/yr worse at γ = 8 (standard error 6.0). The quadratic model is also worst at γ = 8 (Table A1). One hypothesis, which we have not tested with committed code, is that at γ = 8 most directions of the parameter vector have not finished learning within the budget.
+A constant step raises the table's mean gap at every γ (+25.9, +76.6 and +30.2 bps/yr; standard errors 11.5, 24.6 and 8.0). All ten constant-step seeds at γ = 5 met the primary rule without holding the best portfolio, so under a constant step that rule measures stability more than accuracy. On the 20% grid, splines beat the constant-step table at γ = 5 and γ = 3 (−27.8 and −61.8; standard errors 11.9 and 24.2) and lose at γ = 8 (+11.4, standard error 5.1). Against the $1/N$ baseline they are level at γ = 5 (−1.8, standard error 9.5) and 41.6 bps/yr worse at γ = 8 (standard error 6.0). One hypothesis, which we have not tested, is that at γ = 8 most directions of the parameter vector have not finished learning within the budget.
 
 ![**Figure 4.** Learning gap for every seed (dots) and its mean (bar and label). Left: the 20% grid. Right: the 10% grid, where function approximation was expected to help most.](figures/fig_fa.png)
 
-**On the 10% grid, spline function approximation with a constant step loses to the $1/N$ table.** This is the setting that motivated the extension, since the table cannot visit 43,758 portfolios often enough. The spline agent's mean gap is 78.8, 140.6 and 59.6 bps/yr against the table's 11.7, 22.0 and 5.8, with paired differences of +67.1, +118.6 and +53.8 (standard errors 9.1, 12.2 and 9.8), and it is worse on 10, 10 and 9 of the ten seeds. The comparison is confounded. No constant-step table was run on the 10% grid, so the two agents differ in step-size rule as well as in representation, and on the 20% grid the constant step alone costs the table 25.9, 76.6 and 30.2 bps/yr. Raising exploration to 10% at halfway does not help (paired changes of +2.6, +15.0 and +0.6, each within about one standard error) and costs 25 to 28 bps/yr per episode in training regret. No seed of the sixty meets the primary convergence rule.
-
-The spline model ranks the whole grid far better than the table does (median Spearman correlation 0.976 against 0.543 at γ = 5) and places none of the true top ten in its own top ten at the median (Table A1, Figure A11). Every seed under-weights SPY, choosing 20% to 40% where the best portfolio holds 50%, 60% or 40% at γ = 5, 3 and 8. A possible explanation, which we have not tested, is that a smooth approximation fits the broad shape of the utility surface and is biased near its maximum, where the portfolio is chosen. The committed diagnostics are the rank correlation and the top-ten recall only. A mean-field calculation made before the run had predicted gaps of about 33.6, 0 and 1.3 bps/yr; the realized gaps are 78.8, 140.6 and 59.6, so that calculation does not describe this agent's errors.
-
-The spline and constant-step table runs use separately tuned step sizes, so their comparison mixes representation and step size, and on the 10% grid the step (2.778 × 10⁻⁵) was matched to the noise level without re-tuning. We report the 10% grid outcome as a negative result for this configuration.
+On the 10% grid, the setting that motivated the extension, splines lose to the $1/N$ table: mean gaps of 78.8, 140.6 and 59.6 bps/yr against 11.7, 22.0 and 5.8 (paired differences +67.1, +118.6 and +53.8; standard errors 9.1, 12.2 and 9.8), worse on 29 of 30 seeds. The comparison is confounded. No constant-step table ran on this grid, the constant step alone costs the table 26 to 77 bps/yr on the 20% grid, and the spline step (2.778 × 10⁻⁵) was matched to the noise level without re-tuning. More exploration (ε = 10% at halfway) does not help (+2.6, +15.0 and +0.6, each within about one standard error), and no seed of the sixty meets the primary rule. At γ = 5 splines rank the whole grid far better than the table (median Spearman correlation 0.976 against 0.543), yet at the median none of the true top ten is in their own top ten (Table A1, Figure A11). Every seed under-weights SPY, holding 20% to 40% where the best portfolio holds 50%, 60% and 40% at γ = 5, 3 and 8. We report the 10% grid outcome as a negative result for this configuration.
 
 ### 6.4 Extension: transaction costs and rebalancing (post hoc)
 
-**A first design that failed.** Our first design kept the nine assets and the 20% grid, made the state the previously chosen portfolio and charged a quadratic cost for moving, which gives 1,287 × 1,287 ≈ 1.66 million (holding, target) pairs and, with no drift in holdings, no reason to rebalance. At zero cost the median learned policy is worth 56.6 bps/yr against the grid oracle's 524.8, which matches the average over all 1,287 grid portfolios (56.7), so the agent learned nothing and we redesigned the problem (Table A2, Figure A13).
+**A first design that failed.** The first design kept the nine assets and the 20% grid, made the state the previous portfolio and charged a quadratic cost for moving. That gives 1.66 million (holding, target) pairs and, with holdings that never drift, no reason to rebalance. At zero cost the median learned policy scored 56.6 bps/yr against the oracle's 524.8, about the average over all 1,287 grid portfolios (56.7), so we redesigned the problem (Table A2, Figure A13).
 
-**The redesign.** The universe is the three ETFs in the support of the nine-asset optimum (SPY, IEF, GLD), with γ = 5. Time is divided into blocks of 63 trading days. Within a block the number of shares is fixed, so the weights drift with realized returns, and the drifted weights are the next block's state (Figure A12). At the start of each block the agent either holds or trades to one of 1,326 targets on a 2% grid. A trade from holdings $s$ to target $x$ costs a fraction of wealth
+**The redesign.** The universe is the three ETFs in the nine-asset optimum (SPY, IEF, GLD), with γ = 5. Time runs in blocks of 63 trading days. Share counts are fixed within a block, so the weights drift with returns and the drifted weights are the next block's state (Figure A12). At the start of each block the agent holds or trades to one of 1,326 targets on a 2% grid, paying a fraction of wealth
 
-$$c(s, x) = \kappa \lVert x - s \rVert_1 + \frac{\lambda}{2} \lVert x - s \rVert_2^2 ,$$
+$$c(s, x) = \kappa \lVert x - s \rVert_1 + \frac{\lambda}{2} \lVert x - s \rVert_2^2$$
 
-a proportional term for the bid-ask spread and a quadratic term for price impact, in the spirit of Gârleanu and Pedersen (2013). The block reward is the realized mean-variance reward of Section 4 computed on the drifting portfolio, minus the cost divided by 63, so it stays in daily units. The agent maximizes the discounted sum of block rewards with a discount factor of 0.95 per block (about 0.81 per year). The discount now affects the policy, because a trade in one block determines the next block's holdings and costs.
+to move from holdings $s$ to target $x$: a proportional term for the bid-ask spread and a quadratic term for price impact, in the spirit of Gârleanu and Pedersen (2013). The block reward is the Section 4 reward on the drifting portfolio minus the cost spread over 63 days. The agent maximizes the discounted sum of block rewards with a discount factor of 0.95 per block (about 0.81 per year), which now matters because a trade sets the next block's holdings. κ and λ come from the ETFs' quoted spreads and volume under a square-root impact model at three fund sizes: \$100 million (κ = 1.63 bp, λ = 4.4 × 10⁻³), \$1 billion (3.90 bp, 1.43 × 10⁻²) and \$10 billion (11.04 bp, 4.57 × 10⁻²), plus a zero-cost control.
 
-The cost parameters come from the ETFs' own quoted spreads and trading volume under a square-root impact model, at three fund sizes: \$100 million (κ = 1.63 bp, λ = 4.4 × 10⁻³), \$1 billion (κ = 3.90 bp, λ = 1.43 × 10⁻²) and \$10 billion (κ = 11.04 bp, λ = 4.57 × 10⁻²), plus a zero-cost control.
+**Benchmarks.** The oracle solves the same problem by value iteration on a 1% lattice, knowing μ, Σ, κ and λ. Three reference policies share its simulated paths: always rebalance to the best no-cost target (46/14/40), trade to that target once and then hold, and a myopic policy that optimizes one block at a time. Every policy is scored by expected discounted utility over 4,000 shared starting points and 90-block paths, in bps/yr. The oracle beats always rebalancing by only 0.04, 0.42, 1.78 and 7.79 bps/yr at zero cost, \$100 million, \$1 billion and \$10 billion (standard errors 0.04, 0.22, 0.36 and 0.64), in line with its in-model lead (0.01, 0.21, 1.32 and 6.94), so the gain available from timing trades is small.
 
-**Benchmarks.** The oracle solves the same discounted problem by value iteration on a 1% lattice with full knowledge of μ, Σ, κ and λ. Three simpler reference policies are scored on the same simulated paths: always rebalance to the best no-cost target (0.46, 0.14, 0.40); trade to it once and then hold; and a myopic policy that optimizes one block at a time. All policies are scored by expected discounted utility over 4,000 shared starting points and paths of 90 blocks, in bps/yr.
+**Agent.** The agent uses a linear Q-function with 87 spline features of the post-trade weights and two cost features, the L1 and squared L2 size of the trade, whose coefficients it learns from net rewards. It never sees μ, Σ, κ, λ or the oracle. Each seed trains for 4 million blocks; the step size (3 × 10⁻⁴) was tuned on a separate seed at \$1 billion, and the reported policy averages the parameters over the last 10% of training. Twelve expectations were registered before any final run (Table A3).
 
-On the evaluation paths the oracle beats always rebalancing by 0.04, 0.42, 1.78 and 7.79 bps/yr at zero cost, \$100 million, \$1 billion and \$10 billion (standard errors 0.04, 0.22, 0.36 and 0.64), so the gain available from timing trades is small. The lead computed inside the oracle's own model (0.01, 0.21, 1.32 and 6.94) agrees within sampling error.
-
-**Agent.** A table over continuous holdings is not possible, so the agent uses a linear Q-function with 87 spline features of the post-trade weights and two cost features, the L1 and squared L2 size of the trade, whose coefficients it learns from net rewards. It never sees μ, Σ, κ, λ or the oracle. Each seed trains for 4 million blocks (252 million simulated days). The step size (3 × 10⁻⁴) was tuned on a separate seed (20261112) at the \$1 billion level, and the reported policy averages the parameters over the final 10% of training. Twelve expectations were registered on 20 November before any final run (Table A3).
-
-**Table 11.** Value of each policy, bps/yr of expected discounted utility. The agent's value is the mean of ten seeds.
+**Table 10.** Value of each policy, bps/yr of expected discounted utility. The agent's value is the mean of ten seeds.
 
 | Policy | Zero cost | \$100M | \$1B | \$10B |
 |---|---:|---:|---:|---:|
@@ -304,67 +256,65 @@ On the evaluation paths the oracle beats always rebalancing by 0.04, 0.42, 1.78 
 | Agent (mean of 10 seeds) | 518.37 | 517.07 | 518.11 | 520.45 |
 | Trade once, then hold | 508.49 | 507.22 | 504.56 | 496.11 |
 
-**The agent loses to the oracle at every cost level and on every one of the forty seeds.** The mean gap is 13.1, 13.1, 10.0 and 2.8 bps/yr, and the seeds range from −20.3 to −5.8, −20.6 to −4.8, −19.6 to −2.6 and −5.9 to −0.5. Seeds differ by more than the evaluation noise: the standard deviation across seeds is 4.3 to 5.5 bps/yr at the three lower levels, against a path standard error near 1.
+**Results.** The agent trails the oracle at every level and on all forty seeds, and the gap narrows as costs rise: 13.1 bps/yr at zero cost and at \$100 million, 10.0 at \$1 billion and 2.8 at \$10 billion. Seeds differ by more than the evaluation noise (standard deviation across seeds 4.3 to 5.5 bps/yr below \$10 billion, against a path standard error near 1). Scoring a third policy, always rebalancing to the agent's own favorite target, splits the agent's gap to always rebalancing into target choice and trade timing (Table 11, Figure 5).
 
-**Table 12.** The agent against the references, mean of ten seeds, bps/yr unless noted.
+**Table 11.** The agent against the references, mean of ten seeds. Target choice compares always rebalancing to the agent's own favorite target with always rebalancing to the best target; trade timing compares the agent with always rebalancing to its own target. The two sum to agent − always rebalance, up to rounding.
 
 | | Zero cost | \$100M | \$1B | \$10B |
-|---|---:|---:|---:|---:|
+|----------------------------------------------|-----------:|-----------:|-----------:|-----------:|
+| **A. Value gap, bps/yr** | | | | |
 | Agent − oracle (SD across seeds) | −13.14 (4.58) | −13.09 (5.52) | −9.99 (4.32) | −2.77 (1.70) |
 | Agent − always rebalance | −13.11 | −12.67 | −8.21 | +5.01 |
-| Where it heads: own target − always rebalance | −13.11 | −12.75 | −9.04 | −1.14 |
-| When it trades: agent − own target | 0.00 | 0.08 | 0.83 | 6.16 |
-| Share of blocks with no trade, agent (oracle) | 0.35 (0.15) | 0.25 (0.28) | 0.18 (0.32) | 0.17 (0.45) |
-| Turnover per block, agent (oracle) | 2.06% (2.88%) | 2.28% (2.20%) | 2.36% (2.08%) | 2.11% (1.55%) |
-| Seeds converged, rule of 20 November (of 10) | 5 | 7 | 7 | 4 |
+| \quad from target choice | −13.11 | −12.75 | −9.04 | −1.14 |
+| \quad from trade timing | 0.00 | 0.08 | 0.83 | 6.16 |
+| **B. Trading and convergence, agent (oracle)** | | | | |
+| Share of blocks with no trade | 0.35 (0.15) | 0.25 (0.28) | 0.18 (0.32) | 0.17 (0.45) |
+| Turnover per block | 2.06% (2.88%) | 2.28% (2.20%) | 2.36% (2.08%) | 2.11% (1.55%) |
+| Seeds converged, final rule (of 10) | 5 | 7 | 7 | 4 |
 
 ![**Figure 5.** The agent's gap to the oracle by cost level, split into the portfolio it aims for, its decisions about when to trade, and the oracle's lead over always rebalancing. The three bars sum to the mean gap. Dots are the ten seeds.](figures/fig_tc_split.png)
 
-The gap can be split by scoring a third policy, always rebalancing to the agent's own favourite target. The difference between that policy and always rebalancing to the best target measures where the agent heads. The difference between the agent and that policy measures when it trades.
+At the three lower levels almost all of the gap is target choice. The favorite target loses 13.1, 12.8 and 9.0 bps/yr against the best target, and timing adds 0.0, 0.1 and 0.8. Every favorite target there holds 18% to 32% in IEF against 14% in the best target (Figure A15), and the agent loses on all ten seeds to always rebalancing, a rule handed the best target from μ and Σ.
 
-At zero cost, \$100 million and \$1 billion almost all of the gap is where the agent heads. Rebalancing to its favourite target loses 13.1, 12.8 and 9.0 bps/yr against rebalancing to the best target, while its timing adds 0.0, 0.1 and 0.8 (the last is about 2.5 across-seed standard errors from zero). Every seed's favourite target at these levels holds 18% to 32% in IEF against 14% in the best target (Figure A15). At these three levels the agent also loses to always rebalancing on all ten seeds, although that rule is handed the best target, which is computed from μ and Σ, while the agent has to find its target from rewards.
+At \$10 billion trade timing is worth +6.2 bps/yr, against the oracle's 7.8 lead over always rebalancing, and the favorite target loses only 1.1. The agent beats always rebalancing on all ten seeds (by 5.0 on average, 1.9 to 7.3) and is statistically indistinguishable from the myopic policy, which knows μ, Σ and the costs (−0.5, across-seed standard error 0.54; ahead on five seeds). It holds in 17% of blocks against the oracle's 45%, and its turnover (2.11% per block) lies between the oracle's (1.55%) and always rebalancing's (2.98%).
 
-At \$10 billion the agent's timing is worth +6.2 bps/yr relative to always rebalancing to its own target, rebalancing to that target loses only 1.1 against rebalancing to the best target, and the agent beats always rebalancing on all ten seeds, by 5.0 on average (1.9 to 7.3). It is still 2.8 bps/yr behind the oracle. Against the myopic policy its mean shortfall of 0.5 (across-seed standard error 0.54) is not distinguishable from zero, and it wins on five seeds of ten; at the three lower levels it trails the myopic policy by 13.1, 13.1 and 9.9. It holds in 17% of blocks against the oracle's 45%, and its turnover (2.11% per block) lies between the oracle's (1.55%) and always rebalancing's (2.98%). We have no analysis that says which part of its trading behaviour produces the timing value. Why its target loses so much less at \$10 billion than at the lower levels has also not been investigated, and we offer no explanation.
+The agent learns the quadratic cost coefficient, within a factor of two of the truth on 9 of 10 seeds at \$100 million and all ten at \$1 billion and \$10 billion. It does not learn the linear one: below 0.2 of the truth on all ten seeds at \$10 billion, at or below 0.15 on six at \$1 billion, and 2.8 to 14.9 times too high on five at \$100 million (Figure A17). Of the twelve registered expectations, eight were met and four partly met (Table A3). The largest miss is the first: we predicted a gap to the oracle of 1 to 8 bps/yr and observed 13.1, 13.1 and 10.0 at the lower levels, because the three-seed tuning pilot understated the favorite target's utility loss (2 to 6 bps/yr there, 9.75 at \$1 billion here).
 
-The agent learns the quadratic cost coefficient and does not learn the linear one (Figure A17). The quadratic coefficient is within a factor of two of the truth on 9 of 10 seeds at \$100 million and on all ten at \$1 billion and \$10 billion. The linear coefficient is zero or below 0.2 of the truth on all ten seeds at \$10 billion and at or below 0.15 on six seeds at \$1 billion, and it is 2.8 to 14.9 times too high on five seeds at \$100 million.
-
-Of the twelve registered expectations, eight were met and four partly met (Table A3). The first was missed at the three lower levels, where we predicted a gap to the oracle of 1 to 8 bps/yr and observed 13.1, 13.1 and 10.0. The pilot on three tuning seeds had understated the favourite target's static utility loss, which was 2 to 6 bps/yr there and is 9.75 on the final ten seeds at \$1 billion.
-
-**Disclosures.** The forty runs are post hoc relative to the baseline and came from commit `1787f0d` with a clean working tree. Benchmark information entered several design decisions, none of which reaches the agent during training: the three-ETF universe is the support of the nine-asset optimum, the cost levels were chosen with the oracle's results in view, the two cost features build in the functional form of the cost, and the convergence rule was revised three times before it was frozen on 20 November. The registered expectations lean on a \$1 billion tuning pilot of the same agent, benchmark diagnostics included. Our precision target was missed at \$1 billion. Appendix C lists all thirteen disclosures.
+**Disclosures.** The forty runs are post hoc. Benchmark information shaped the design and never reached the agent during training: the universe is the support of the nine-asset optimum, the cost levels were chosen with the oracle's results in view, the cost features fix the cost's functional form, and the convergence rule was revised three times before it was frozen. The full list is in Appendix C.
 
 ### 6.5 Research challenges and limitations
 
-**Estimation error in expected returns and covariances.** μ and Σ are estimated once from 5,152 days and then treated as known. The standard error of each annualized mean is 1.4 to 6.4 percentage points (Table 1). SPY's mean of 10.7% has a standard error of 4.27, which exceeds the difference in mean between about half of the asset pairs (17 of 36). The optimum's concentration in SPY and GLD therefore rests on mean estimates the data cannot distinguish from several alternatives. Our results are conditional on the calibrated moments and are silent on whether that optimum would be a good portfolio out of sample. We did not run an alternative calibration window or a shrinkage estimate of Σ.
+**Estimation error.** μ and Σ come from one 5,152-day sample and are then treated as known. Annualized means have standard errors of 1.4 to 6.4 percentage points (Table 1). SPY's, 4.27, exceeds the difference in means for 17 of the 36 asset pairs, so the optimum's concentration in SPY and GLD rests on estimates the data cannot separate from several alternatives. Our results are conditional on the calibrated moments and say nothing about the optimum's out-of-sample performance. We ran neither another calibration window nor a shrinkage estimate of Σ.
 
-**Conditioning and numerical stability.** Σ has condition number 268.07 and smallest eigenvalue $3.10 \times 10^{-6}$, at which the simulator's Cholesky factorization is stable; the budget-only closed form, which depends on $\Sigma^{-1}$ and on three near-collinear equity funds, is the object most exposed to conditioning, and the long-only problem, where six weights are zero, avoids that sensitivity.
+**Conditioning and numerical stability.** Σ has condition number 268 (smallest eigenvalue $3.10 \times 10^{-6}$), well enough behaved for a stable Cholesky factor in the simulator. The budget-only closed form, which inverts Σ, is the exposed object. It answers the three near-collinear equity funds with offsetting bets (182% SPY against −88% EFA at γ = 5) and does the same with IEF and TIP (+27% and −27%). The long-only optimum cannot short, holds three ETFs and avoids this sensitivity.
 
-**The curse of dimensionality.** The number of actions grows from 495 to 3,108,105 as the step falls from 25% to 5%. At a fixed budget, random visits per portfolio fall from about 1,097 on the 20% grid to 85 on the 10% grid even after doubling the episodes, and no seed of thirty converges there. Function approximation did not rescue that grid (Section 6.3), and the first transaction-cost design, with 1.66 million state-action pairs, learned nothing (Section 6.4). In each case the limit is set by reward noise relative to the utility differences that matter, together with the number of alternatives.
+**The curse of dimensionality.** The action set grows from 495 to 3,108,105 portfolios as the step falls from 25% to 5%. Random visits per portfolio fall from about 1,097 on the 20% grid to 85 on the 10% grid even with twice the episodes, and no seed converges there. Spline function approximation with a constant step did worse than the table on that grid (Section 6.3), and the first transaction-cost design, with 1.66 million state-action pairs, learned nothing (Section 6.4). In each case the limit is reward noise relative to the utility differences that matter, together with the number of alternatives.
 
-**Discretization error and benchmark leakage.** The discretization gap (11.74, 5.74 and 1.29 bps/yr at γ = 5 on the three grids) is reported separately from the learning gap everywhere, the action set is built from the asset count and the step only with tests that stop agent code importing benchmark code, and every case of benchmark information reaching a human design decision is disclosed (the episode budget in Section 4 and the transaction-cost design in Section 6.4).
+**Discretization error and benchmark leakage.** Discretization and learning gaps are reported separately throughout. The action set uses only the asset count and the step, tests stop agent code from importing benchmark code, and each human design choice that used benchmark information is disclosed (Sections 4 and 6.4).
 
-**Consistency between reward and objective.** With the $B-1$ divisor, $E[R \mid w] = U(w)$ exactly, a property the unit tests verify by simulation, and the headline gaps are computed from the exact moments. In the transaction-cost extension the block reward is net of cost and computed on drifting weights, so its expectation is not exactly $U$ of the starting weights; the oracle maximizes the same discounted objective and accounts for the drift by simulation.
+**Consistency between reward and objective.** With the $B-1$ divisor, $E[R \mid w] = U(w)$ exactly, which unit tests verify by simulation. In the transaction-cost extension the reward is net of cost on drifting weights, so its expectation is not exactly $U$ of the starting weights; the oracle maximizes the same discounted objective.
 
-**The limits of a stationary simulated environment.** Returns are independent Gaussian draws with fixed moments. There are no regimes, no predictability and no fat tails, although the data has excess kurtosis as high as 58.9. The baseline uses 260 million simulated days per seed, about a million years of daily data, to choose among portfolios that an investor with twenty years of data could not tell apart. Sample-average learning works here because the moments never change; with drifting moments the $1/N$ rule would average over regimes and stop adapting. The experiment shows that the learning problem is solvable in principle at a large cost in data, and it leaves open whether the method is practical on historical returns.
+**The limits of a stationary simulated environment.** Returns are independent Gaussian draws with fixed moments, with no regimes, no predictability and no fat tails, although excess kurtosis in the data reaches 58.9 (LQD). The baseline uses 260 million simulated days per seed, about a million years of data, to choose among portfolios that an investor with twenty years of data could not tell apart. Sample averaging works here because the moments never change; with drifting moments the $1/N$ rule would stop adapting. The learning problem is solvable in principle at a large cost in data, and whether the method works on historical returns is left open.
 
 ## 7. Conclusion
 
-**What the agent learned.** From rewards alone, with no knowledge of expected returns or covariances, the Q-learning agent learned to hold U.S. equities and gold on every seed and to add a bond fund on most. That is the composition of the mean-variance optimum. It also followed the optimum toward bonds as risk aversion rose.
+**What the agent learned.** From rewards alone, with no knowledge of expected returns or covariances, the agent learned to hold U.S. equities and gold on every seed and a bond fund on most, the composition of the mean-variance optimum, and it moved toward bonds as risk aversion rose.
 
-**How close it came.** At γ = 5 on the 20% grid the median gap across seeds is 14.1 bps/yr to the best attainable portfolio and 19.8 bps/yr to the continuous optimum, out of 530.5 available, where equal weighting loses 310.9. Three seeds of ten recover the best grid portfolio exactly at γ = 5, and five of ten at γ = 3 and γ = 8. Nine of ten seeds meet the convergence rule set in advance.
+**How close it came.** At γ = 5 on the 20% grid the median seed is 14.1 bps/yr from the best attainable portfolio and 19.8 from the continuous optimum, out of 530.5 available; equal weighting loses 310.9. Three seeds of ten recover the best grid portfolio at γ = 5 and five at γ = 3 and γ = 8. At γ = 5 nine of ten meet the convergence rule set in advance.
 
-**What prevented exact recovery.** The top grid portfolios are about 10 bps/yr apart and a single episode's reward has a standard deviation near 3,900 bps/yr. Ranking them reliably would take about a million evaluations of each, and exploration supplies about a thousand. The agent finds the right region of the simplex and stops on one of several near-equivalent portfolios inside it.
+**What prevented exact recovery.** The top grid portfolios are about 10 bps/yr apart while one episode's reward has a standard deviation near 3,900. Ranking them reliably takes about a million evaluations of each, and exploration supplies about a thousand. The agent finds the right region and stops on one of several near-equivalent portfolios inside it.
 
-**The trade-off in action-space design.** A finer grid removes discretization error and adds learning error. At this training budget the two roughly cancel between the 20% and 10% grids at γ = 5, the 10% grid is worse at γ = 3 and γ = 8, and the coarser 25% grid has the smaller median total gap.
+**The trade-off in action-space design.** A finer grid removes discretization error and adds learning error. Under the same longer settings the two roughly cancel between the 20% and 10% grids at γ = 5, and the 10% grid is worse at γ = 3 and γ = 8. At the baseline budget the 25% grid has a smaller median total gap than the 20% grid (14.3 against 19.8).
 
-**The extensions.** Both are post hoc and both include a negative result. Spline function approximation with a constant step ranks a large action set well overall and picks badly at the top. On the 10% grid it loses to the $1/N$ table at every risk aversion, in a comparison that also changes the step-size rule. With transaction costs, a first design learned nothing, and the redesigned agent trails the oracle at every cost level. It learns the quadratic cost, its trade timing adds 0.8 bps/yr at \$1 billion and 6.2 at \$10 billion, and at the three lower levels its choice of target costs 9 to 13 bps/yr.
+**The extensions.** Both are post hoc and both include a negative result. Spline function approximation ranks a large action set well and picks badly at the top; on the 10% grid it loses to the $1/N$ table, in a comparison that also changes the step-size rule. With transaction costs, the first design learned nothing. The redesigned agent, which never sees μ, Σ or the costs, closes in on the full-information oracle as costs rise (13.1 bps/yr behind at zero cost, 2.8 at \$10 billion). At \$10 billion its trade timing is worth 6.2 bps/yr and it is statistically indistinguishable from the myopic policy, but most of the narrowing comes from a better target at that level, which we have not explained.
 
-**Limits.** These results hold in a stationary Gaussian world whose moments are taken as true, with a data budget no investor has. The pre-registered experiments (the 20% and 25% grids at γ = 5, and γ = 3 and 8) carry the headline; the post hoc runs support it and do not replace it.
+**Limits.** These results hold in a stationary Gaussian world whose moments are taken as true, with a data budget no investor has. The pre-registered experiments carry the headline; the post hoc runs support it.
 
 ## References
 
 Barsky, R. B., Juster, F. T., Kimball, M. S., and Shapiro, M. D. (1997). Preference parameters and behavioral heterogeneity: An experimental approach in the Health and Retirement Study. *Quarterly Journal of Economics*, 112(2), 537–579.
 
-Elminejad, A., Havranek, T., and Irsova, Z. (2022). Relative risk aversion: A meta-analysis. Working paper, Charles University.
+Elminejad, A., Havranek, T., and Irsova, Z. (2025). Relative risk aversion: A meta-analysis. *Journal of Economic Surveys*, 39(5), 2315–2333.
 
 French, K. R. Data Library, daily Fama/French research factors. Accessed September 2026.
 
@@ -378,9 +328,11 @@ Sutton, R. S., and Barto, A. G. (2018). *Reinforcement Learning: An Introduction
 
 Watkins, C. J. C. H., and Dayan, P. (1992). Q-learning. *Machine Learning*, 8, 279–292.
 
+\clearpage
+
 ## Appendix A. Additional figures and tables
 
-![**Figure A1.** Correlation matrix of the nine ETFs' daily excess returns, 2006 to 2026.](figures/fig_correlation.png){width=62%}
+![**Figure A1.** Correlation matrix of the nine ETFs' daily excess returns, 7 February 2006 to 31 July 2026.](figures/fig_correlation.png){width=62%}
 
 ![**Figure A2.** Continuous long-only optimum and best 20% grid portfolio at each risk aversion. The six ETFs not shown have zero weight.](figures/fig_benchmarks_by_gamma.png)
 
@@ -427,9 +379,9 @@ Watkins, C. J. C. H., and Dayan, P. (1992). Q-learning. *Machine Learning*, 8, 2
 
 ![**Figure A13.** First transaction-cost design: the learned policies against their benchmarks.](figures/fig_tc_first_design.png){width=75%}
 
-![**Figure A14.** Redesign: value of each policy by cost level (Table 11), with every seed of the agent.](figures/fig_tc_values.png)
+![**Figure A14.** Redesign: value of each policy by cost level (Table 10), with every seed of the agent.](figures/fig_tc_values.png)
 
-![**Figure A15.** Left: each seed's favourite target. Right: the share of blocks in which the agent and the oracle do not trade.](figures/fig_tc_targets_hold.png)
+![**Figure A15.** Left: each seed's favorite target. Right: the share of blocks in which the agent and the oracle do not trade.](figures/fig_tc_targets_hold.png)
 
 ![**Figure A16.** Every seed against the oracle, always rebalancing and the myopic policy.](figures/fig_tc_vs_references.png)
 
@@ -438,7 +390,7 @@ Watkins, C. J. C. H., and Dayan, P. (1992). Q-learning. *Machine Learning*, 8, 2
 **Table A3.** Expectations registered on 20 November 2026, before any final transaction-cost run. Levels are in the order zero, \$100M, \$1B, \$10B. Eight met, four partly met.
 
 | | Registered expectation | Result | Verdict |
-|---|---|---|---|
+|-----|-------------------------------------------|-------------------------------------------|------------|
 | E1 | Agent − oracle between −1 and −8 bps/yr at each level; negative on at least 8 of 10 seeds | −13.1, −13.1, −10.0, −2.8; negative on 10 of 10 at every level | Partly met |
 | E2 | The target error is most of the gap at zero, \$100M and \$1B | Target −13.1, −12.8, −9.0 against timing 0.0, 0.1, 0.8 | Met |
 | E3 | Agent loses to always rebalancing at \$100M and \$1B; relatively better at \$10B | −12.7, −8.2; +5.0 at \$10B | Met |
@@ -467,6 +419,8 @@ Watkins, C. J. C. H., and Dayan, P. (1992). Q-learning. *Machine Learning*, 8, 2
 | 8 | 0.069 | 0.064 | 0.200 | 0 | 0.195 | 0.527 |
 | 9 | 0.069 | 0.064 | 0 | 0 | 0.005 | 0.138 |
 
+\clearpage
+
 ## Appendix B. Reproducibility
 
 **Commands** (from the repository root; full instructions in `README.md`).
@@ -476,6 +430,7 @@ python -m pytest src/tests -q                      # test suite
 python -m src.data.clean                           # rebuild data/processed/ from committed raw data
 python -m src.run_experiments --results-dir results/repro        # the four pre-registered experiments
 python -m src.run_experiments --run b63 --results-dir results/b63   # a post hoc run (same pattern for the others)
+python -m src.benchmarks.closed_form_table         # budget-only closed form, results/benchmarks/
 python -m src.tc_drift.oracle_runs                 # transaction-cost oracle tables
 python -m src.tc_drift.run all --workers 7         # 4 cost levels x 10 seeds, then scoring
 python -m src.reporting.build --all                # per-run HTML reports
@@ -484,7 +439,7 @@ python -m src.tc_sweep_report                      # its report, reports/tc-quad
 sh docs/report/build.sh                            # figures, LaTeX paper (REPORT.pdf), slides.html and .pdf
 ```
 
-`docs/report/build.sh` runs `docs/report/figures/make_figures.py` (every figure in the report and the slides), converts `REPORT.md` to LaTeX with pandoc (`latex/REPORT.tex`, with `latex/preamble.tex`, `latex/table_captions.lua` and `latex/fix_tables.py`) and typesets `REPORT.pdf` with XeLaTeX, then runs `docs/report/slides/build_slides.py` and prints `slides.pdf`. Raw data must not be downloaded again; the committed files of 24 September 2026 are the calibration source.
+`docs/report/build.sh` runs `docs/report/figures/make_figures.py` (every figure in the report and the slides), converts `REPORT.md` to LaTeX with pandoc (`latex/REPORT.tex`, with `latex/preamble.tex`, `latex/table_captions.lua` and `latex/fix_tables.py`) and typesets `REPORT.pdf` with XeLaTeX, then runs `docs/report/slides/build_slides.py` and prints `slides.pdf`. Raw data must not be downloaded again; the committed files, downloaded on 24 September 2026, are the calibration source.
 
 **Seeds.** Reported runs use master seed 20261016, split into separate streams for training returns, the agent's exploration and evaluation. Function-approximation step sizes were tuned on 20261103 and the transaction-cost agent on 20261112.
 
@@ -502,15 +457,7 @@ sh docs/report/build.sh                            # figures, LaTeX paper (REPOR
 | First transaction-cost design | Post hoc | 6 November | `da2b0fa` |
 | Transaction costs with drift, 40 runs | Post hoc, expectations registered 20 November | 20 November | `1787f0d`, clean tree |
 
-The tag `baseline-v1` points at commit `f70296a`, which contains later edits that do not change behaviour; every manifest records the training commit `80a6e9c`.
-
 **Versions.** Python 3.13.9, numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6, yfinance 1.7.0. The transaction-cost runs used one BLAS thread on an arm64 Mac.
-
-**Tests.** 758 tests passed on 20 November 2026 (macOS, Python 3.13). They were not rerun for this draft, which changed no code.
-
-**Sources of the numbers.** Every number in this report is read from a committed file: `data/processed/` (Tables 1 and 2), `results/<experiment>/evaluation/summary.json`, `per_seed.csv`, `weights.csv` and `performance.csv` (Sections 3 and 5), `reports/<run>/data.json` (Sections 5 and 6.1 to 6.3), `results/tc-quadratic-cost/` and `results/tc-drift/runs/<level>/summary.json` and `per_seed.csv` (Section 6.4).
-
-**Known gaps.** No committed script produces the budget-only closed-form portfolio, so its weights are not printed. Three function-approximation analyses have no committed script, so the γ = 8 explanation and the account of the spline agent's bias near the maximum in Section 6.3 are stated as hypotheses. No constant-step table was run on the 10% grid. The transaction-cost oracle tables are not committed (gitignored, rebuilt by `python -m src.tc_drift.oracle_runs` in 20 minutes to 2.5 hours). The oracle summary and tuning records were produced from uncommitted code.
 
 ## Appendix C. Disclosures for the transaction-cost extension
 
@@ -528,4 +475,4 @@ The forty runs are post hoc relative to the baseline and came from commit `1787f
 10. Our precision target at \$1 billion was missed: the paired standard error of one seed's gap is 0.94 bps/yr against a target of 0.59.
 11. Drift is applied to excess returns, with an effect bounded at 7.1 × 10⁻⁶.
 12. One of the oracle's verification checks was restated after the fact, and another is a two-standard-error bound.
-13. The twelve registered expectations (Table A3) lean on the \$1 billion tuning pilot, three runs of the same agent on a different master seed, and on that pilot's benchmark diagnostics (oracle gaps, the favourite target's utility loss, the true cost coefficients). They are informed by benchmark information about the same agent on other seeds, and were frozen on 20 November before any final run.
+13. The twelve registered expectations (Table A3) lean on the \$1 billion tuning pilot, three runs of the same agent on a different master seed, and on that pilot's benchmark diagnostics (oracle gaps, the favorite target's utility loss, the true cost coefficients). They are informed by benchmark information about the same agent on other seeds, and were frozen on 20 November before any final run.

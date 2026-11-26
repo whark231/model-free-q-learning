@@ -53,6 +53,7 @@ data/interim/
 results/*
 !results/.gitkeep
 !results/INDEX.md
+!results/README.md
 !results/index.json
 !results/settings.json
 !results/*/
