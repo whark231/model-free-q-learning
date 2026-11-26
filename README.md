@@ -1,177 +1,225 @@
 # Model-Free Q-Learning and Optimal Portfolio Choice with Nine Assets
 
-Wharton, Data Science and AI for Finance, Fall 2026 · William Harkless and Albert Aldrich
+**Albert Aldrich and William Harkless** · Wharton, Data Science for Finance, Fall 2026
 
-Can a model-free Q-learning agent recover a near-optimal nine-ETF portfolio when
-it only observes simulated rewards, never the expected returns or covariances
-behind them? We calibrate a Gaussian market from 20 years of ETF data, compute
-the mean-variance optimum, train a tabular Q-learning agent on simulated
-returns, and measure how close it gets. Two bonus extensions build on this:
-function approximation (a linear Q-function over portfolio features) and
-transaction costs (a stateful agent that pays to rebalance).
+**[Read the report (PDF)](docs/report/REPORT.pdf)** · [Slides (PDF)](docs/report/slides/slides.pdf) · [Assignment](assignment.pdf)
 
-## Requirements
+Can a reinforcement-learning agent find a near-optimal portfolio when it only
+sees the rewards of its own choices, and never the expected returns or
+covariances that generate them? We calibrate a Gaussian market from 20 years
+of daily data on nine ETFs, solve for the mean-variance optimum exactly, train
+a tabular Q-learning agent on simulated returns across ten random seeds, and
+measure how close it gets. Two bonus extensions follow: function approximation
+for large action sets, and transaction costs with drifting holdings.
 
-Tested on two combinations. On 2026-11-20 all 758 tests passed on the Mac
-(Python 3.13). On 2026-11-09 all 442 tests then in the suite passed on Windows
-with Python 3.10, and on 2026-11-19 all 672 tests then in the suite passed there
-(`docs/reviews/AUDIT_2026-11-06.md` §9.5); the tests added since have not been
-run on Windows:
+## Results
 
-- Python 3.13 with numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6,
-  yfinance 1.7.0 and pytest 8.4.2 (the versions that produced the committed data)
-- Python 3.10 with the versions pinned in `requirements.txt` (numpy 2.2.6,
-  the newest available for Python 3.10)
+![Certainty-equivalent return of the optimum, the best grid portfolio, the learned portfolio and equal weight at risk aversion 5](docs/report/figures/fig_gap_ladder.png)
 
-`requirements.txt` installs the Python 3.10 combination:
+At risk aversion γ = 5, choosing among the 1,287 long-only portfolios on a 20%
+weight grid (report §5):
+
+| | Certainty-equivalent return, bps/yr | Behind the optimum |
+|---|---:|---:|
+| Continuous long-only optimum | 530.5 | |
+| Best portfolio on the 20% grid | 524.8 | 5.7 |
+| Learned portfolio, median of 10 seeds | 510.7 | 19.8 |
+| Equal weight (1/N) | 219.6 | 310.9 |
+
+- **What it learned.** Every seed holds U.S. equities (SPY) and gold (GLD), as
+  the optimum does, and eight of ten add a bond fund. As risk aversion rises
+  the learned portfolios move toward bonds, as the optimum does.
+- **How close it came.** The median seed is 14.1 bps/yr behind the best
+  portfolio it was allowed to pick. Three of ten seeds find that portfolio
+  exactly at γ = 5, and five of ten at γ = 3 and γ = 8.
+- **Why it stops short.** The two best grid portfolios differ by 10.5 bps/yr,
+  while one 20-day episode's reward has a standard deviation near 3,900 bps/yr.
+  Separating them reliably would take about a million tries of each; the
+  agent's exploration gives each about a thousand.
+- **Action-space design.** A finer grid removes discretization error and adds
+  learning error. The pre-registered coarser 25% grid has a smaller median
+  total gap than the 20% grid (14.3 against 19.8 bps/yr, §5.5). The post hoc
+  10% grid (with 63-day episodes and 26M episodes) roughly breaks even with the
+  20% grid at γ = 5 and is worse at γ = 3 and γ = 8 (§6.1).
+- **Extensions (post hoc, with their failures reported).** Spline function
+  approximation beats a constant-step table on the 20% grid at two of three
+  risk aversions and ranks the whole action set well, but picks badly at the
+  top. On the 10% grid it loses to the tabular agent, in a comparison that also
+  changes the step-size rule (§6.3). With transaction costs and drifting
+  holdings, on the three ETFs of the optimum, the agent trails a
+  full-information oracle by 13.1 bps/yr at zero cost and 2.8 at $10 billion of
+  assets. It loses to always-rebalancing at the three lower cost levels; at
+  $10 billion its trade timing is worth 6.2 bps/yr, but most of the narrowing
+  comes from a better target, which we have not explained (§6.4).
+
+![Weights of the optimum, the best grid portfolio, the median seed and equal weight, and each seed's final portfolio](docs/report/figures/fig_weights.png)
+
+Only the four baseline experiments (γ = 5 on the 20% and 25% grids, γ = 3 and
+γ = 8 on the 20% grid) had their settings fixed before any full-scale run.
+Every other run is labeled post hoc in the report.
+
+## Where each part of the assignment is
+
+| Assignment part | Report | Code | Method notes |
+|---|---|---|---|
+| I. Data and ground-truth environment | §2 | [`src/data/`](src/data/), [`src/environment.py`](src/environment.py) | [`DATA_CLEANING.md`](docs/methods/DATA_CLEANING.md), [`ENVIRONMENT.md`](docs/methods/ENVIRONMENT.md) |
+| II. Theoretical benchmarks | §3 | [`src/benchmarks/`](src/benchmarks/) | Derivation in report §3 |
+| III. Reinforcement-learning design | §4 | [`src/action_space/grid.py`](src/action_space/grid.py), [`src/rewards.py`](src/rewards.py), [`src/agent.py`](src/agent.py), [`src/train.py`](src/train.py) | Settings and reasons in report Table 3, [`EXPERIMENTS.md`](docs/methods/EXPERIMENTS.md) |
+| IV. Training and convergence | §5.1, §5.2 | [`src/run_experiments.py`](src/run_experiments.py), [`src/config.py`](src/config.py) | [`EXPERIMENTS.md`](docs/methods/EXPERIMENTS.md) |
+| V. Comparison with the benchmarks, convergence speed | §5.3 to §5.6 | [`src/evaluate.py`](src/evaluate.py) | [`EVALUATION.md`](docs/methods/EVALUATION.md) |
+| VI. Robustness and research challenges | §6.1, §6.2, §6.5 | Same runner, post hoc runs | [`EXPERIMENTS.md`](docs/methods/EXPERIMENTS.md) §7 |
+| Bonus: function approximation | §6.3 | [`src/features.py`](src/features.py), [`src/fa_agent.py`](src/fa_agent.py), [`src/tune_fa.py`](src/tune_fa.py) | [`FA_INTEGRATION_NOTES.md`](docs/methods/FA_INTEGRATION_NOTES.md), [`EXPERIMENTS.md`](docs/methods/EXPERIMENTS.md) §8 |
+| Bonus: transaction costs | §6.4, Appendix C | [`src/tc_drift/`](src/tc_drift/); first design in [`src/transaction_costs.py`](src/transaction_costs.py) | [`TC_DRIFT_DESIGN.md`](docs/methods/TC_DRIFT_DESIGN.md), [`TRANSACTION_COSTS.md`](docs/methods/TRANSACTION_COSTS.md) |
+
+The agent never sees μ, Σ or the benchmarks. It receives only its action index
+and a scalar reward, and unit tests check that its code does not import the
+data loader, the benchmark module or the data files.
+
+## Quick start
+
+Python 3.10 or newer. From the repository root:
 
 ```bash
 pip install -r requirements.txt
+python -m pytest src/tests -q                  # test suite (see Tests below)
+python -m src.data.clean                       # rebuild data/processed/ from the committed raw data
+python -m src.run_experiments --dry-run        # print the four baseline experiments without training
+python -m src.run_experiments --results-dir results/repro   # train and evaluate them, about 3.5 hours
+python -m src.benchmarks.closed_form_table     # budget-only closed-form weights, results/benchmarks/
 ```
 
-**Windows:** `src.run_experiments` and `src.evaluate` now set UTF-8 output
-themselves. `src.tc_sweep_report` does not yet, so before running it set:
+Training is seeded. Compare `results/repro/` with
+[`results/INDEX.md`](results/INDEX.md); a re-run of 30,000 episodes of three
+seeds matched the saved logs bit for bit on the original machine
+(`RUN_ISSUES_2026-10-22.md`), and another platform may differ in the last
+floating-point digits. The large
+training logs (`run_*.npz`) are not committed, so `src.run_experiments`
+refuses to re-evaluate a committed results folder; train into a new folder
+instead.
 
-```powershell
-$env:PYTHONIOENCODING = "utf-8"
-```
+Do not re-run `src.data.download_raw`. The raw data (downloaded 2026-09-24) is
+committed because Yahoo restates adjusted prices, and a new download would
+change the calibration.
 
-## Reproduce
+## Reproducing everything else
 
-From the repo root:
+**Post hoc tabular and function-approximation runs.** Each has a run id and
+its own folder, for example:
 
 ```bash
-python -m pytest src/tests -q          # all tests pass
-python -m src.data.clean               # rebuild data/processed/ from the committed raw data
-python -m src.run_experiments --results-dir results/repro   # baseline-v1: train and evaluate into a new folder
-python -m src.benchmarks.closed_form_table   # budget-only closed-form weights, results/benchmarks/
+python -m src.run_experiments --run b63 --results-dir results/b63
 ```
 
-A fresh clone has each run's manifest and summaries but not its training
-logs (`run_*.npz`, too large to commit), so `src.run_experiments` refuses to
-re-evaluate a committed folder. To reproduce a run, train into a new folder
-and compare with the committed summaries, for example
-`python -m src.run_experiments --results-dir results/repro` against
-`results/INDEX.md`. Training is seeded, so the numbers should match.
+[`EXPERIMENTS.md`](docs/methods/EXPERIMENTS.md) §7 lists the tabular variants
+(`eps-decay`, `b63`, `n26m`, `all-three`, `grid10-robustness`) and §8 the
+constant-step and function-approximation runs (`tabular-const`,
+`fa-quadratic`, `fa-spline`, and `fa-spline-grid10-eps3` and `-eps10` in §8.8,
+committed in folders with a `_2026-11-11` suffix), each with its command,
+registered expectation and run time.
 
-Do not re-run `src.data.download_raw` to reproduce results. The raw data
-(downloaded 2026-09-24) is committed because Yahoo restates history, and a new
-download would change the calibration.
-
-**Post-hoc runs** use `--run <run_id>` into their own results folder, for
-example `python -m src.run_experiments --run b63 --results-dir results/b63`.
-`docs/methods/EXPERIMENTS.md` §7 lists the tabular variants (`eps-decay`, `b63`, `n26m`,
-`all-three`, `grid10-robustness`) and §8 the constant-learning-rate runs
-(`tabular-const`, `fa-quadratic`, `fa-spline`), each with its command,
-expected direction and run time.
-
-**Transaction costs with drift** (the reported TC extension,
-`docs/methods/TC_DRIFT_DESIGN.md`) has its own commands. The oracle tables
-(`results/tc-drift/oracle/*.npz`) are not committed, so rebuild them first:
+**Transaction costs with drift** (the reported extension,
+[`TC_DRIFT_DESIGN.md`](docs/methods/TC_DRIFT_DESIGN.md)):
 
 ```bash
-python -m src.tc_drift.oracle_runs              # 20 min to 2.5 h, depending on the machine
-git checkout results/tc-drift/oracle/summary.json   # keep the committed summary (see below)
-python -m src.tc_drift.run all --workers 7      # 4 cost levels × 10 seeds, then scoring; 2 h 14 min on a 10-core Mac (2026-11-20)
+python -m src.tc_drift.run all --workers 7      # 4 cost levels x 10 seeds, then scoring
 python -m src.tc_drift.run train --level aum_1b --seed 0   # one run
-python -m src.tc_drift.run evaluate --level aum_1b         # score one level (all 10 seeds; --seeds 0 1 2 for fewer)
+python -m src.tc_drift.run evaluate --level aum_1b         # score one level (--seeds 0 1 2 for fewer)
+python -m src.tc_drift.report                   # rebuild reports/tc-drift/report.html from committed files
 ```
 
-`oracle_runs` rewrites `summary.json`. Before restoring it, `git diff` should
-show changes only in `provenance`, `created_utc` and `runtime_seconds`; any
-other change means the tables did not reproduce. `run.py` checks the tables
-against the committed summary, so restore it first. Levels are `zero`,
-`aum_100m`, `aum_1b` and `aum_10b`. Results go to
-`results/tc-drift/runs/<level>/`: `summary.json`, `per_seed.csv` and one
-`seed<i>.json` record per run, the per-seed `.npz` training logs (θ at every
-checkpoint) and `values.npz` (per-path values of every policy), about 9 MB in
-all, are committed (`.gitignore` exceptions). Console logs go to `results/tc-drift/runs/logs/`. Training and evaluation use the project's
-master seed 20261016 (`src/tc_drift/spec.py`; tuning used 20261112), and `run all` skips any run that already
-has a finished record, so an interrupted batch can be restarted. All 40
-reported runs must come from one commit with a clean tree; the final runs came
-from `1787f0d` (`src_dirty: false` in every record; results and E1 to E12
-verdicts in `results/tc-drift/runs/README.md`). The HTML report is rebuilt
-from the committed files with `python -m src.tc_drift.report`, which writes
-`reports/tc-drift/report.html` and `data.json`.
+Levels are `zero`, `aum_100m`, `aum_1b` and `aum_10b`. The full batch took
+2 h 14 min on a 10-core Mac (2026-11-20). The six oracle tables
+(`results/tc-drift/oracle/*.npz`) are committed, and `run.py` checks them
+against `results/tc-drift/oracle/summary.json`. To rebuild them yourself, run
+`python -m src.tc_drift.oracle_runs` (8,452 s for the committed tables), then
+`git checkout results/tc-drift/oracle/summary.json`; before restoring,
+`git diff` should show changes only in `provenance`, `created_utc` and
+`runtime_seconds`. All 40 reported runs came from clean commit `1787f0d`.
+Results, including the twelve registered expectations and their verdicts, are
+in [`results/tc-drift/runs/README.md`](results/tc-drift/runs/README.md).
 
-**The first transaction-cost design** (kept as a negative result) runs through
-its own script with a configuration file (`docs/methods/TRANSACTION_COSTS.md`):
+**The first transaction-cost design** (kept as a negative result,
+[`TRANSACTION_COSTS.md`](docs/methods/TRANSACTION_COSTS.md)):
 
 ```bash
 python -m src.transaction_costs experiments/transaction-costs/quadratic-cost.json --dry-run
-python -m src.tc_sweep_report      # rebuilds reports/tc-quadratic-cost/ from results/tc-quadratic-cost/
+python -m src.tc_sweep_report      # rebuilds reports/tc-quadratic-cost/
 ```
 
-**Reports** are rebuilt from committed files only:
+On Windows, set `$env:PYTHONIOENCODING = "utf-8"` before `src.tc_sweep_report`.
+
+**Per-run HTML reports**, rebuilt from committed files
+([`reports/README.md`](reports/README.md)):
 
 ```bash
-python -m src.reporting.build --all    # every reports/<run_id>/report.html
+python -m src.reporting.build --all
 ```
 
-Extracting a new run (`python -m src.reporting.extract <run_id>`) needs that
-run's training logs, which stay on the machine that trained it
-(`reports/README.md`).
+**The report and slides.** `sh docs/report/build.sh` regenerates every figure
+(`docs/report/figures/make_figures.py`), typesets `docs/report/REPORT.md` into
+`REPORT.pdf` with pandoc and XeLaTeX, and rebuilds the slide deck. It needs
+pandoc, TeX Live (xelatex, latexmk, libertinus-otf) and Google Chrome; set `PY`, `PANDOC`
+and `CHROME` if they are not at the macOS paths the script assumes.
+
+## Requirements
+
+`requirements.txt` pins the Python 3.10 set (numpy 2.2.6, scipy 1.15.3,
+pandas 2.3.3, matplotlib 3.10.9, yfinance 1.7.0, requests 2.33.1,
+pytest 9.1.1). The committed data and results were produced with Python
+3.13.9, numpy 2.3.5, scipy 1.16.3, pandas 2.3.3, matplotlib 3.10.6 and
+yfinance 1.7.0. The test suite passes under both sets apart from the one
+known failure below (`DATA_CLEANING.md` §7.5), and rebuilding `data/processed/`
+with the Python 3.10 set matches the committed files to floating-point
+rounding (largest relative difference in Σ 3.7e-15, 2026-11-26).
 
 ## Seeds
 
-All reported randomness comes from master seed **20261016** (`src/config.py`),
-split into separate streams per run for returns, the agent's exploration, and
-evaluation (`SeedPlan` in `src/environment.py`). Each run's manifest records
-the seed plan. Seed i draws the same simulated returns in every run, so runs
-can be compared seed by seed. The learning rates for the constant-α runs were
-tuned on a separate master seed, **20261103**, never on the reported one
-(`docs/methods/EXPERIMENTS.md` §8.1). The transaction-cost agent was tuned on
-**20261112** (`src/tc_drift/spec.py`, `TC_DRIFT_DESIGN.md` §9).
+All reported randomness comes from master seed **20261016**
+([`src/config.py`](src/config.py)). It is split into separate streams for
+training returns, the agent's exploration and evaluation (`SeedPlan` in
+[`src/environment.py`](src/environment.py)), and each run's manifest records
+the plan. Seed i sees the same simulated returns in every run with the same
+episode length and grid, so those runs compare seed by seed.
+Step sizes for the constant-step runs were tuned on master seed
+**20261103** and the transaction-cost agent on **20261112**, never on the
+reported seed.
+
+## Tests
+
+`python -m pytest src/tests -q` runs 761 tests in about 12 minutes. On 2026-11-26, on Windows with the
+`requirements.txt` set (Python 3.10.2), 760 passed. The one known failure,
+`test_committed_report_matches_a_rebuild`, compares the committed
+transaction-cost HTML report byte for byte with a rebuild, and fails wherever
+matplotlib differs from the version that built it (3.10.6); the report's
+`data.json` rebuilds identically ([`reports/README.md`](reports/README.md)).
+On the Mac that produced the results (Python 3.13), 758 of the then 758 tests passed on 2026-11-20.
 
 ## Expected outputs
 
 | Where | What |
 |---|---|
-| `results/INDEX.md` | Summary of `baseline-v1`'s four experiments |
-| `results/<run_id>/INDEX.md` | Summary of each post-hoc run |
-| `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (grouped weight bars, learning curve, cumulative regret, losses by seed) |
-| `results/comparison_g5_grid20_vs_grid25/`, `results/grid10-robustness/comparison_*` | The action-space resolution comparisons |
-| `results/tc-quadratic-cost/` | The first transaction-cost design's sweep, one JSON per cost level |
-| `results/tc-drift/` | Transaction costs with drift: `oracle/summary.json`, `checks/`, `tuning/`, and `runs/<level>/` (the 40 final agent runs, 2026-11-20) |
-| `reports/<run_id>/report.html` | One self-contained report per run, compared with earlier runs (`reports/registry.json`) |
-| `reports/tc-drift/report.html` | The TC-with-drift final runs (outside the registry; `python -m src.tc_drift.report`) |
-
-Training logs (`run_*.npz`) are not committed; every summary and report is.
-See `docs/methods/EXPERIMENTS.md` §4 for the folder layout.
-
-## Pipeline
-
-| Step | Code | Documentation |
-|---|---|---|
-| Download and clean nine ETFs and the risk-free rate | `src/data/` | `docs/methods/DATA_CLEANING.md` |
-| Simulated market from the calibrated μ and Σ | `src/environment.py` | `docs/methods/ENVIRONMENT.md` |
-| Benchmarks: closed form, long-only optimum, best grid portfolio | `src/benchmarks/mean_variance.py` | |
-| Action grid and reward | `src/action_space/grid.py`, `src/rewards.py` | |
-| Tabular Q-learning agent | `src/agent.py` | |
-| Training runner | `src/train.py` | |
-| Evaluation against the benchmarks | `src/evaluate.py` | `docs/methods/EVALUATION.md` |
-| Experiment settings and batch runner | `src/config.py`, `src/run_experiments.py` | `docs/methods/EXPERIMENTS.md` |
-| Function approximation: features, agent, step-size tuning | `src/features.py`, `src/fa_agent.py`, `src/tune_fa.py` | `docs/methods/FA_INTEGRATION_NOTES.md`, `docs/methods/EXPERIMENTS.md` §8 |
-| Transaction costs with drift: environment, oracle, agent, tuning, run driver | `src/tc_drift/` | `docs/methods/TC_DRIFT_DESIGN.md` |
-| Transaction costs, first design (negative result) | `src/transaction_costs.py`, `src/tc_sweep_report.py` | `docs/methods/TRANSACTION_COSTS.md` |
-| Run reports | `src/reporting/` | `reports/README.md` |
-
-`docs/PROJECT_PROSPECTUS.md` has the plan and task ownership.
-`docs/reviews/AUDIT_2026-11-06.md` holds the 2026-11-06 audit and the later status reviews; §9.6 lists everything still open.
-`docs/README.md` lists every document.
+| [`results/README.md`](results/README.md) | Map of the results folder: which run each subfolder holds and the report section it feeds |
+| `results/INDEX.md` | Summary of the four baseline experiments |
+| `results/<experiment>/evaluation/` | `summary.json`, CSV tables (per seed, weights, performance) and figures (weights, learning curve, cumulative regret, losses by seed) |
+| `results/<run_id>/INDEX.md` | Summary of each post hoc run |
+| `results/benchmarks/` | Budget-only closed-form weights and their check against a numerical solve |
+| `results/tc-drift/runs/<level>/` | The 40 transaction-cost runs: `summary.json`, `per_seed.csv`, per-seed records and logs |
+| `reports/<run_id>/report.html` | One self-contained HTML report per run, compared with earlier runs |
+| `docs/report/REPORT.pdf`, `docs/report/slides/slides.pdf` | The report and the slides |
 
 ## Repository layout
 
 | Folder | What |
 |---|---|
-| `src/` | All code; tests in `src/tests/` |
-| `data/` | `raw/` (committed, never re-downloaded), `interim/`, `processed/` (rebuilt by `src.data.clean`) |
-| `experiments/` | Run configurations for the transaction-cost script |
-| `results/` | Manifests, evaluation summaries, tables and figures. `baseline-v1` is the top level (`INDEX.md` and its four experiment folders); each later run has `results/<run_id>/` (the two `fa-spline-grid10-eps*` runs are in `results/<run_id>_2026-11-11/`); `tuning/` holds the FA step-size search |
-| `reports/` | One HTML report per run with its extracted `data.json`, the run list `registry.json`, and the hand-built `full_run_2026-10-22/` report |
-| `docs/` | Methods, reviews and audits, team notes, and the prospectus (`docs/README.md`) |
-| `notebooks/` | An empty placeholder notebook; no reported result uses it |
-| `no-ai-slop-main/` | The writing-style checklist the docs follow (`CLAUDE.md` §3.1) |
+| [`src/`](src/) | All code; tests in `src/tests/` |
+| [`data/`](data/) | `raw/` (committed, never re-downloaded) and `processed/` (rebuilt by `src.data.clean`), with the cleaning log |
+| [`results/`](results/) | Run manifests, evaluation summaries, tables and figures ([`results/README.md`](results/README.md)) |
+| [`reports/`](reports/) | One interactive HTML report per run |
+| [`experiments/`](experiments/) | Configuration files for the first transaction-cost design |
+| [`docs/report/`](docs/report/) | The report (`REPORT.md`, `REPORT.pdf`), its figures and LaTeX build, the slides, and earlier drafts in `drafts/` |
+| [`docs/methods/`](docs/methods/) | How each part works, with every decision and assumption written down |
+| [`docs/reviews/`](docs/reviews/), [`docs/notes/`](docs/notes/), [`docs/PROJECT_PROSPECTUS.md`](docs/PROJECT_PROSPECTUS.md) | The project record: plan and ownership, audits, review history and team notes ([`docs/README.md`](docs/README.md)) |
 
-`assignment.pdf` (the assignment) and `CLAUDE.md` (the team's working agreement
-with Claude) stay at the root.
+[`CLAUDE.md`](CLAUDE.md) is the team's working agreement for AI-assisted
+sessions with Claude Code, and `.claude/no-ai-slop/` holds the writing-style
+checklist it applies (third-party, MIT licensed).

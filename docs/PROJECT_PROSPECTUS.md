@@ -2,13 +2,13 @@
 
 **Due:** November 30, 2026
 **Team:** William & Albert
-**Status:** living plan, updated 2026-11-25 (William). Parts I to VI, both extensions, the report and the slides are done. The report's final draft is `docs/report/REPORT_final.md` and `.pdf` (PRs #53 and #54), and the slide deck is in `docs/report/slides/`. The audit items are closed (§3, §6 and §7 say where each one went). What remains before the Nov 30 deadline: two report decisions (the E6 verdict, and promoting `REPORT_final.md` to `REPORT.md`), the `dev` into `main` merge, a fresh-clone check and submission. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`. `main` was last updated on 2026-11-24 (PR #52), and `dev` is 8 commits ahead of it on 2026-11-25.
+**Status:** closed 2026-11-26 (William). Every component in §3 is done, the report is `docs/report/REPORT.md` and `.pdf`, and the slides are in `docs/report/slides/`. Every open decision in §6 is closed; the last two are recorded there with their outcome. The one remaining step is William's pull request from `dev` into `main`, then submission. Audit IDs: a bare ID (M8, F-L9, L7) is from `AUDIT_2026-11-06.md`; an ID prefixed A20 (A20-H1, A20-M2) is from `AUDIT_2026-11-20.md`.
 
 ---
 
 ## TL;DR / In plain terms
 
-Everything the assignment requires has been built, run and independently checked. Both extensions are run; for the transaction-cost runs, the summary statistics re-derived from the committed per-path values by Albert (2026-11-20) and by William (2026-11-22); the per-path scoring itself was not re-run by a separate route. The transaction-cost agent loses to the oracle at every cost level, mostly because it heads for the wrong portfolio; at the largest cost level ($10B) its trade timing is worth +6.2 bps/yr against rebalancing to its own target, and it beats always-rebalancing by 5.0 bps/yr. The report and the slides are written. What is left is the final merge into `main`, a fresh-clone check and submission.
+Everything the assignment requires has been built, run and independently checked. Both extensions are run; for the transaction-cost runs, the summary statistics re-derived from the committed per-path values by Albert (2026-11-20) and by William (2026-11-22); the per-path scoring itself was not re-run by a separate route. The transaction-cost agent loses to the oracle at every cost level, mostly because it heads for the wrong portfolio; at the largest cost level ($10B) its trade timing is worth +6.2 bps/yr against rebalancing to its own target, and it beats always-rebalancing by 5.0 bps/yr. The report and the slides are written, and the project closed on 2026-11-26.
 
 **Key concepts to understand**
 
@@ -20,7 +20,7 @@ Everything the assignment requires has been built, run and independently checked
 
 - `baseline-v1` is the headline result for Parts IV and V.
 - The TC agent runs are done. Of the 12 expectations registered before them (`TC_DRIFT_DESIGN.md` §7), 8 are met and 4 partly met (E1, E7, E9, E11; `results/tc-drift/runs/README.md`). The extension is reported with its agent results, labelled post hoc.
-- The report's final draft is `docs/report/REPORT_final.md`: 13 pages of main text and references, then Appendices A to C. The slides match it.
+- The report is `docs/report/REPORT.md` (the final draft, promoted 2026-11-26): 13 pages of main text and references, then Appendices A to C. The slides match it.
 
 ---
 
@@ -62,10 +62,10 @@ Full suite: 758 tests passing on 2026-11-20 on Albert's Mac (`python -m pytest s
 | 12 | Function approximation: linear Q over quadratic or spline features | `FA_INTEGRATION_NOTES.md`, `EXPERIMENTS.md` §8 | ✅ Built, step size tuned on separate seeds, and run 2026-11-06: `tabular-const`, `fa-quadratic`, `fa-spline` (30 seeds each). Both FA models beat the constant-α tabular agent at γ = 5 and 3 and ranked the reward landscape better (Spearman); of the registered expectations, split into five checks, four failed in whole or part (`EXPERIMENTS.md` §8.7). Every run now carries Q-fit numbers and shows them in its report (2026-11-09) |
 
 ### Deliverables
-| # | Component | Notes | Status (2026-11-25) |
+| # | Component | Notes | Status (2026-11-26) |
 |---|---|---|---|
-| 13 | Research report (10 to 15 pages) in the assignment's structure | Sections split in §4 | ✅ Final draft 2026-11-25: `docs/report/REPORT_final.md` and `.pdf`, 13 pages of main text and references. Drafts: v1 `REPORT.md` (Albert, 2026-11-24, PR #51, from `REPORT_SKELETON.md`), v2 `REPORT_v2_AA.md` (Albert's markup, 2026-11-25), and the final draft (William's markup, shortened; `REPORT_final_CHANGES.md`). Open: the E6 verdict, and copying the final draft over `REPORT.md` so `build.sh` rebuilds it (`REPORT_final_CHANGES.md`, "For the team to decide") |
-| 14 | Clean, reproducible code and README | | 🔶 Code and README done; the merge and the fresh-clone check remain. Windows print crash and line-ending hashing fixed, and the README's reproduce command works in a fresh clone (2026-11-09; `AUDIT_2026-11-06.md` M1, M2, F-H1). TC with drift has its README commands (TC-10), and the README's stale TC lines are fixed (A20-M3, A20-M7; Albert, 2026-11-24, `c58f50f`). *2026-11-25:* A20-H3 is closed by `src/benchmarks/closed_form_table.py`, which writes `results/benchmarks/closed_form_budget_only.csv` and checks it against a numerical solve (Albert, `58d23e5`). A20-M2 is closed: the six TC oracle tables are committed (`58d23e5`), so TC scoring needs no rebuild. M9 and the `tc_sweep_report.py` print fix are closed as not needed, since the report gives the first TC design one paragraph and Figure A13 and no tables (D-G). Known failure, documented in `reports/README.md`: `test_committed_report_matches_a_rebuild` fails where matplotlib differs from the version that built the TC report (760 of 761 passed on Windows on 2026-11-22), and `data.json` rebuilds identically. Open: `dev` into `main` (8 commits ahead on 2026-11-25), then the fresh-clone check (tests, data rebuild, `run_experiments --dry-run`; no retraining) |
+| 13 | Research report (10 to 15 pages) in the assignment's structure | Sections split in §4 | ✅ `docs/report/REPORT.md` and `.pdf`, 13 pages of main text and references, then Appendices A to C. Drafts in `docs/report/drafts/`: the skeleton, v1 (Albert, 2026-11-24, PR #51), v2 with Albert's markup (2026-11-25), and the final draft with William's markup, shortened (2026-11-25, PRs #53 and #54; changes in `CHANGES_v2_to_final.md`). Promoted to `REPORT.md` on 2026-11-26 |
+| 14 | Clean, reproducible code and README | | ✅ Closed 2026-11-26. The README was rewritten for graders: results, a map from each assignment part to report section, code and docs, quick start, seeds, requirements and expected outputs, plus `results/README.md`. Fresh-clone check on Windows (Python 3.10.2, numpy 2.2.6, pandas 2.3.3), 2026-11-26: `src.data.clean` rebuilds `data/processed/` to floating-point rounding (largest relative difference in the covariance matrix 3.7e-15; the files differ in their last printed digits) and `run_experiments --dry-run` lists the four baseline experiments. Tests on Windows, 2026-11-26: 759 of 761 passed. One failure was a real bug, `src/benchmarks/closed_form_table.py` writing CRLF on Windows (`58d23e5`), fixed the same day (LF pinned; the rebuilt CSV is byte-identical to the committed one), after which that test passes; the other is the known `test_committed_report_matches_a_rebuild` matplotlib failure documented in `reports/README.md`. Earlier fixes: the Windows print crash, line-ending hashing and the README's reproduce command (2026-11-09; `AUDIT_2026-11-06.md` M1, M2, F-H1); the TC README commands (TC-10, A20-M3, A20-M7, `c58f50f`); A20-H3 (`src/benchmarks/closed_form_table.py`) and A20-M2 (the six TC oracle tables committed), both `58d23e5`. M9 and the `tc_sweep_report.py` print fix were closed as not needed (D-G). Not retrained in the check |
 | 15 | Class presentation | | ✅ 2026-11-25: `docs/report/slides/` (`build_slides.py` builds `slides.html` and `slides.pdf`; the talk is in `SPEAKER_NOTES.md`). 15 slides plus 3 backup, matched to the final draft, with a title slide and a diagram of the data pipeline and training loop as slide 4. About 11 minutes at the times in the notes |
 
 ## 4. Task Ownership
@@ -88,7 +88,7 @@ Full suite: 758 tests passing on 2026-11-20 on Albert's Mac (`python -m pytest s
 | README + code cleanup | Albert | William |
 | Presentation | Both | |
 
-## 5. Timeline (remaining)
+## 5. Timeline
 
 Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular baseline, full baseline run and robustness runs (by 2026-10-29), FA and the TC sweep (2026-11-03 to 2026-11-06). The original order put TC in week 7 and FA in week 8; in practice both ran in week 8.
 
@@ -97,7 +97,7 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 | 8 (rest) | Nov 6 to 12 | Done: every run re-evaluated with Q fit, audit fixes M1 to M5, M10 and the flow-audit items; `dev` merged into `main` Nov 9 (PR #28); the TC redesign decided and its interface frozen (PR #33). Not done: the final run list | Final run list registered with expected directions |
 | 9 | Nov 13 to 19 | Done: TC with drift built (PRs #34 to #37), the Nov 17 gate met, the oracle run on every setting, tuning decided and piloted (PR #39). Not done: the first report draft | All non-TC figures and tables final; draft complete |
 | 10 | Nov 20 to 26 | Done: the 40 TC agent runs, trained and scored Nov 20 (Albert, 2 h 14 min on his Mac; PR #47), so the Nov 24 go/no-go is met; the HTML TC report; Albert's repo audit and the report skeleton; the report (v1 Nov 24, v2 and the final draft Nov 25) and the slides (Nov 24, matched to the final draft Nov 25) | All results final (done); full draft (done) |
-| Final | Nov 27 to 30 | Final review, slides, `dev` into `main`, a fresh-clone check (tests, data rebuild and `run_experiments --dry-run`; no retraining), submission | Report, code and README submitted |
+| Final | Nov 26 | Done: final review, slides, the fresh-clone check, the report promoted to `REPORT.md`, the repo organized for graders. William opens the `dev` into `main` pull request and submits | Report, code and README submitted |
 
 ## 6. Open Decisions
 
@@ -120,8 +120,8 @@ Weeks 1 to 8 are done: data, environment, benchmark, grid and reward, tabular ba
 - [x] **Report schedule** (D-H, both): the TC go/no-go is Nov 24 (William); draft sections by Nov 24 and a full draft by Nov 26 (Albert's proposal, agreed 2026-11-20)
 - [x] **Final runs** (William, 2026-11-22): none beyond those done. FA on the 10% grid (C1) ran 2026-11-11 and the TC agent 2026-11-20; C2, C3, P1 and P2 (`AUDIT_2026-11-06.md` §6) are not run. What is left is writing
 - [x] Which post-hoc runs the report covers in full (A20-M8): settled by the report's §6, which follows `REPORT_SKELETON.md` §6
-- [ ] **E6 verdict** (both): Table A3 marks E6 ("agent loses to myopic at every level") as met, but at $10B the shortfall (−0.5, SE 0.54) is not distinguishable from zero. "Partly met" would change the eight-met count in four places (`REPORT_final_CHANGES.md`)
-- [ ] **Promote the final draft to `REPORT.md`** (both): `build.sh` and Appendix B's build command use `REPORT.md`, so copy `REPORT_final.md` over it once it is accepted (v1 stays in git history)
+- [x] **E6 verdict** (closed 2026-11-26 by William at project close; registered as a joint decision, so Albert may reopen it): kept as met. E6 is scored on the across-seed mean, as E1 is, and the mean is below myopic at every level (−0.5 at $10B). Table A3 prints the SE (0.54) and the 5-of-10 seed count beside the verdict, and the conclusion says the agent is statistically indistinguishable from myopic at $10B, so the caveat is in the report. No count changed
+- [x] **Promote the final draft to `REPORT.md`** (done 2026-11-26): `REPORT_final.md`, `.pdf` and `.tex` are now `docs/report/REPORT.*`, so `build.sh` and Appendix B describe the submitted file. v1, v2, the skeleton and both change logs are in `docs/report/drafts/`
 
 The Q-learning core's decisions (γ, the convergence rule, episode length, episode count, seed count, β and the second Part VI robustness check) were settled on 2026-10-16 and live in `src/config.py`, with the reasoning in `EXPERIMENTS.md` and `REVIEW_HISTORY.md` §6. *2026-11-22:* Albert's audit found the written reasons missing for episode length, episode count, seed count, ε at halfway and K (A20-H1). *2026-11-25:* closed in the report, whose Table 3 gives each setting with its reason; `EXPERIMENTS.md` was not updated. γ's written justification is in `DATA_CLEANING.md` §8.4 (2026-10-19).
 
@@ -130,9 +130,9 @@ The Q-learning core's decisions (γ, the convergence rule, episode length, episo
 - **The TC result is mixed and must be interpreted with care** (updated 2026-11-22; the time risk is gone). The agent is 10 to 13 bps/yr behind the oracle at zero, $100M and $1B and also loses to always-rebalancing there; only at $10B does it beat always-rebalancing (+5.0 bps/yr). The pilot understated the favourite target's utility loss (2 to 6 bps/yr in the pilot against 9.75 here, at $1B), c1 is poorly learned, and why the target error is so much smaller at $10B is not investigated. Benchmark information shaped the learning rule, the tail averaging and the convergence rule (design §14 risk 5). The report presents the oracle as the benchmark and the split as the explanation, and prints every disclosure listed in `REPORT_SKELETON.md` §6.5. The bonus is graded on whether the extension is "correctly designed, benchmarked, and interpreted".
 - ~~**Documentation gaps the rubric grades**~~ Closed 2026-11-25. A20-H1: the reasons are in report Table 3. A20-H2: the derivation is in report §3 (no separate `BENCHMARKS.md`). A20-H3: `src/benchmarks/closed_form_table.py`. A20-H4: the report words the γ = 8 cause as an untested hypothesis and reports neither the surrogate table nor the shrinkage slopes, so no script is needed.
 - ~~**The report is late.**~~ Closed: v1 on Nov 24, the final draft on Nov 25.
-- **Thanksgiving week reduces available time** right before the deadline (Nov 26 to 30).
-- **Reproducibility.** The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). `dev` was merged into `main` on 2026-11-09 (PR #28, F-M1), so a plain clone gets the current code; merge `dev` into `main` again after each later change (`main` last updated 2026-11-24, PR #52; `dev` is 8 commits ahead on 2026-11-25). Tests: 758 passed on Albert's Mac on 2026-11-20; 760 of 761 passed on Windows (Python 3.10.2, numpy 2.2.6, matplotlib 3.10.9) on 2026-11-22; the one failure, `test_committed_report_matches_a_rebuild`, comes from the matplotlib version changing the SVG bytes, and `data.json` rebuilds identically (detail in `NEXT_STEPS_FOR_ALBERT.md`).
+- ~~**Thanksgiving week reduces available time**~~ Closed: the work finished on 2026-11-26.
+- **Reproducibility** (closed 2026-11-26). The Windows print crash and the false "changed" flags are fixed (`AUDIT_2026-11-06.md` M1, M2). The fresh-clone check is in row 14. `dev` goes into `main` through William's final pull request; `main` was last updated 2026-11-24 (PR #52). Known failure: `test_committed_report_matches_a_rebuild` fails where matplotlib differs from the version that built the TC report, and `data.json` rebuilds identically (`reports/README.md`).
 
 ---
 
-*This is a living document. Update it as decisions get made and the timeline shifts.*
+*Closed 2026-11-26. This file is kept as the record of the plan and how it changed.*

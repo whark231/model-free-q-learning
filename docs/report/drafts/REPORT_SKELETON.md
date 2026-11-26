@@ -1,6 +1,6 @@
 # Report Skeleton: Model-Free Q-Learning for Mean-Variance Portfolio Choice
 
-**By:** Claude, for Albert and William · **First written:** 2026-11-20 · **Updated:** 2026-11-23 (transaction-cost results filled, per-run takeaways, figure inventory, slide outline) · **Status:** skeleton; no report text written yet
+**By:** Claude, for Albert and William · **First written:** 2026-11-20 · **Updated:** 2026-11-23 · **Status:** superseded by `docs/report/REPORT.md` (archived 2026-11-26). Numbers here were read on 2026-11-23 and are not maintained.
 **Built from:** `docs/reviews/AUDIT_2026-11-20.md` and its notes folder, `reports/registry.json`, every `reports/*/report.html` and `data.json`, and `results/tc-drift/runs/`. Every number below names the committed file it comes from. The 2026-11-23 additions were read from those files on that date, at commit `2169c7e`.
 
 ---
