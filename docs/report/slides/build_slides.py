@@ -68,6 +68,23 @@ slides.append(f'''<section class="slide title">
 <div class="figure">{img("fig_gap_ladder")}</div></div>
 </section>''')
 
+# 2 ------------------------------------------------------------------- data
+slides.append(slide(
+    "The environment: 20 years of daily data, estimated once and frozen",
+    split("fig_correlation", f'''
+<ul>
+<li>SPY, EFA, EEM · IEF, LQD, TIP · GLD, VNQ, DBC</li>
+<li>Adjusted Close, simple excess returns, one daily frequency</li>
+<li>7 Feb 2006 to 31 Jul 2026, inner-joined, nothing imputed</li>
+<li>Gaussian simulator with μ and Σ fixed; the agent sees simulated rewards only</li>
+</ul>
+<div class="stats">
+{stat("5,152", "daily observations")}
+{stat("0.07", "SPY–GLD correlation; Sharpe 0.55 and 0.50")}
+{stat("−0.29", "SPY–IEF correlation")}
+</div>'''),
+    kicker="Part I · data and calibration"))
+
 # 1b -------------------------------------------------------------- pipeline
 def box(head: str, body: str, cls: str = "") -> str:
     return f'<div class="pbox {cls}"><div class="ph">{head}</div><div class="pb">{body}</div></div>'
@@ -119,23 +136,6 @@ slides.append(slide(
 </div>
 <p class="note">The agent sees only its action index and a scalar reward. It never sees μ, Σ or the benchmarks; unit tests check that its code does not import them.</p>
 </div>''',
-    kicker="Part I · data and calibration"))
-
-# 2 ------------------------------------------------------------------- data
-slides.append(slide(
-    "The environment: 20 years of daily data, estimated once and frozen",
-    split("fig_correlation", f'''
-<ul>
-<li>SPY, EFA, EEM · IEF, LQD, TIP · GLD, VNQ, DBC</li>
-<li>Adjusted Close, simple excess returns, one daily frequency</li>
-<li>7 Feb 2006 to 31 Jul 2026, inner-joined, nothing imputed</li>
-<li>Gaussian simulator with μ and Σ fixed; the agent sees simulated rewards only</li>
-</ul>
-<div class="stats">
-{stat("5,152", "daily observations")}
-{stat("0.07", "SPY–GLD correlation; Sharpe 0.55 and 0.50")}
-{stat("−0.29", "SPY–IEF correlation")}
-</div>'''),
     kicker="Part I · data and calibration"))
 
 # 3 ------------------------------------------------------------- benchmarks

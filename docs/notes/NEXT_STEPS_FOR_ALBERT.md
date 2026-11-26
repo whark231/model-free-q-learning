@@ -12,7 +12,7 @@
 
 **Key takeaways**
 - No result changed. The final draft's changes from your v2 are listed in `docs/report/REPORT_final_CHANGES.md`, including five places where I kept a short version of something I had marked for cutting, and why.
-- The slides now open with a title slide, and slide 3 is a diagram of the data pipeline and training loop (Part I).
+- The slides now open with a title slide, and slide 4 is a diagram of the data pipeline and training loop (Part I).
 
 | Item | What |
 |---|---|

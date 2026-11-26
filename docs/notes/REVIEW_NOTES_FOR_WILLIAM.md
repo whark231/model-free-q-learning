@@ -43,7 +43,7 @@ Everything is run, and the report and slides are written (final draft 2026-11-25
 **TL;DR / In plain terms:** the report and slides are written, and they settle every open writing item. The code items are done (Albert, `58d23e5`) or no longer needed.
 
 - **Report:** final draft `docs/report/REPORT_final.md` and `.pdf` (PRs #53 and #54), from Albert's v1 (2026-11-24) and v2, then your markup, shortened to 13 pages of main text and references. Changes in `REPORT_final_CHANGES.md`. Your sections (Theory/Benchmark, Q-learning, FA) are in it.
-- **Presentation:** `docs/report/slides/`, 15 slides plus 3 backup, matched to the final draft, with a title slide and a pipeline diagram (slide 3). Notes in `SPEAKER_NOTES.md`.
+- **Presentation:** `docs/report/slides/`, 15 slides plus 3 backup, matched to the final draft, with a title slide and a pipeline diagram (slide 4). Notes in `SPEAKER_NOTES.md`.
 - **A20-H2:** the derivation is in report §3. No separate `BENCHMARKS.md` was written.
 - **A20-H3:** `src/benchmarks/closed_form_table.py` writes `results/benchmarks/closed_form_budget_only.csv` and checks it against a numerical solve (agreement 1.47e-6; Albert, `58d23e5`).
 - **A20-H4:** no script committed. The report words the γ = 8 cause as "one hypothesis, which we have not tested" and reports neither the surrogate table nor the shrinkage slopes.

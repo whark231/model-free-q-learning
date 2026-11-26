@@ -74,7 +74,7 @@ The notes now cite `REPORT_final.md`. `slides.html` and `slides.pdf` are rebuilt
 
 Two slides were added afterwards, taking the deck to 15 slides plus 3 backup:
 - Slide 1 is a landing slide with the title, the question, the nine ETFs by asset class, the authors and the course. The old opening slide is now slide 2, with its kicker changed to "The question".
-- Slide 3, "From raw prices to a trained agent", is a diagram of the Part I pipeline and the training loop. It covers data sources, cleaning, one-time estimation of μ and Σ, the frozen simulator, the four steps of an episode, 13M episodes and 10 seeds, evaluation and the benchmarks. It is drawn in HTML and CSS inside `build_slides.py`, so it has no image file. Every number on it is from Sections 2 to 4.
+- Slide 4, "From raw prices to a trained agent", is a diagram of the Part I pipeline and the training loop. It covers data sources, cleaning, one-time estimation of μ and Σ, the frozen simulator, the four steps of an episode, 13M episodes and 10 seeds, evaluation and the benchmarks. It is drawn in HTML and CSS inside `build_slides.py`, so it has no image file. Every number on it is from Sections 2 to 4.
 
 The speaker notes are renumbered to match. At the times given the talk now runs about 11 minutes.
 

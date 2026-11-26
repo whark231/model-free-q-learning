@@ -6,7 +6,7 @@
 
 - **Certainty-equivalent bps/yr.** Every gap is the sure annual return the investor gives up, in basis points.
 - **Discretization gap and learning gap.** Best grid portfolio against the optimum, and learned portfolio against the best grid portfolio.
-- **Pre-registered and post hoc.** Slides 4 to 9 and the 25% grid on slide 10 are pre-registered. Slides 11 to 14 and the 10% grid on slide 10 are post hoc, and each carries a tag. Two lines cross that boundary. The risk-aversion footnote on slide 11 (γ = 3 and 8) is pre-registered, and the Q-table diagnostic line on slide 9 is post hoc.
+- **Pre-registered and post hoc.** Slides 3 to 9 and the 25% grid on slide 10 are pre-registered. Slides 11 to 14 and the 10% grid on slide 10 are post hoc, and each carries a tag. Two lines cross that boundary. The risk-aversion footnote on slide 11 (γ = 3 and 8) is pre-registered, and the Q-table diagnostic line on slide 9 is post hoc.
 
 **Key takeaway to land:** the agent gets within about 20 bps/yr of the optimum out of 530, and reward noise about 370 times larger than the differences among the best portfolios stops it getting the rest.
 
@@ -22,13 +22,13 @@ Introduce yourselves and the project, model-free Q-learning for portfolio choice
 
 Our question is the assignment's: can a model-free learner recover a near-optimal portfolio when it only observes realized rewards and never sees expected returns or covariances? We calibrate a simulated market on nine ETFs and let a Q-learning agent choose among 1,287 long-only portfolios. The chart is the answer in one picture. The continuous optimum is worth 530.5 basis points a year of certainty-equivalent return. Across our ten seeds the median gap to it is 19.8. An equal-weight portfolio ends 310.9 behind. So the agent closes almost all of the gap that a naive investor leaves open, and the rest of the talk explains the last 20 basis points.
 
-## 3. From raw prices to a trained agent (45 s)
-
-This is the whole pipeline on one slide. The top row runs once. We take daily adjusted closes for the nine ETFs from Yahoo and the daily risk-free rate from Kenneth French, turn them into excess returns, and align the dates, which leaves 5,152 days. From those we estimate the mean vector and the covariance matrix once and freeze them inside a Gaussian simulator. That simulator is the ground truth of the experiment. The bottom row is one training episode. The agent picks one of 1,287 portfolios, mostly at random early on and greedily later. It holds that portfolio for 20 simulated days, earns the realized mean minus half gamma times the realized variance, and updates its estimate for that portfolio. That repeats 13 million times per seed, and we run ten seeds. At the end we score each seed's favorite portfolio against the two benchmarks, exactly from the true moments, with 10,000 fresh episodes as a check. The agent only ever sees which portfolio it picked and the reward. It never sees the moments or the benchmarks.
-
-## 4. The environment: 20 years of daily data, estimated once and frozen (45 s)
+## 3. The environment: 20 years of daily data, estimated once and frozen (45 s)
 
 The data is the nine ETFs in the assignment: three equity, three fixed income, three real assets. We use Yahoo adjusted closes and simple excess returns over the French daily risk-free rate, from February 2006 to July 2026, which is 5,152 days. Dates are inner-joined and nothing is filled in. Everything is at one daily frequency. The correlation matrix already hints at the answer. SPY and gold have the two best Sharpe ratios, 0.55 and 0.50, and a correlation of 0.07. Treasuries are negatively correlated with equities. We estimate the mean vector and covariance once, freeze them, and draw Gaussian returns from them. The agent's code cannot import those moments, and tests enforce that.
+
+## 4. From raw prices to a trained agent (45 s)
+
+This is the whole pipeline on one slide. The top row runs once. We take daily adjusted closes for the nine ETFs from Yahoo and the daily risk-free rate from Kenneth French, turn them into excess returns, and align the dates, which leaves 5,152 days. From those we estimate the mean vector and the covariance matrix once and freeze them inside a Gaussian simulator. That simulator is the ground truth of the experiment. The bottom row is one training episode. The agent picks one of 1,287 portfolios, mostly at random early on and greedily later. It holds that portfolio for 20 simulated days, earns the realized mean minus half gamma times the realized variance, and updates its estimate for that portfolio. That repeats 13 million times per seed, and we run ten seeds. At the end we score each seed's favorite portfolio against the two benchmarks, exactly from the true moments, with 10,000 fresh episodes as a check. The agent only ever sees which portfolio it picked and the reward. It never sees the moments or the benchmarks.
 
 ## 5. Two benchmarks under the agent's own constraints (45 s)
 
